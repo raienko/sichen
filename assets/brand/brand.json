@@ -1,0 +1,26 @@
+{
+  "colors": {
+    "primary": "#3F5BD9",
+    "iconBackground": "#208AEF",
+    "splashBackground": "#208AEF"
+  },
+  "palette": {
+    "light": {
+      "primary": "#3F5BD9",
+      "onPrimary": "#FFFFFF",
+      "primaryPressed": "#3148B5",
+      "accent": "#3F5BD9",
+      "selected": "#E3E7FA",
+      "focus": "#3F5BD9"
+    },
+    "dark": {
+      "primary": "#4E66D6",
+      "onPrimary": "#FFFFFF",
+      "primaryPressed": "#4459C4",
+      "accent": "#8A9CF2",
+      "selected": "#2A3150",
+      "focus": "#8A9CF2"
+    }
+  },
+  "maps": {}
+}

@@ -1,0 +1,340 @@
+diff --git a/node_modules/react-native-ui-datepicker/lib/commonjs/components/time-picker/wheel-picker/wheel-picker.js b/node_modules/react-native-ui-datepicker/lib/commonjs/components/time-picker/wheel-picker/wheel-picker.js
+index 0140365..29f4207 100644
+--- a/node_modules/react-native-ui-datepicker/lib/commonjs/components/time-picker/wheel-picker/wheel-picker.js
++++ b/node_modules/react-native-ui-datepicker/lib/commonjs/components/time-picker/wheel-picker/wheel-picker.js
+@@ -32,6 +32,7 @@ const WheelPicker = ({
+   flatListProps = {}
+ }) => {
+   const momentumStarted = (0, _react.useRef)(false);
++  const userScrollPending = (0, _react.useRef)(false);
+   const selectedIndex = options.findIndex(item => item.value === value);
+   const flatListRef = (0, _react.useRef)(null);
+   const [scrollY] = (0, _react.useState)(new _reactNative.Animated.Value(selectedIndex * itemHeight));
+@@ -62,31 +63,36 @@ const WheelPicker = ({
+     momentumStarted.current = true;
+   };
+   const handleMomentumScrollEnd = event => {
++    const shouldHandle = userScrollPending.current;
+     momentumStarted.current = false;
+-    handleScrollEnd(event);
++    userScrollPending.current = false;
++    if (shouldHandle) {
++      handleScrollEnd(event);
++    }
+   };
+   const handleScrollEndDrag = event => {
+-    var _event$nativeEvent$co;
+-    // Capture the offset value immediately
+-    const offsetY = (_event$nativeEvent$co = event.nativeEvent.contentOffset) === null || _event$nativeEvent$co === void 0 ? void 0 : _event$nativeEvent$co.y;
++    userScrollPending.current = true;
++    // Publish the snapped row immediately so a confirmation made directly
++    // after releasing the wheel cannot commit the previous value. If the
++    // drag has momentum, handleMomentumScrollEnd will publish its final row.
++    handleScrollEnd(event);
+ 
+-    // We'll start a short timer to see if momentum scroll begins
++    // A slow drag has no momentum-end event, so stop treating later native
++    // scroll events as part of this interaction once that is known.
+     setTimeout(() => {
+-      // If momentum scroll hasn't started within the timeout,
+-      // then it was a slow scroll that won't trigger momentum
+-      if (!momentumStarted.current && offsetY !== undefined) {
+-        // Create a synthetic event with just the data we need
+-        const syntheticEvent = {
+-          nativeEvent: {
+-            contentOffset: {
+-              y: offsetY
+-            }
+-          }
+-        };
+-        handleScrollEnd(syntheticEvent);
++      if (!momentumStarted.current) {
++        userScrollPending.current = false;
+       }
+     }, 50);
+   };
++  const handleAccessibilityAction = event => {
++    var _options$nextIndex;
++    const direction = event.nativeEvent.actionName === 'increment' ? 1 : event.nativeEvent.actionName === 'decrement' ? -1 : 0;
++    const nextIndex = Math.min(options.length - 1, Math.max(0, selectedIndex + direction));
++    if (nextIndex !== selectedIndex) {
++      onChange(((_options$nextIndex = options[nextIndex]) === null || _options$nextIndex === void 0 ? void 0 : _options$nextIndex.value) || 0);
++    }
++  };
+   (0, _react.useEffect)(() => {
+     if (selectedIndex < 0 || selectedIndex >= options.length) {
+       throw new Error(`Selected index ${selectedIndex} is out of bounds [0, ${options.length - 1}]`);
+@@ -98,17 +104,37 @@ const WheelPicker = ({
+    * This ensures that what the user sees as selected in the picker always corresponds to the value state.
+    */
+   (0, _react.useEffect)(() => {
+-    var _flatListRef$current;
+-    (_flatListRef$current = flatListRef.current) === null || _flatListRef$current === void 0 || _flatListRef$current.scrollToIndex({
+-      index: selectedIndex,
+-      animated: _reactNative.Platform.OS === 'ios'
+-    });
++    // Publishing the release row makes this a controlled update while a
++    // flick may still be coasting. Do not programmatically reposition the
++    // list until native scrolling has reached its final row.
++    if (!userScrollPending.current) {
++      var _flatListRef$current;
++      (_flatListRef$current = flatListRef.current) === null || _flatListRef$current === void 0 || _flatListRef$current.scrollToIndex({
++        index: selectedIndex,
++        animated: _reactNative.Platform.OS === 'ios'
++      });
++    }
+   }, [selectedIndex, itemHeight]);
+   return /*#__PURE__*/_react.default.createElement(_reactNative.View, _extends({
+     style: [_wheelPicker.default.container, {
+       height: containerHeight
+     }, containerStyle]
+-  }, containerProps), /*#__PURE__*/_react.default.createElement(_reactNative.View, {
++  }, containerProps, {
++    accessible: true,
++    accessibilityRole: "adjustable",
++    accessibilityValue: {
++      min: 0,
++      max: options.length - 1,
++      now: selectedIndex,
++      text: String((options[selectedIndex] === null || options[selectedIndex] === void 0 ? void 0 : options[selectedIndex].text) || value)
++    },
++    accessibilityActions: [{
++      name: 'increment'
++    }, {
++      name: 'decrement'
++    }],
++    onAccessibilityAction: handleAccessibilityAction
++  }), /*#__PURE__*/_react.default.createElement(_reactNative.View, {
+     style: [_wheelPicker.default.selectedIndicator, selectedIndicatorStyle, {
+       transform: [{
+         translateY: -itemHeight / 2
+diff --git a/node_modules/react-native-ui-datepicker/lib/module/components/time-picker/wheel-picker/wheel-picker.js b/node_modules/react-native-ui-datepicker/lib/module/components/time-picker/wheel-picker/wheel-picker.js
+index 1c11309..7bb2c79 100644
+--- a/node_modules/react-native-ui-datepicker/lib/module/components/time-picker/wheel-picker/wheel-picker.js
++++ b/node_modules/react-native-ui-datepicker/lib/module/components/time-picker/wheel-picker/wheel-picker.js
+@@ -23,6 +23,7 @@ const WheelPicker = ({
+   flatListProps = {}
+ }) => {
+   const momentumStarted = useRef(false);
++  const userScrollPending = useRef(false);
+   const selectedIndex = options.findIndex(item => item.value === value);
+   const flatListRef = useRef(null);
+   const [scrollY] = useState(new Animated.Value(selectedIndex * itemHeight));
+@@ -53,31 +54,36 @@ const WheelPicker = ({
+     momentumStarted.current = true;
+   };
+   const handleMomentumScrollEnd = event => {
++    const shouldHandle = userScrollPending.current;
+     momentumStarted.current = false;
+-    handleScrollEnd(event);
++    userScrollPending.current = false;
++    if (shouldHandle) {
++      handleScrollEnd(event);
++    }
+   };
+   const handleScrollEndDrag = event => {
+-    var _event$nativeEvent$co;
+-    // Capture the offset value immediately
+-    const offsetY = (_event$nativeEvent$co = event.nativeEvent.contentOffset) === null || _event$nativeEvent$co === void 0 ? void 0 : _event$nativeEvent$co.y;
++    userScrollPending.current = true;
++    // Publish the snapped row immediately so a confirmation made directly
++    // after releasing the wheel cannot commit the previous value. If the
++    // drag has momentum, handleMomentumScrollEnd will publish its final row.
++    handleScrollEnd(event);
+ 
+-    // We'll start a short timer to see if momentum scroll begins
++    // A slow drag has no momentum-end event, so stop treating later native
++    // scroll events as part of this interaction once that is known.
+     setTimeout(() => {
+-      // If momentum scroll hasn't started within the timeout,
+-      // then it was a slow scroll that won't trigger momentum
+-      if (!momentumStarted.current && offsetY !== undefined) {
+-        // Create a synthetic event with just the data we need
+-        const syntheticEvent = {
+-          nativeEvent: {
+-            contentOffset: {
+-              y: offsetY
+-            }
+-          }
+-        };
+-        handleScrollEnd(syntheticEvent);
++      if (!momentumStarted.current) {
++        userScrollPending.current = false;
+       }
+     }, 50);
+   };
++  const handleAccessibilityAction = event => {
++    var _options$nextIndex;
++    const direction = event.nativeEvent.actionName === 'increment' ? 1 : event.nativeEvent.actionName === 'decrement' ? -1 : 0;
++    const nextIndex = Math.min(options.length - 1, Math.max(0, selectedIndex + direction));
++    if (nextIndex !== selectedIndex) {
++      onChange(((_options$nextIndex = options[nextIndex]) === null || _options$nextIndex === void 0 ? void 0 : _options$nextIndex.value) || 0);
++    }
++  };
+   useEffect(() => {
+     if (selectedIndex < 0 || selectedIndex >= options.length) {
+       throw new Error(`Selected index ${selectedIndex} is out of bounds [0, ${options.length - 1}]`);
+@@ -89,17 +95,37 @@ const WheelPicker = ({
+    * This ensures that what the user sees as selected in the picker always corresponds to the value state.
+    */
+   useEffect(() => {
+-    var _flatListRef$current;
+-    (_flatListRef$current = flatListRef.current) === null || _flatListRef$current === void 0 || _flatListRef$current.scrollToIndex({
+-      index: selectedIndex,
+-      animated: Platform.OS === 'ios'
+-    });
++    // Publishing the release row makes this a controlled update while a
++    // flick may still be coasting. Do not programmatically reposition the
++    // list until native scrolling has reached its final row.
++    if (!userScrollPending.current) {
++      var _flatListRef$current;
++      (_flatListRef$current = flatListRef.current) === null || _flatListRef$current === void 0 || _flatListRef$current.scrollToIndex({
++        index: selectedIndex,
++        animated: Platform.OS === 'ios'
++      });
++    }
+   }, [selectedIndex, itemHeight]);
+   return /*#__PURE__*/React.createElement(View, _extends({
+     style: [styles.container, {
+       height: containerHeight
+     }, containerStyle]
+-  }, containerProps), /*#__PURE__*/React.createElement(View, {
++  }, containerProps, {
++    accessible: true,
++    accessibilityRole: "adjustable",
++    accessibilityValue: {
++      min: 0,
++      max: options.length - 1,
++      now: selectedIndex,
++      text: String((options[selectedIndex] === null || options[selectedIndex] === void 0 ? void 0 : options[selectedIndex].text) || value)
++    },
++    accessibilityActions: [{
++      name: 'increment'
++    }, {
++      name: 'decrement'
++    }],
++    onAccessibilityAction: handleAccessibilityAction
++  }), /*#__PURE__*/React.createElement(View, {
+     style: [styles.selectedIndicator, selectedIndicatorStyle, {
+       transform: [{
+         translateY: -itemHeight / 2
+diff --git a/node_modules/react-native-ui-datepicker/src/components/time-picker/wheel-picker/wheel-picker.tsx b/node_modules/react-native-ui-datepicker/src/components/time-picker/wheel-picker/wheel-picker.tsx
+index a694882..8da8710 100644
+--- a/node_modules/react-native-ui-datepicker/src/components/time-picker/wheel-picker/wheel-picker.tsx
++++ b/node_modules/react-native-ui-datepicker/src/components/time-picker/wheel-picker/wheel-picker.tsx
+@@ -4,6 +4,7 @@ import {
+   TextStyle,
+   NativeSyntheticEvent,
+   NativeScrollEvent,
++  AccessibilityActionEvent,
+   Animated,
+   ViewStyle,
+   View,
+@@ -56,6 +57,7 @@ const WheelPicker: React.FC<Props> = ({
+   flatListProps = {},
+ }) => {
+   const momentumStarted = useRef(false);
++  const userScrollPending = useRef(false);
+   const selectedIndex = options.findIndex((item) => item.value === value);
+ 
+   const flatListRef = useRef<FlatList>(null);
+@@ -105,32 +107,49 @@ const WheelPicker: React.FC<Props> = ({
+   const handleMomentumScrollEnd = (
+     event: NativeSyntheticEvent<NativeScrollEvent>
+   ) => {
++    const shouldHandle = userScrollPending.current;
+     momentumStarted.current = false;
+-    handleScrollEnd(event);
++    userScrollPending.current = false;
++    if (shouldHandle) {
++      handleScrollEnd(event);
++    }
+   };
+ 
+   const handleScrollEndDrag = (
+     event: NativeSyntheticEvent<NativeScrollEvent>
+   ) => {
+-    // Capture the offset value immediately
+-    const offsetY = event.nativeEvent.contentOffset?.y;
++    userScrollPending.current = true;
++    // Publish the snapped row immediately so a confirmation made directly
++    // after releasing the wheel cannot commit the previous value. If the
++    // drag has momentum, handleMomentumScrollEnd will publish its final row.
++    handleScrollEnd(event);
+ 
+-    // We'll start a short timer to see if momentum scroll begins
++    // A slow drag has no momentum-end event, so stop treating later native
++    // scroll events as part of this interaction once that is known.
+     setTimeout(() => {
+-      // If momentum scroll hasn't started within the timeout,
+-      // then it was a slow scroll that won't trigger momentum
+-      if (!momentumStarted.current && offsetY !== undefined) {
+-        // Create a synthetic event with just the data we need
+-        const syntheticEvent = {
+-          nativeEvent: {
+-            contentOffset: { y: offsetY },
+-          },
+-        };
+-        handleScrollEnd(syntheticEvent as any);
++      if (!momentumStarted.current) {
++        userScrollPending.current = false;
+       }
+     }, 50);
+   };
+ 
++  const handleAccessibilityAction = (event: AccessibilityActionEvent) => {
++    const direction =
++      event.nativeEvent.actionName === 'increment'
++        ? 1
++        : event.nativeEvent.actionName === 'decrement'
++          ? -1
++          : 0;
++    const nextIndex = Math.min(
++      options.length - 1,
++      Math.max(0, selectedIndex + direction)
++    );
++
++    if (nextIndex !== selectedIndex) {
++      onChange(options[nextIndex]?.value ?? 0);
++    }
++  };
++
+   useEffect(() => {
+     if (selectedIndex < 0 || selectedIndex >= options.length) {
+       throw new Error(
+@@ -146,16 +165,31 @@ const WheelPicker: React.FC<Props> = ({
+    * This ensures that what the user sees as selected in the picker always corresponds to the value state.
+    */
+   useEffect(() => {
+-    flatListRef.current?.scrollToIndex({
+-      index: selectedIndex,
+-      animated: Platform.OS === 'ios',
+-    });
++    // Publishing the release row makes this a controlled update while a
++    // flick may still be coasting. Do not programmatically reposition the
++    // list until native scrolling has reached its final row.
++    if (!userScrollPending.current) {
++      flatListRef.current?.scrollToIndex({
++        index: selectedIndex,
++        animated: Platform.OS === 'ios',
++      });
++    }
+   }, [selectedIndex, itemHeight]);
+ 
+   return (
+     <View
+       style={[styles.container, { height: containerHeight }, containerStyle]}
+       {...containerProps}
++      accessible
++      accessibilityRole="adjustable"
++      accessibilityValue={{
++        min: 0,
++        max: options.length - 1,
++        now: selectedIndex,
++        text: String(options[selectedIndex]?.text ?? value),
++      }}
++      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
++      onAccessibilityAction={handleAccessibilityAction}
+     >
+       <View
+         style={[

@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "关闭",
+    "cancel": "取消",
+    "back": "返回",
+    "confirm": "确认",
+    "ok": "好",
+    "loading": "加载中",
+    "done": "完成"
+  },
+  "input": {
+    "name": {
+      "label": "姓名",
+      "placeholder": "Ada Lovelace",
+      "helper": "这将显示在您的个人资料中"
+    },
+    "age": {
+      "label": "年龄",
+      "placeholder": "0",
+      "helper": "0–120，输入时会自动去除非数字字符"
+    },
+    "email": {
+      "label": "邮箱",
+      "placeholder": "ada@example.com",
+      "error": "请输入有效的邮箱地址"
+    },
+    "focusEmail": "聚焦邮箱输入框",
+    "password": {
+      "label": "密码",
+      "show": "显示密码",
+      "hide": "隐藏密码"
+    },
+    "disabled": {
+      "label": "已禁用",
+      "placeholder": "不可编辑"
+    },
+    "country": {
+      "label": "国家/地区",
+      "placeholder": "选择国家/地区",
+      "helper": "打开底部弹层 — 点按背景可保留当前选择",
+      "options": {
+        "uk": "英国",
+        "ua": "乌克兰",
+        "es": "西班牙",
+        "jp": "日本",
+        "cn": "中国"
+      }
+    },
+    "startsAt": {
+      "label": "开始时间",
+      "placeholder": "选择日期和时间",
+      "helper": "日期和时间会暂存为草稿，直到你点按“完成”"
+    },
+    "birthday": {
+      "label": "生日",
+      "placeholder": "选择日期",
+      "helper": "仅日期，且不能选择未来的日子"
+    },
+    "alarm": {
+      "label": "闹钟",
+      "placeholder": "选择时间",
+      "helper": "仅时间 — 日历会完全隐藏"
+    },
+    "code": {
+      "label": "验证码",
+      "helper": "6 位数字 — iOS 会在键盘上方提供短信中的验证码"
+    },
+    "phone": {
+      "label": "电话",
+      "placeholder": "(213) 373-4253",
+      "helper": "输入时自动分组，并以国际格式保存",
+      "countryPicker": {
+        "label": "国家/地区代码",
+        "title": "国家或地区",
+        "search": "搜索国家或地区代码",
+        "empty": "未找到国家或地区"
+      }
+    },
+    "checklist": {
+      "label": "兴趣",
+      "helper": "请选择所有适用项",
+      "options": {
+        "design": "设计",
+        "engineering": "工程",
+        "research": "研究",
+        "unavailable": "不可用选项"
+      }
+    },
+    "switchGroup": {
+      "label": "通知",
+      "helper": "每个通知渠道均可单独控制",
+      "options": {
+        "product": "产品更新",
+        "security": "安全提醒",
+        "marketing": "营销信息",
+        "managed": "由你的组织管理"
+      }
+    },
+    "radioGroup": {
+      "label": "套餐",
+      "helper": "请选择一项",
+      "options": {
+        "free": "免费版",
+        "pro": "专业版",
+        "business": "商务版",
+        "enterprise": "联系销售团队"
+      }
+    },
+    "range": {
+      "label": "预算",
+      "helper": "选择最小值和最大值",
+      "minimum": "最低预算",
+      "maximum": "最高预算"
+    },
+    "characterCount": "{{count}}/{{max}} 个字符",
+    "notes": {
+      "label": "备注",
+      "placeholder": "有什么需要我们知道的吗？",
+      "helper": "随文字增高至六行，之后滚动"
+    },
+    "color": {
+      "label": "强调色",
+      "placeholder": "选择颜色",
+      "helper": "拖动、选择预设颜色或输入十六进制值——点按“完成”后生效"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "弹出窗口",
+      "content": "弹出模态框"
+    },
+    "bottomSheet": {
+      "trigger": "底部面板",
+      "content": "底部面板模态框"
+    },
+    "actions": {
+      "trigger": "操作",
+      "optionA": "选项 A",
+      "optionB": "选项 B"
+    },
+    "fullscreen": {
+      "trigger": "全屏",
+      "content": "全屏模态框"
+    }
+  },
+  "mediaPlayer": {
+    "play": "播放",
+    "pause": "暂停",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "progress": "播放位置",
+    "time": "{{current}} / {{total}}"
+  },
+  "markdown": {
+    "bulletPoint": "项目符号",
+    "nestedBulletPoint": "嵌套项目符号",
+    "orderedItem": "列表项 {n}",
+    "nestedOrderedItem": "嵌套列表项 {n}",
+    "quote": "引用",
+    "nestedQuote": "嵌套引用",
+    "row": "第 {n} 行：{content}",
+    "equation": "公式：{latex}",
+    "headings": "标题",
+    "links": "链接",
+    "images": "图片"
+  },
+  "carousel": {
+    "slide": "第 {{current}} 张，共 {{total}} 张"
+  },
+  "toast": {
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "openHint": "打开关联页面",
+    "showcase": {
+      "message": "你的更改已保存。",
+      "errorTitle": "上传失败",
+      "errorMessage": "点按查看出了什么问题。",
+      "action": "查看",
+      "sticky": "这条会一直显示，直到你关闭它。",
+      "expiring": "这条将在三秒后消失。"
+    }
+  },
+  "stateView": {
+    "loading": "正在加载",
+    "empty": "这里暂时没有内容",
+    "error": "出了点问题",
+    "success": "全部完成",
+    "offline": "你已离线"
+  },
+  "theme": {
+    "label": "外观",
+    "light": "浅色",
+    "dark": "深色",
+    "system": "跟随系统"
+  },
+  "locale": {
+    "label": "语言",
+    "system": "跟随系统"
+  },
+  "showcase": {
+    "summary": "姓名：{{name}} / 年龄：{{age}} / 邮箱：{{email}}",
+    "typography": "排版",
+    "markdown": "Markdown",
+    "webView": "网页视图",
+    "theme": "主题与颜色",
+    "localization": "本地化",
+    "accessibility": "无障碍",
+    "responsive": "响应式单位",
+    "grid": "栅格",
+    "spacer": "间距",
+    "divider": "分隔线",
+    "icons": "图标",
+    "buttons": "按钮",
+    "tags": "标签",
+    "badges": "徽章",
+    "avatars": "头像",
+    "header": "页眉",
+    "tabBar": "标签栏",
+    "checkboxes": "复选框",
+    "radioButtons": "单选按钮",
+    "switches": "开关",
+    "sliders": "滑块",
+    "stepper": "步进器",
+    "skeleton": "骨架屏",
+    "chart": "图表",
+    "map": "地图",
+    "barcode": "条码",
+    "timer": "计时器",
+    "share": "分享",
+    "progress": "进度",
+    "segmentedControl": "分段控件",
+    "stateViews": "状态视图",
+    "inputs": "输入框",
+    "formField": "表单字段",
+    "images": "图片",
+    "imageViewer": "图片查看器",
+    "chat": "聊天",
+    "cards": "卡片",
+    "section": "区块",
+    "listItems": "列表项",
+    "list": "列表",
+    "carousel": "轮播",
+    "pagination": "分页",
+    "mediaPlayer": "媒体播放器",
+    "imagePicker": "图片选择器",
+    "filePicker": "文件选择器",
+    "modals": "模态框",
+    "popups": "弹出对话框",
+    "toasts": "轻提示",
+    "alerts": "提示",
+    "permissions": "权限",
+    "deepLinks": "深层链接",
+    "storage": "存储",
+    "logger": "日志",
+    "utilities": "实用工具",
+    "sampleSentence": "敏捷的棕色狐狸跳过了那只懒狗。",
+    "colorPicker": "颜色选择器",
+    "api": "API",
+    "forms": "表单",
+    "formatting": "格式化",
+    "network": "网络",
+    "haptics": "触感反馈"
+  },
+  "checkbox": {
+    "custom": "自定义复选框",
+    "expo": "Expo UI 复选框",
+    "disabled": "已禁用且选中"
+  },
+  "radioButton": {
+    "custom": "自定义单选按钮",
+    "expo": "Expo 风格单选按钮",
+    "disabled": "已禁用的单选按钮"
+  },
+  "switch": {
+    "custom": "自定义开关",
+    "expo": "Expo UI 开关",
+    "disabled": "已禁用且开启"
+  },
+  "slider": {
+    "custom": "自定义滑块",
+    "expo": "Expo UI 滑块",
+    "multiple": "多个滑块",
+    "multipleFirst": "第一个值",
+    "multipleSecond": "第二个值",
+    "multipleThird": "第三个值",
+    "disabled": "已禁用的滑块"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {{page}} 页，共 {{total}} 页",
+    "label": "分页"
+  },
+  "share": {
+    "action": "分享",
+    "copy": "复制",
+    "copied": "已复制到剪贴板",
+    "failed": "无法分享"
+  },
+  "tag": {
+    "remove": "移除{{value}}"
+  },
+  "stepper": {
+    "decrease": "减少{{label}}",
+    "increase": "增加{{label}}"
+  },
+  "formField": {
+    "required": "必填"
+  },
+  "alert": {
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息"
+  },
+  "map": {
+    "directions": "路线",
+    "yourLocation": "你的位置"
+  },
+  "imageViewer": {
+    "close": "关闭",
+    "share": "分享",
+    "position": "{{index}} / {{total}}",
+    "label": "第 {{index}} 张，共 {{total}} 张"
+  },
+  "imagePicker": {
+    "title": "选择图片",
+    "gallery": "图库",
+    "camera": "相机"
+  },
+  "avatarGroup": {
+    "separator": "、",
+    "andMore": "{{names}}等另外 {{count}} 人",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "you": "你",
+    "placeholder": "消息",
+    "send": "发送",
+    "attach": "添加文件",
+    "attachPhoto": "添加照片",
+    "removeAttachment": "移除{{name}}",
+    "replyingTo": "回复 {{name}}",
+    "cancelReply": "取消回复",
+    "editing": "正在编辑消息",
+    "cancelEdit": "取消编辑",
+    "edited": "已编辑",
+    "deleted": "此消息已删除",
+    "retry": "重试",
+    "loadingEarlier": "正在加载更早的消息",
+    "activity": {
+      "typingOne": "{{name}} 正在输入…",
+      "typingTwo": "{{first}} 和 {{second}} 正在输入…",
+      "typingMany": "{{count}} 人正在输入…",
+      "recordingOne": "{{name}} 正在录音…",
+      "recordingTwo": "{{first}} 和 {{second}} 正在录音…",
+      "recordingMany": "{{count}} 人正在录音…",
+      "uploadingOne": "{{name}} 正在发送文件…",
+      "uploadingTwo": "{{first}} 和 {{second}} 正在发送文件…",
+      "uploadingMany": "{{count}} 人正在发送文件…"
+    },
+    "receipt": {
+      "sending": "正在发送",
+      "sent": "已发送",
+      "delivered": "已送达",
+      "read": "已读",
+      "failed": "发送失败，轻点重试"
+    },
+    "actions": {
+      "title": "消息操作",
+      "reply": "回复",
+      "copy": "复制",
+      "edit": "编辑",
+      "delete": "删除",
+      "react": "用 {{emoji}} 回应",
+      "deleteTitle": "删除这条消息？",
+      "deleteMessage": "所有成员都将看不到它。",
+      "hint": "长按查看操作"
+    },
+    "attachment": {
+      "image": "照片",
+      "video": "视频",
+      "audio": "语音消息",
+      "file": "文件",
+      "more": "+{{count}}",
+      "open": "打开{{name}}",
+      "playVideo": "播放视频"
+    },
+    "fileSize": {
+      "b": "{{size}} B",
+      "kb": "{{size}} KB",
+      "mb": "{{size}} MB",
+      "gb": "{{size}} GB"
+    },
+    "message": {
+      "label": "{{name}}，{{time}}",
+      "reactions": "回应：{{reactions}}"
+    },
+    "empty": {
+      "title": "还没有消息",
+      "message": "打个招呼，开始对话吧。"
+    },
+    "participants": {
+      "members": "{{count}} 位成员",
+      "online": "{{count}} 人在线"
+    },
+    "jumpToLatest": "跳到最新消息",
+    "jumpToLatestUnseen": "跳到最新消息，{{count}} 条新消息",
+    "openProfile": "查看{{name}}的资料",
+    "openLink": "打开 {{link}}"
+  },
+  "colorPicker": {
+    "area": "饱和度和亮度",
+    "areaValue": "饱和度 {{saturation}}%，亮度 {{brightness}}%",
+    "hue": "色相",
+    "hueValue": "{{degrees}} 度",
+    "preset": "颜色 {{hex}}",
+    "hex": "十六进制"
+  },
+  "validation": {
+    "required": "必填",
+    "email": "请输入有效的电子邮件",
+    "passwordMin": "至少 {{min}} 个字符",
+    "passwordLetter": "至少包含一个字母",
+    "passwordDigit": "至少包含一个数字",
+    "passwordSymbol": "至少包含一个符号",
+    "name": "只能使用字母",
+    "tooShort": "至少 {{min}} 个字符",
+    "tooLong": "最多 {{max}} 个字符",
+    "phone": "请输入有效的电话号码",
+    "url": "请输入有效的网址",
+    "mismatch": "不匹配"
+  }
+}

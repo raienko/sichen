@@ -1,0 +1,24 @@
+import { View } from "react-native";
+
+import Text from "@/components/text";
+import { createStyles } from "@/features/responsive";
+import { useTheme } from "@/features/theme";
+
+/** {{{description}}} */
+export default function {{pascalCase name}}Section() {
+  const theme = useTheme();
+  const styles = useStyles();
+  const hint = { color: theme.colors.textSecondary };
+
+  return (
+    <View style={styles.container}>
+      <Text value="{{{description}}}" type="footnote" style={hint} />
+    </View>
+  );
+}
+
+const useStyles = createStyles(({ spacing }) => ({
+  container: {
+    gap: spacing.x12,
+  },
+}));

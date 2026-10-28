@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "confirm": "تأكيد",
+    "ok": "موافق",
+    "loading": "جارٍ التحميل",
+    "done": "تم"
+  },
+  "input": {
+    "name": {
+      "label": "الاسم",
+      "placeholder": "Ada Lovelace",
+      "helper": "يظهر هذا في ملفك الشخصي"
+    },
+    "age": {
+      "label": "العمر",
+      "placeholder": "0",
+      "helper": "0–120، تُحذف الرموز غير الرقمية أثناء الكتابة"
+    },
+    "email": {
+      "label": "البريد الإلكتروني",
+      "placeholder": "ada@example.com",
+      "error": "أدخل بريدًا إلكترونيًا صالحًا"
+    },
+    "focusEmail": "التركيز على البريد الإلكتروني",
+    "password": {
+      "label": "كلمة المرور",
+      "show": "إظهار كلمة المرور",
+      "hide": "إخفاء كلمة المرور"
+    },
+    "disabled": {
+      "label": "معطّل",
+      "placeholder": "غير قابل للتعديل"
+    },
+    "country": {
+      "label": "الدولة",
+      "placeholder": "اختر دولة",
+      "helper": "يفتح لوحة سفلية — انقر على الخلفية للإبقاء على الاختيار الحالي",
+      "options": {
+        "uk": "المملكة المتحدة",
+        "ua": "أوكرانيا",
+        "es": "إسبانيا",
+        "jp": "اليابان",
+        "cn": "الصين"
+      }
+    },
+    "startsAt": {
+      "label": "يبدأ في",
+      "placeholder": "اختر التاريخ والوقت",
+      "helper": "التاريخ والوقت يُحفظان كمسودة حتى تضغط «تم»"
+    },
+    "birthday": {
+      "label": "تاريخ الميلاد",
+      "placeholder": "اختر يومًا",
+      "helper": "التاريخ فقط، ولا يمكن اختيار أي يوم في المستقبل"
+    },
+    "alarm": {
+      "label": "المنبّه",
+      "placeholder": "اختر وقتًا",
+      "helper": "الوقت فقط — يُخفى التقويم بالكامل"
+    },
+    "code": {
+      "label": "رمز التحقق",
+      "helper": "6 أرقام — يعرض iOS رمز الرسالة النصية أعلى لوحة المفاتيح"
+    },
+    "phone": {
+      "label": "الهاتف",
+      "placeholder": "(213) 373-4253",
+      "helper": "يُنسّق أثناء الكتابة ويُحفظ بالصيغة الدولية",
+      "countryPicker": {
+        "label": "رمز اتصال الدولة",
+        "title": "الدولة أو المنطقة",
+        "search": "ابحث عن دولة أو رمز اتصال",
+        "empty": "لم يتم العثور على دول"
+      }
+    },
+    "checklist": {
+      "label": "الاهتمامات",
+      "helper": "اختر كل ما ينطبق",
+      "options": {
+        "design": "التصميم",
+        "engineering": "الهندسة",
+        "research": "البحث",
+        "unavailable": "خيار غير متاح"
+      }
+    },
+    "switchGroup": {
+      "label": "الإشعارات",
+      "helper": "يمكن التحكم في كل قناة بشكل منفصل",
+      "options": {
+        "product": "تحديثات المنتج",
+        "security": "تنبيهات الأمان",
+        "marketing": "التسويق",
+        "managed": "تديره مؤسستك"
+      }
+    },
+    "radioGroup": {
+      "label": "الخطة",
+      "helper": "اختر خيارًا واحدًا",
+      "options": {
+        "free": "مجاني",
+        "pro": "احترافي",
+        "business": "أعمال",
+        "enterprise": "تواصل مع المبيعات"
+      }
+    },
+    "range": {
+      "label": "الميزانية",
+      "helper": "اختر الحد الأدنى والأقصى",
+      "minimum": "الحد الأدنى للميزانية",
+      "maximum": "الحد الأقصى للميزانية"
+    },
+    "characterCount": "{{count}} من {{max}} حرفًا",
+    "notes": {
+      "label": "ملاحظات",
+      "placeholder": "هل هناك ما يجب أن نعرفه؟",
+      "helper": "يتّسع مع النص حتى ستة أسطر، ثم يتم التمرير"
+    },
+    "color": {
+      "label": "لون التمييز",
+      "placeholder": "اختر لونًا",
+      "helper": "اسحب أو اختر لونًا جاهزًا أو اكتب قيمة سداسية عشرية — يُطبَّق عند الضغط على تم"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "نافذة منبثقة",
+      "content": "نافذة منبثقة"
+    },
+    "bottomSheet": {
+      "trigger": "لوحة سفلية",
+      "content": "نافذة اللوحة السفلية"
+    },
+    "actions": {
+      "trigger": "إجراءات",
+      "optionA": "الخيار A",
+      "optionB": "الخيار B"
+    },
+    "fullscreen": {
+      "trigger": "ملء الشاشة",
+      "content": "نافذة ملء الشاشة"
+    }
+  },
+  "mediaPlayer": {
+    "play": "تشغيل",
+    "pause": "إيقاف مؤقت",
+    "mute": "كتم الصوت",
+    "unmute": "إلغاء كتم الصوت",
+    "progress": "موضع التشغيل",
+    "time": "{{current}} من {{total}}"
+  },
+  "markdown": {
+    "bulletPoint": "نقطة",
+    "nestedBulletPoint": "نقطة متداخلة",
+    "orderedItem": "عنصر القائمة {n}",
+    "nestedOrderedItem": "عنصر قائمة متداخل {n}",
+    "quote": "اقتباس",
+    "nestedQuote": "اقتباس متداخل",
+    "row": "الصف {n}: {content}",
+    "equation": "معادلة: {latex}",
+    "headings": "العناوين",
+    "links": "الروابط",
+    "images": "الصور"
+  },
+  "carousel": {
+    "slide": "الشريحة {{current}} من {{total}}"
+  },
+  "toast": {
+    "success": "نجاح",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "info": "معلومات",
+    "openHint": "يفتح الشاشة المرتبطة",
+    "showcase": {
+      "message": "تم حفظ التغييرات.",
+      "errorTitle": "فشل الرفع",
+      "errorMessage": "اضغط لمعرفة سبب المشكلة.",
+      "action": "عرض",
+      "sticky": "سيبقى هذا حتى تغلقه.",
+      "expiring": "سيختفي هذا بعد ثلاث ثوانٍ."
+    }
+  },
+  "stateView": {
+    "loading": "جارٍ التحميل",
+    "empty": "لا يوجد شيء هنا بعد",
+    "error": "حدث خطأ ما",
+    "success": "اكتمل كل شيء",
+    "offline": "أنت غير متصل"
+  },
+  "theme": {
+    "label": "المظهر",
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "locale": {
+    "label": "اللغة",
+    "system": "النظام"
+  },
+  "showcase": {
+    "summary": "الاسم: {{name}} / العمر: {{age}} / البريد الإلكتروني: {{email}}",
+    "typography": "الطباعة",
+    "markdown": "Markdown",
+    "webView": "عرض الويب",
+    "theme": "السمة والألوان",
+    "localization": "الترجمة",
+    "accessibility": "إمكانية الوصول",
+    "responsive": "الوحدات المتجاوبة",
+    "grid": "الشبكة",
+    "spacer": "المباعد",
+    "divider": "فاصل",
+    "icons": "الأيقونات",
+    "buttons": "الأزرار",
+    "tags": "الوسوم",
+    "badges": "الشارات",
+    "avatars": "الصور الرمزية",
+    "header": "الترويسة",
+    "tabBar": "شريط التبويبات",
+    "checkboxes": "مربعات الاختيار",
+    "radioButtons": "أزرار الاختيار",
+    "switches": "مفاتيح التبديل",
+    "sliders": "أشرطة التمرير",
+    "stepper": "المُدرِّج",
+    "skeleton": "هيكل التحميل",
+    "chart": "الرسم البياني",
+    "map": "الخريطة",
+    "barcode": "الرمز الشريطي",
+    "timer": "المؤقت",
+    "share": "المشاركة",
+    "progress": "التقدم",
+    "segmentedControl": "عنصر تحكم مقسَّم",
+    "stateViews": "حالات العرض",
+    "inputs": "حقول الإدخال",
+    "formField": "حقل النموذج",
+    "images": "الصور",
+    "imageViewer": "عارض الصور",
+    "chat": "الدردشة",
+    "cards": "البطاقات",
+    "section": "القسم",
+    "listItems": "عناصر القائمة",
+    "list": "القائمة",
+    "carousel": "دوّار",
+    "pagination": "ترقيم الصفحات",
+    "mediaPlayer": "مشغل الوسائط",
+    "imagePicker": "منتقي الصور",
+    "filePicker": "منتقي الملفات",
+    "modals": "النوافذ المنبثقة",
+    "popups": "مربعات الحوار",
+    "toasts": "التنبيهات",
+    "alerts": "تنبيهات",
+    "permissions": "الأذونات",
+    "deepLinks": "الروابط العميقة",
+    "storage": "التخزين",
+    "logger": "السجل",
+    "utilities": "الأدوات",
+    "sampleSentence": "نص حكيم له سر قاطع وذو شأن عظيم مكتوب على ثوب أخضر.",
+    "colorPicker": "منتقي الألوان",
+    "api": "واجهة API",
+    "forms": "النماذج",
+    "formatting": "التنسيق",
+    "network": "الشبكة",
+    "haptics": "الاهتزاز اللمسي"
+  },
+  "checkbox": {
+    "custom": "مربع اختيار مخصص",
+    "expo": "مربع اختيار Expo UI",
+    "disabled": "معطل ومحدد"
+  },
+  "radioButton": {
+    "custom": "زر اختيار مخصص",
+    "expo": "زر اختيار بنمط Expo",
+    "disabled": "زر اختيار معطل"
+  },
+  "switch": {
+    "custom": "مفتاح تبديل مخصص",
+    "expo": "مفتاح تبديل Expo UI",
+    "disabled": "معطل ومشغل"
+  },
+  "slider": {
+    "custom": "شريط تمرير مخصص",
+    "expo": "شريط تمرير Expo UI",
+    "multiple": "مقابض متعددة",
+    "multipleFirst": "القيمة الأولى",
+    "multipleSecond": "القيمة الثانية",
+    "multipleThird": "القيمة الثالثة",
+    "disabled": "شريط تمرير معطل"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "الصفحة السابقة",
+    "next": "الصفحة التالية",
+    "page": "الصفحة {{page}} من {{total}}",
+    "label": "ترقيم الصفحات"
+  },
+  "share": {
+    "action": "مشاركة",
+    "copy": "نسخ",
+    "copied": "تم النسخ إلى الحافظة",
+    "failed": "تعذّرت المشاركة"
+  },
+  "tag": {
+    "remove": "إزالة {{value}}"
+  },
+  "stepper": {
+    "decrease": "إنقاص {{label}}",
+    "increase": "زيادة {{label}}"
+  },
+  "formField": {
+    "required": "مطلوب"
+  },
+  "alert": {
+    "success": "نجاح",
+    "error": "خطأ",
+    "warning": "تحذير",
+    "info": "معلومات"
+  },
+  "map": {
+    "directions": "الاتجاهات",
+    "yourLocation": "موقعك"
+  },
+  "imageViewer": {
+    "close": "إغلاق",
+    "share": "مشاركة",
+    "position": "{{index}} / {{total}}",
+    "label": "الصورة {{index}} من {{total}}"
+  },
+  "imagePicker": {
+    "title": "اختر صورة",
+    "gallery": "المعرض",
+    "camera": "الكاميرا"
+  },
+  "avatarGroup": {
+    "separator": "، ",
+    "andMore": "{{names}} و{{count}} آخرون",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "you": "أنت",
+    "placeholder": "رسالة",
+    "send": "إرسال",
+    "attach": "إرفاق ملف",
+    "attachPhoto": "إرفاق صورة",
+    "removeAttachment": "إزالة {{name}}",
+    "replyingTo": "الرد على {{name}}",
+    "cancelReply": "إلغاء الرد",
+    "editing": "تعديل الرسالة",
+    "cancelEdit": "إلغاء التعديل",
+    "edited": "معدّلة",
+    "deleted": "تم حذف هذه الرسالة",
+    "retry": "إعادة المحاولة",
+    "loadingEarlier": "جارٍ تحميل الرسائل السابقة",
+    "activity": {
+      "typingOne": "{{name}} يكتب…",
+      "typingTwo": "{{first}} و{{second}} يكتبان…",
+      "typingMany": "{{count}} أشخاص يكتبون…",
+      "recordingOne": "{{name}} يسجّل صوتًا…",
+      "recordingTwo": "{{first}} و{{second}} يسجّلان صوتًا…",
+      "recordingMany": "{{count}} أشخاص يسجّلون صوتًا…",
+      "uploadingOne": "{{name}} يرسل ملفًا…",
+      "uploadingTwo": "{{first}} و{{second}} يرسلان ملفات…",
+      "uploadingMany": "{{count}} أشخاص يرسلون ملفات…"
+    },
+    "receipt": {
+      "sending": "جارٍ الإرسال",
+      "sent": "تم الإرسال",
+      "delivered": "تم التسليم",
+      "read": "تمت القراءة",
+      "failed": "لم تُرسل. انقر لإعادة المحاولة"
+    },
+    "actions": {
+      "title": "إجراءات الرسالة",
+      "reply": "رد",
+      "copy": "نسخ",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "react": "التفاعل بـ {{emoji}}",
+      "deleteTitle": "حذف هذه الرسالة؟",
+      "deleteMessage": "ستُحذف لدى جميع المشاركين في الدردشة.",
+      "hint": "اضغط مطولًا لعرض الإجراءات"
+    },
+    "attachment": {
+      "image": "صورة",
+      "video": "فيديو",
+      "audio": "رسالة صوتية",
+      "file": "ملف",
+      "more": "+{{count}}",
+      "open": "فتح {{name}}",
+      "playVideo": "تشغيل الفيديو"
+    },
+    "fileSize": {
+      "b": "{{size}} بايت",
+      "kb": "{{size}} ك.ب",
+      "mb": "{{size}} م.ب",
+      "gb": "{{size}} ج.ب"
+    },
+    "message": {
+      "label": "{{name}}، {{time}}",
+      "reactions": "التفاعلات: {{reactions}}"
+    },
+    "empty": {
+      "title": "لا توجد رسائل بعد",
+      "message": "ألقِ التحية لبدء المحادثة."
+    },
+    "participants": {
+      "members": "{{count}} أعضاء",
+      "online": "{{count}} متصلون الآن"
+    },
+    "jumpToLatest": "الانتقال إلى أحدث الرسائل",
+    "jumpToLatestUnseen": "الانتقال إلى أحدث الرسائل، {{count}} جديدة",
+    "openProfile": "عرض الملف الشخصي لـ {{name}}",
+    "openLink": "فتح {{link}}"
+  },
+  "colorPicker": {
+    "area": "التشبع والسطوع",
+    "areaValue": "التشبع {{saturation}}٪، السطوع {{brightness}}٪",
+    "hue": "درجة اللون",
+    "hueValue": "{{degrees}} درجة",
+    "preset": "اللون {{hex}}",
+    "hex": "سداسي عشري"
+  },
+  "validation": {
+    "required": "حقل مطلوب",
+    "email": "أدخل بريدًا إلكترونيًا صالحًا",
+    "passwordMin": "{{min}} أحرف على الأقل",
+    "passwordLetter": "أضف حرفًا واحدًا على الأقل",
+    "passwordDigit": "أضف رقمًا واحدًا على الأقل",
+    "passwordSymbol": "أضف رمزًا واحدًا على الأقل",
+    "name": "استخدم الأحرف فقط",
+    "tooShort": "{{min}} أحرف على الأقل",
+    "tooLong": "{{max}} حرفًا كحد أقصى",
+    "phone": "أدخل رقم هاتف صالحًا",
+    "url": "أدخل عنوان ويب صالحًا",
+    "mismatch": "غير متطابق"
+  }
+}

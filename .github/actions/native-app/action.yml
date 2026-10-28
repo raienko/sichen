@@ -1,0 +1,79 @@
+name: Native app cache
+description: >
+  Restores the native app built for this commit's native fingerprint and
+  build profile (scripts/native), so the build step can repack the current
+  JS into it instead of building. On a miss, restores what makes a full
+  build faster instead: ccache and CocoaPods on iOS, Gradle on Android.
+  Run `node scripts/native/build.mjs <platform> --profile <profile>` after
+  it; the cache is saved when the job ends.
+
+inputs:
+  platform:
+    description: ios or android
+    required: true
+  profile:
+    description: A build profile from scripts/native/profiles.mjs
+    required: true
+
+outputs:
+  fingerprint:
+    description: The native fingerprint the binary is cached under
+    value: ${{ steps.fingerprint.outputs.hash }}
+  cache-hit:
+    description: "'true' when a binary for this fingerprint was restored"
+    value: ${{ steps.app.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Fingerprint the native app
+      id: fingerprint
+      shell: bash
+      run: echo "hash=$(node scripts/native/build.mjs ${{ inputs.platform }} --profile ${{ inputs.profile }} --print-fingerprint)" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the app built for this fingerprint
+      id: app
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .native-cache/${{ inputs.platform }}/${{ inputs.profile }}
+        key: native-${{ inputs.platform }}-${{ inputs.profile }}-${{ steps.fingerprint.outputs.hash }}
+
+    # Only a full build needs these.
+    - name: Install ccache
+      if: inputs.platform == 'ios' && steps.app.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        brew install ccache
+        {
+          echo "CCACHE_DIR=$HOME/Library/Caches/ccache"
+          echo "CCACHE_MAXSIZE=3G"
+          # React Native's recommended settings for Xcode builds.
+          echo "CCACHE_SLOPPINESS=clang_index_store,file_stat_matches,include_file_ctime,include_file_mtime,ivfsoverlay,pch_defines,modules,system_headers,time_macros"
+          echo "CCACHE_FILECLONE=true"
+          echo "CCACHE_DEPEND=true"
+          echo "CCACHE_INODECACHE=true"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore compiler and CocoaPods caches
+      if: inputs.platform == 'ios' && steps.app.outputs.cache-hit != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/Library/Caches/ccache
+          ~/Library/Caches/CocoaPods
+        key: native-ios-build-${{ hashFiles('yarn.lock') }}-${{ github.run_id }}
+        restore-keys: |
+          native-ios-build-${{ hashFiles('yarn.lock') }}-
+          native-ios-build-
+
+    - name: Restore Gradle caches
+      if: inputs.platform == 'android' && steps.app.outputs.cache-hit != 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: native-android-gradle-${{ hashFiles('yarn.lock') }}-${{ github.run_id }}
+        restore-keys: |
+          native-android-gradle-${{ hashFiles('yarn.lock') }}-
+          native-android-gradle-

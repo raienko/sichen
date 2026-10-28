@@ -1,0 +1,206 @@
+name: Code quality
+
+# Every quality gate, one job each, so a pull request lists them by name
+# ("Code quality / Lint", "Code quality / Web build", …) and branch
+# protection can require exactly the ones that matter. The same gates as
+# `yarn verify` (and .husky/pre-push), plus the builds that are too slow for
+# a push hook, and CodeQL's security analysis.
+#
+# Manual for now: run it from the Actions tab, or call it from another
+# workflow with `uses: ./.github/workflows/code-quality.yml`. To run it on every
+# pull request and on main again, add:
+#
+#   push:
+#     branches: [main]
+#   pull_request:
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  formatting:
+    name: Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Check formatting
+        run: yarn format:check
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Lint
+        run: yarn lint
+
+  types:
+    name: Types
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Check types
+        run: yarn typecheck
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Restore Jest cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .jest-cache
+          key: jest-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-${{ github.sha }}
+          restore-keys: jest-${{ runner.os }}-${{ hashFiles('yarn.lock') }}-
+      - name: Run unit tests with coverage
+        run: yarn test:coverage --cacheDirectory .jest-cache
+      - name: Read coverage
+        id: coverage
+        if: always()
+        run: node scripts/ci/coverage-summary.mjs
+      - name: Publish coverage summary
+        if: always()
+        uses: ./.github/actions/summary
+        with:
+          title: Test coverage
+          status: ${{ job.status }}
+          fields: ${{ steps.coverage.outputs.fields }}
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Scan for committed secrets
+        run: yarn secrets:check
+
+  expo-doctor:
+    name: Expo Doctor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Check SDK versions and project setup
+        run: yarn doctor
+
+  web-build:
+    name: Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      # Server output: renders every page in Node and bundles the API
+      # routes, so this is where code that needs a browser at import time
+      # fails — not at deploy.
+      - name: Export the web app and API routes
+        run: yarn web:build
+
+  native-bundles:
+    name: Native bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      # The iOS and Android JavaScript bundles, built on Linux: catches a
+      # broken import or a Metro error on native without Xcode or Gradle.
+      - name: Bundle iOS and Android
+        run: yarn native:bundle
+
+  storybook-build:
+    name: Storybook build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Build web Storybook
+        run: yarn storybook:web:build
+
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Packages this branch adds or changes compared with main: known
+      # vulnerabilities (moderate and up) and copyleft licences fail it.
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fail-on-severity: moderate
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-3.0, LGPL-2.1, LGPL-3.0
+
+  # GitHub's static security analysis, here rather than in GitHub's
+  # "default setup" so it runs and reports with everything else. Default
+  # setup has to be off (Settings → Code security → CodeQL) — GitHub
+  # refuses results from both. Findings land in the Security tab.
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The app's code, and the workflows themselves (untrusted input,
+        # over-broad permissions).
+        language: [javascript-typescript, actions]
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up CodeQL
+        uses: github/codeql-action/init@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          languages: ${{ matrix.language }}
+          # Nothing to compile: both are analysed from source.
+          build-mode: none
+          queries: security-extended
+      - name: Analyse
+        uses: github/codeql-action/analyze@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          category: /language:${{ matrix.language }}

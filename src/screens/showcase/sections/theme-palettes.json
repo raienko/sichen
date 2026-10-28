@@ -1,0 +1,30 @@
+{
+  "violet": {
+    "overrides": {
+      "light": {
+        "primary": "#6d28d9",
+        "focus": "#6d28d9",
+        "primaryPressed": "#5b21b6"
+      },
+      "dark": {
+        "primary": "#c4b5fd",
+        "focus": "#c4b5fd",
+        "primaryPressed": "#6d28d9"
+      }
+    }
+  },
+  "amber": {
+    "overrides": {
+      "light": {
+        "primary": "#b45309",
+        "focus": "#b45309",
+        "primaryPressed": "#92400e"
+      },
+      "dark": {
+        "primary": "#fbbf24",
+        "focus": "#fbbf24",
+        "primaryPressed": "#92400e"
+      }
+    }
+  }
+}

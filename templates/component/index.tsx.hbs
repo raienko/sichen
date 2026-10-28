@@ -1,0 +1,25 @@
+import { View, type StyleProp, type ViewStyle } from "react-native";
+
+import { createStyles } from "@/features/responsive";
+
+type Props = {
+  style?: StyleProp<ViewStyle>;
+  testID?: string;
+};
+
+/**
+ * {{{description}}}
+ *
+ * @example <{{pascalCase name}} />
+ */
+export default function {{pascalCase name}}({ style, testID }: Props) {
+  const styles = useStyles();
+
+  return <View testID={testID} style={[styles.container, style]} />;
+}
+
+const useStyles = createStyles(({ spacing }) => ({
+  container: {
+    gap: spacing.x8,
+  },
+}));

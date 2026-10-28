@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "back": "Back",
+    "confirm": "Confirm",
+    "ok": "OK",
+    "loading": "Loading",
+    "done": "Done"
+  },
+  "input": {
+    "name": {
+      "label": "Name",
+      "placeholder": "Ada Lovelace",
+      "helper": "This is displayed on your profile"
+    },
+    "age": {
+      "label": "Age",
+      "placeholder": "0",
+      "helper": "0–120, non-digits stripped as you type"
+    },
+    "email": {
+      "label": "Email",
+      "placeholder": "ada@example.com",
+      "error": "Enter a valid email"
+    },
+    "focusEmail": "Focus email",
+    "password": {
+      "label": "Password",
+      "show": "Show password",
+      "hide": "Hide password"
+    },
+    "disabled": {
+      "label": "Disabled",
+      "placeholder": "not editable"
+    },
+    "country": {
+      "label": "Country",
+      "placeholder": "Pick a country",
+      "helper": "Opens a bottom-sheet Modal — tap the backdrop to keep the current pick",
+      "options": {
+        "uk": "United Kingdom",
+        "ua": "Ukraine",
+        "es": "Spain",
+        "jp": "Japan",
+        "cn": "China"
+      }
+    },
+    "startsAt": {
+      "label": "Starts at",
+      "placeholder": "Pick a date and time",
+      "helper": "Date + time, staged in a draft until you press Done"
+    },
+    "birthday": {
+      "label": "Birthday",
+      "placeholder": "Pick a day",
+      "helper": "Date only, and nothing in the future is selectable"
+    },
+    "alarm": {
+      "label": "Alarm",
+      "placeholder": "Pick a time",
+      "helper": "Time only — the calendar is hidden entirely"
+    },
+    "code": {
+      "label": "Verification code",
+      "helper": "6 digits — iOS offers a texted code above the keyboard"
+    },
+    "phone": {
+      "label": "Phone",
+      "placeholder": "(213) 373-4253",
+      "helper": "Grouped as you type and stored in international format",
+      "countryPicker": {
+        "label": "Country calling code",
+        "title": "Country or region",
+        "search": "Search country or calling code",
+        "empty": "No countries found"
+      }
+    },
+    "checklist": {
+      "label": "Interests",
+      "helper": "Choose as many as apply",
+      "options": {
+        "design": "Design",
+        "engineering": "Engineering",
+        "research": "Research",
+        "unavailable": "Unavailable option"
+      }
+    },
+    "switchGroup": {
+      "label": "Notifications",
+      "helper": "Each channel can be controlled separately",
+      "options": {
+        "product": "Product updates",
+        "security": "Security alerts",
+        "marketing": "Marketing",
+        "managed": "Managed by your organization"
+      }
+    },
+    "radioGroup": {
+      "label": "Plan",
+      "helper": "Choose one option",
+      "options": {
+        "free": "Free",
+        "pro": "Pro",
+        "business": "Business",
+        "enterprise": "Contact sales"
+      }
+    },
+    "range": {
+      "label": "Budget",
+      "helper": "Choose the minimum and maximum",
+      "minimum": "Minimum budget",
+      "maximum": "Maximum budget"
+    },
+    "characterCount": "{{count}} of {{max}} characters",
+    "notes": {
+      "label": "Notes",
+      "placeholder": "Anything we should know?",
+      "helper": "Grows with its text up to six lines, then scrolls"
+    },
+    "color": {
+      "label": "Accent colour",
+      "placeholder": "Pick a colour",
+      "helper": "Drag, pick a preset or type a hex value — committed on Done"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "Popup",
+      "content": "Popup modal"
+    },
+    "bottomSheet": {
+      "trigger": "Bottom sheet",
+      "content": "Bottom sheet modal"
+    },
+    "actions": {
+      "trigger": "Actions",
+      "optionA": "Option A",
+      "optionB": "Option B"
+    },
+    "fullscreen": {
+      "trigger": "Fullscreen",
+      "content": "Fullscreen modal"
+    }
+  },
+  "mediaPlayer": {
+    "play": "Play",
+    "pause": "Pause",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "progress": "Playback position",
+    "time": "{{current}} of {{total}}"
+  },
+  "markdown": {
+    "bulletPoint": "Bullet point",
+    "nestedBulletPoint": "Nested bullet point",
+    "orderedItem": "List item {n}",
+    "nestedOrderedItem": "Nested list item {n}",
+    "quote": "Blockquote",
+    "nestedQuote": "Nested blockquote",
+    "row": "Row {n}: {content}",
+    "equation": "Math: {latex}",
+    "headings": "Headings",
+    "links": "Links",
+    "images": "Images"
+  },
+  "carousel": {
+    "slide": "Slide {{current}} of {{total}}"
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "openHint": "Opens the linked screen",
+    "showcase": {
+      "message": "Your changes have been saved.",
+      "errorTitle": "Upload failed",
+      "errorMessage": "Tap to see what went wrong.",
+      "action": "View",
+      "sticky": "This one stays until you close it.",
+      "expiring": "This one expires in three seconds."
+    }
+  },
+  "stateView": {
+    "loading": "Loading",
+    "empty": "Nothing here yet",
+    "error": "Something went wrong",
+    "success": "All done",
+    "offline": "You're offline"
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "locale": {
+    "label": "Language",
+    "system": "System"
+  },
+  "showcase": {
+    "summary": "name: {{name}} / age: {{age}} / email: {{email}}",
+    "typography": "Typography",
+    "markdown": "Markdown",
+    "webView": "Web view",
+    "theme": "Theme & colors",
+    "localization": "Localization",
+    "accessibility": "Accessibility",
+    "responsive": "Responsive units",
+    "grid": "Grid",
+    "spacer": "Spacer",
+    "divider": "Divider",
+    "icons": "Icons",
+    "buttons": "Buttons",
+    "tags": "Tags",
+    "badges": "Badges",
+    "avatars": "Avatars",
+    "header": "Header",
+    "tabBar": "Tab bar",
+    "checkboxes": "Checkboxes",
+    "radioButtons": "Radio buttons",
+    "switches": "Switches",
+    "sliders": "Sliders",
+    "stepper": "Stepper",
+    "skeleton": "Skeleton",
+    "chart": "Chart",
+    "map": "Map",
+    "barcode": "Barcode",
+    "timer": "Timer",
+    "share": "Share",
+    "progress": "Progress",
+    "segmentedControl": "Segmented control",
+    "stateViews": "State views",
+    "inputs": "Inputs",
+    "formField": "Form field",
+    "images": "Images",
+    "imageViewer": "Image viewer",
+    "chat": "Chat",
+    "cards": "Cards",
+    "section": "Section",
+    "listItems": "List items",
+    "list": "List",
+    "carousel": "Carousel",
+    "pagination": "Pagination",
+    "mediaPlayer": "Media player",
+    "imagePicker": "Image picker",
+    "filePicker": "File picker",
+    "modals": "Modals",
+    "popups": "Popups",
+    "toasts": "Toasts",
+    "alerts": "Alerts",
+    "permissions": "Permissions",
+    "deepLinks": "Deep links",
+    "storage": "Storage",
+    "logger": "Logger",
+    "utilities": "Utilities",
+    "sampleSentence": "The quick brown fox jumps over the lazy dog.",
+    "colorPicker": "Color picker",
+    "api": "API",
+    "forms": "Forms",
+    "formatting": "Formatting",
+    "network": "Network",
+    "haptics": "Haptics"
+  },
+  "checkbox": {
+    "custom": "Custom checkbox",
+    "expo": "Expo UI checkbox",
+    "disabled": "Disabled and checked"
+  },
+  "radioButton": {
+    "custom": "Custom radio button",
+    "expo": "Expo-style radio button",
+    "disabled": "Disabled radio button"
+  },
+  "switch": {
+    "custom": "Custom switch",
+    "expo": "Expo UI switch",
+    "disabled": "Disabled and on"
+  },
+  "slider": {
+    "custom": "Custom slider",
+    "expo": "Expo UI slider",
+    "multiple": "Multiple thumbs",
+    "multipleFirst": "First value",
+    "multipleSecond": "Second value",
+    "multipleThird": "Third value",
+    "disabled": "Disabled slider"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "Previous page",
+    "next": "Next page",
+    "page": "Page {{page}} of {{total}}",
+    "label": "Pagination"
+  },
+  "share": {
+    "action": "Share",
+    "copy": "Copy",
+    "copied": "Copied to clipboard",
+    "failed": "Could not share"
+  },
+  "tag": {
+    "remove": "Remove {{value}}"
+  },
+  "stepper": {
+    "decrease": "Decrease {{label}}",
+    "increase": "Increase {{label}}"
+  },
+  "formField": {
+    "required": "Required"
+  },
+  "alert": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "map": {
+    "directions": "Directions",
+    "yourLocation": "Your location"
+  },
+  "imageViewer": {
+    "close": "Close",
+    "share": "Share",
+    "position": "{{index}} / {{total}}",
+    "label": "Photo {{index}} of {{total}}"
+  },
+  "imagePicker": {
+    "title": "Choose image",
+    "gallery": "Gallery",
+    "camera": "Camera"
+  },
+  "avatarGroup": {
+    "separator": ", ",
+    "andMore": "{{names}} and {{count}} more",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "you": "You",
+    "placeholder": "Message",
+    "send": "Send",
+    "attach": "Attach a file",
+    "attachPhoto": "Attach a photo",
+    "removeAttachment": "Remove {{name}}",
+    "replyingTo": "Replying to {{name}}",
+    "cancelReply": "Cancel reply",
+    "editing": "Editing message",
+    "cancelEdit": "Cancel editing",
+    "edited": "edited",
+    "deleted": "This message was deleted",
+    "retry": "Retry",
+    "loadingEarlier": "Loading earlier messages",
+    "activity": {
+      "typingOne": "{{name}} is typing…",
+      "typingTwo": "{{first}} and {{second}} are typing…",
+      "typingMany": "{{count}} people are typing…",
+      "recordingOne": "{{name}} is recording audio…",
+      "recordingTwo": "{{first}} and {{second}} are recording audio…",
+      "recordingMany": "{{count}} people are recording audio…",
+      "uploadingOne": "{{name}} is sending a file…",
+      "uploadingTwo": "{{first}} and {{second}} are sending files…",
+      "uploadingMany": "{{count}} people are sending files…"
+    },
+    "receipt": {
+      "sending": "Sending",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Not sent. Tap to retry"
+    },
+    "actions": {
+      "title": "Message actions",
+      "reply": "Reply",
+      "copy": "Copy",
+      "edit": "Edit",
+      "delete": "Delete",
+      "react": "React with {{emoji}}",
+      "deleteTitle": "Delete this message?",
+      "deleteMessage": "It will be removed for everyone in the chat.",
+      "hint": "Long-press for actions"
+    },
+    "attachment": {
+      "image": "Photo",
+      "video": "Video",
+      "audio": "Voice message",
+      "file": "File",
+      "more": "+{{count}}",
+      "open": "Open {{name}}",
+      "playVideo": "Play video"
+    },
+    "fileSize": {
+      "b": "{{size}} B",
+      "kb": "{{size}} KB",
+      "mb": "{{size}} MB",
+      "gb": "{{size}} GB"
+    },
+    "message": {
+      "label": "{{name}}, {{time}}",
+      "reactions": "Reactions: {{reactions}}"
+    },
+    "empty": {
+      "title": "No messages yet",
+      "message": "Say hello to start the conversation."
+    },
+    "participants": {
+      "members": "{{count}} members",
+      "online": "{{count}} online"
+    },
+    "jumpToLatest": "Jump to newest messages",
+    "jumpToLatestUnseen": "Jump to newest messages, {{count}} new",
+    "openProfile": "View {{name}}'s profile",
+    "openLink": "Open {{link}}"
+  },
+  "colorPicker": {
+    "area": "Saturation and brightness",
+    "areaValue": "{{saturation}}% saturation, {{brightness}}% brightness",
+    "hue": "Hue",
+    "hueValue": "{{degrees}} degrees",
+    "preset": "Colour {{hex}}",
+    "hex": "Hex"
+  },
+  "validation": {
+    "required": "Required",
+    "email": "Enter a valid email",
+    "passwordMin": "At least {{min}} characters",
+    "passwordLetter": "Include at least one letter",
+    "passwordDigit": "Include at least one digit",
+    "passwordSymbol": "Include at least one symbol",
+    "name": "Use letters only",
+    "tooShort": "At least {{min}} characters",
+    "tooLong": "At most {{max}} characters",
+    "phone": "Enter a valid phone number",
+    "url": "Enter a valid web address",
+    "mismatch": "Doesn't match"
+  }
+}

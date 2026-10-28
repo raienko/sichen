@@ -1,0 +1,20 @@
+# Vulnerability exceptions for the weekly scan (.github/workflows/vulnerability-scan.yml).
+# The register — owner, reason, expiry — is docs/security/exceptions.md; this
+# file is its machine-readable half. Every entry needs an `ignoreUntil`: when
+# it passes, the scan fails again until the entry is renewed or the
+# dependency is fixed. Keep the two files in step.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2026-11-19
+reason = "braces 3.0.3 — build tooling only (patch-package > find-yarn-workspace-root > micromatch); not in the app bundle. Owner: unassigned."
+
+[[IgnoredVulns]]
+id = "GHSA-86w9-cpqp-85rv"
+ignoreUntil = 2026-11-19
+reason = "node-forge 1.4.0 — Expo CLI only (@expo/cli, @expo/code-signing-certificates); not in the app bundle. Fixed by an SDK patch bump. Owner: unassigned."
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+ignoreUntil = 2026-11-19
+reason = "uuid 7.0.3 — prebuild only (@expo/config-plugins > xcode); not in the app bundle. Owner: unassigned."

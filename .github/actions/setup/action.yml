@@ -1,0 +1,17 @@
+name: Set up project
+description: >
+  Node from .nvmrc, the Yarn cache, and a frozen-lockfile install. The
+  install's postinstall generates visual assets and the palette. App identity comes from the selected environment.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version-file: .nvmrc
+        cache: yarn
+
+    - name: Install dependencies
+      shell: bash
+      run: yarn install --frozen-lockfile

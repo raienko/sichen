@@ -1,0 +1,66 @@
+name: Component library
+
+# Publishes the component library — the web Storybook — to GitHub Pages,
+# once Code quality passes.
+#
+# Manual for now: run it from the Actions tab. To publish on every push to
+# main again, add:
+#
+#   push:
+#     branches: [main]
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One publish at a time, and a running one is never cut off halfway.
+concurrency:
+  group: component-library
+  cancel-in-progress: false
+
+jobs:
+  code-quality:
+    name: Code quality
+    uses: ./.github/workflows/code-quality.yml
+    # A called workflow can't have more than its caller grants: CodeQL
+    # (inside Code quality) uploads its results as security events.
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+
+  build:
+    name: Build
+    needs: code-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Build web Storybook
+        run: yarn storybook:web:build
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: storybook-static
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

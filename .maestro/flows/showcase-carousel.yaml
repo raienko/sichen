@@ -1,0 +1,61 @@
+# Showcase › Carousel — one flow for iOS, Android and web. Opens the section
+# by its id, moves with the dots (the buttons every platform has), and
+# checks that turning loop off keeps the slide on screen (the bug where it
+# went blank). The swipe-and-wrap part runs on iOS and Android only: a web
+# test can't drive the pan gesture.
+appId: ${APP_ID}
+name: Showcase › Carousel
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+- scrollUntilVisible:
+    element:
+      id: "showcase.carousel"
+- tapOn:
+    id: "showcase.carousel"
+- scrollUntilVisible:
+    element: "current slide"
+    centerElement: true
+- extendedWaitUntil:
+    visible: "A river running through a canyon, Slide 1 of 4"
+    timeout: 15000
+
+- tapOn:
+    id: "carousel.dot.2"
+- extendedWaitUntil:
+    visible: "A pug wrapped in a blanket, Slide 2 of 4"
+    timeout: 15000
+
+# Swiping, and wrapping back past the first slide with loop on — touch
+# platforms only (`when: platform` takes one platform, hence two calls).
+- runFlow:
+    when:
+      platform: iOS
+    file: ../subflows/carousel-swipes.yaml
+- runFlow:
+    when:
+      platform: Android
+    file: ../subflows/carousel-swipes.yaml
+
+- tapOn:
+    id: "carousel.dot.4"
+- extendedWaitUntil:
+    visible: ".*Slide 4 of 4"
+    timeout: 15000
+
+# Loop off on the last slide: it stays on screen instead of going blank.
+- scrollUntilVisible:
+    element: "loop: on"
+    direction: UP
+- tapOn: "loop: on"
+- extendedWaitUntil:
+    visible: "loop: off"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "carousel"
+    timeout: 15000
+- scrollUntilVisible:
+    element: ".*Slide 4 of 4"

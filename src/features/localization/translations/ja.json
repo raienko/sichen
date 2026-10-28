@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "閉じる",
+    "cancel": "キャンセル",
+    "back": "戻る",
+    "confirm": "確認",
+    "ok": "OK",
+    "loading": "読み込み中",
+    "done": "完了"
+  },
+  "input": {
+    "name": {
+      "label": "名前",
+      "placeholder": "Ada Lovelace",
+      "helper": "プロフィールに表示されます"
+    },
+    "age": {
+      "label": "年齢",
+      "placeholder": "0",
+      "helper": "0〜120、入力時に数字以外は削除されます"
+    },
+    "email": {
+      "label": "メールアドレス",
+      "placeholder": "ada@example.com",
+      "error": "有効なメールアドレスを入力してください"
+    },
+    "focusEmail": "メール欄にフォーカス",
+    "password": {
+      "label": "パスワード",
+      "show": "パスワードを表示",
+      "hide": "パスワードを非表示"
+    },
+    "disabled": {
+      "label": "無効",
+      "placeholder": "編集できません"
+    },
+    "country": {
+      "label": "国",
+      "placeholder": "国を選択",
+      "helper": "ボトムシートを開きます — 背景をタップすると現在の選択が保持されます",
+      "options": {
+        "uk": "イギリス",
+        "ua": "ウクライナ",
+        "es": "スペイン",
+        "jp": "日本",
+        "cn": "中国"
+      }
+    },
+    "startsAt": {
+      "label": "開始日時",
+      "placeholder": "日付と時刻を選択",
+      "helper": "日付と時刻は「完了」を押すまで下書きとして保持されます"
+    },
+    "birthday": {
+      "label": "誕生日",
+      "placeholder": "日付を選択",
+      "helper": "日付のみ。未来の日は選択できません"
+    },
+    "alarm": {
+      "label": "アラーム",
+      "placeholder": "時刻を選択",
+      "helper": "時刻のみ — カレンダーは表示されません"
+    },
+    "code": {
+      "label": "確認コード",
+      "helper": "6 桁 — iOS はキーボードの上に SMS のコードを表示します"
+    },
+    "phone": {
+      "label": "電話番号",
+      "placeholder": "(213) 373-4253",
+      "helper": "入力時に区切られ、国際形式で保存されます",
+      "countryPicker": {
+        "label": "国番号",
+        "title": "国または地域",
+        "search": "国または国番号を検索",
+        "empty": "国が見つかりません"
+      }
+    },
+    "checklist": {
+      "label": "興味",
+      "helper": "該当するものをすべて選択してください",
+      "options": {
+        "design": "デザイン",
+        "engineering": "エンジニアリング",
+        "research": "リサーチ",
+        "unavailable": "選択できない項目"
+      }
+    },
+    "switchGroup": {
+      "label": "通知",
+      "helper": "各通知チャンネルを個別に設定できます",
+      "options": {
+        "product": "製品アップデート",
+        "security": "セキュリティ通知",
+        "marketing": "マーケティング",
+        "managed": "組織によって管理されています"
+      }
+    },
+    "radioGroup": {
+      "label": "プラン",
+      "helper": "1つ選択してください",
+      "options": {
+        "free": "無料",
+        "pro": "プロ",
+        "business": "ビジネス",
+        "enterprise": "営業に問い合わせ"
+      }
+    },
+    "range": {
+      "label": "予算",
+      "helper": "最小値と最大値を選択",
+      "minimum": "最小予算",
+      "maximum": "最大予算"
+    },
+    "characterCount": "{{max}}文字中{{count}}文字",
+    "notes": {
+      "label": "メモ",
+      "placeholder": "お知らせいただくことはありますか？",
+      "helper": "6行までは文字に合わせて広がり、それ以降はスクロールします"
+    },
+    "color": {
+      "label": "アクセントカラー",
+      "placeholder": "色を選択",
+      "helper": "ドラッグ、プリセットの選択、または16進数の入力 — 「完了」で確定"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "ポップアップ",
+      "content": "ポップアップモーダル"
+    },
+    "bottomSheet": {
+      "trigger": "ボトムシート",
+      "content": "ボトムシートモーダル"
+    },
+    "actions": {
+      "trigger": "アクション",
+      "optionA": "オプション A",
+      "optionB": "オプション B"
+    },
+    "fullscreen": {
+      "trigger": "フルスクリーン",
+      "content": "フルスクリーンモーダル"
+    }
+  },
+  "mediaPlayer": {
+    "play": "再生",
+    "pause": "一時停止",
+    "mute": "ミュート",
+    "unmute": "ミュート解除",
+    "progress": "再生位置",
+    "time": "{{total}} 中 {{current}}"
+  },
+  "markdown": {
+    "bulletPoint": "箇条書き",
+    "nestedBulletPoint": "入れ子の箇条書き",
+    "orderedItem": "リスト項目 {n}",
+    "nestedOrderedItem": "入れ子のリスト項目 {n}",
+    "quote": "引用",
+    "nestedQuote": "入れ子の引用",
+    "row": "{n} 行目: {content}",
+    "equation": "数式: {latex}",
+    "headings": "見出し",
+    "links": "リンク",
+    "images": "画像"
+  },
+  "carousel": {
+    "slide": "{{total}} 枚中 {{current}} 枚目"
+  },
+  "toast": {
+    "success": "成功",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報",
+    "openHint": "リンク先の画面を開きます",
+    "showcase": {
+      "message": "変更を保存しました。",
+      "errorTitle": "アップロードに失敗しました",
+      "errorMessage": "タップして原因を確認してください。",
+      "action": "表示",
+      "sticky": "これは閉じるまで表示され続けます。",
+      "expiring": "これは3秒後に消えます。"
+    }
+  },
+  "stateView": {
+    "loading": "読み込み中",
+    "empty": "まだ何もありません",
+    "error": "問題が発生しました",
+    "success": "完了しました",
+    "offline": "オフラインです"
+  },
+  "theme": {
+    "label": "外観",
+    "light": "ライト",
+    "dark": "ダーク",
+    "system": "システム"
+  },
+  "locale": {
+    "label": "言語",
+    "system": "システム"
+  },
+  "showcase": {
+    "summary": "名前: {{name}} / 年齢: {{age}} / メール: {{email}}",
+    "typography": "タイポグラフィ",
+    "markdown": "Markdown",
+    "webView": "Web ビュー",
+    "theme": "テーマと色",
+    "localization": "ローカライズ",
+    "accessibility": "アクセシビリティ",
+    "responsive": "レスポンシブ単位",
+    "grid": "グリッド",
+    "spacer": "スペーサー",
+    "divider": "区切り線",
+    "icons": "アイコン",
+    "buttons": "ボタン",
+    "tags": "タグ",
+    "badges": "バッジ",
+    "avatars": "アバター",
+    "header": "ヘッダー",
+    "tabBar": "タブバー",
+    "checkboxes": "チェックボックス",
+    "radioButtons": "ラジオボタン",
+    "switches": "スイッチ",
+    "sliders": "スライダー",
+    "stepper": "ステッパー",
+    "skeleton": "スケルトン",
+    "chart": "チャート",
+    "map": "地図",
+    "barcode": "バーコード",
+    "timer": "タイマー",
+    "share": "共有",
+    "progress": "進捗",
+    "segmentedControl": "セグメンテッドコントロール",
+    "stateViews": "状態ビュー",
+    "inputs": "入力フィールド",
+    "formField": "フォームフィールド",
+    "images": "画像",
+    "imageViewer": "画像ビューア",
+    "chat": "チャット",
+    "cards": "カード",
+    "section": "セクション",
+    "listItems": "リスト項目",
+    "list": "リスト",
+    "carousel": "カルーセル",
+    "pagination": "ページ送り",
+    "mediaPlayer": "メディアプレーヤー",
+    "imagePicker": "画像ピッカー",
+    "filePicker": "ファイル選択",
+    "modals": "モーダル",
+    "popups": "ポップアップ",
+    "toasts": "トースト",
+    "alerts": "アラート",
+    "permissions": "権限",
+    "deepLinks": "ディープリンク",
+    "storage": "ストレージ",
+    "logger": "ロガー",
+    "utilities": "ユーティリティ",
+    "sampleSentence": "素早い茶色の狐が怠け者の犬を飛び越えた。",
+    "colorPicker": "カラーピッカー",
+    "api": "API",
+    "forms": "フォーム",
+    "formatting": "書式",
+    "network": "ネットワーク",
+    "haptics": "触覚フィードバック"
+  },
+  "checkbox": {
+    "custom": "カスタムチェックボックス",
+    "expo": "Expo UIチェックボックス",
+    "disabled": "無効・選択済み"
+  },
+  "radioButton": {
+    "custom": "カスタムラジオボタン",
+    "expo": "Expoスタイルのラジオボタン",
+    "disabled": "無効なラジオボタン"
+  },
+  "switch": {
+    "custom": "カスタムスイッチ",
+    "expo": "Expo UIスイッチ",
+    "disabled": "無効・オン"
+  },
+  "slider": {
+    "custom": "カスタムスライダー",
+    "expo": "Expo UIスライダー",
+    "multiple": "複数のつまみ",
+    "multipleFirst": "1番目の値",
+    "multipleSecond": "2番目の値",
+    "multipleThird": "3番目の値",
+    "disabled": "無効なスライダー"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "前のページ",
+    "next": "次のページ",
+    "page": "{{total}} ページ中 {{page}} ページ目",
+    "label": "ページ送り"
+  },
+  "share": {
+    "action": "共有",
+    "copy": "コピー",
+    "copied": "クリップボードにコピーしました",
+    "failed": "共有できませんでした"
+  },
+  "tag": {
+    "remove": "{{value}} を削除"
+  },
+  "stepper": {
+    "decrease": "{{label}} を減らす",
+    "increase": "{{label}} を増やす"
+  },
+  "formField": {
+    "required": "必須"
+  },
+  "alert": {
+    "success": "成功",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報"
+  },
+  "map": {
+    "directions": "経路",
+    "yourLocation": "現在地"
+  },
+  "imageViewer": {
+    "close": "閉じる",
+    "share": "共有",
+    "position": "{{index}} / {{total}}",
+    "label": "写真 {{index}}/{{total}}"
+  },
+  "imagePicker": {
+    "title": "画像を選択",
+    "gallery": "ギャラリー",
+    "camera": "カメラ"
+  },
+  "avatarGroup": {
+    "separator": "、",
+    "andMore": "{{names}}、ほか {{count}} 人",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "you": "あなた",
+    "placeholder": "メッセージ",
+    "send": "送信",
+    "attach": "ファイルを添付",
+    "attachPhoto": "写真を添付",
+    "removeAttachment": "{{name}}を削除",
+    "replyingTo": "{{name}}に返信",
+    "cancelReply": "返信をキャンセル",
+    "editing": "メッセージを編集中",
+    "cancelEdit": "編集をキャンセル",
+    "edited": "編集済み",
+    "deleted": "このメッセージは削除されました",
+    "retry": "再試行",
+    "loadingEarlier": "以前のメッセージを読み込み中",
+    "activity": {
+      "typingOne": "{{name}}さんが入力中…",
+      "typingTwo": "{{first}}さんと{{second}}さんが入力中…",
+      "typingMany": "{{count}} 人が入力中…",
+      "recordingOne": "{{name}}さんが録音中…",
+      "recordingTwo": "{{first}}さんと{{second}}さんが録音中…",
+      "recordingMany": "{{count}} 人が録音中…",
+      "uploadingOne": "{{name}}さんがファイルを送信中…",
+      "uploadingTwo": "{{first}}さんと{{second}}さんがファイルを送信中…",
+      "uploadingMany": "{{count}} 人がファイルを送信中…"
+    },
+    "receipt": {
+      "sending": "送信中",
+      "sent": "送信済み",
+      "delivered": "配信済み",
+      "read": "既読",
+      "failed": "送信できませんでした。タップして再試行"
+    },
+    "actions": {
+      "title": "メッセージの操作",
+      "reply": "返信",
+      "copy": "コピー",
+      "edit": "編集",
+      "delete": "削除",
+      "react": "{{emoji}} でリアクション",
+      "deleteTitle": "このメッセージを削除しますか？",
+      "deleteMessage": "チャットの全員から削除されます。",
+      "hint": "長押しで操作を表示"
+    },
+    "attachment": {
+      "image": "写真",
+      "video": "動画",
+      "audio": "ボイスメッセージ",
+      "file": "ファイル",
+      "more": "+{{count}}",
+      "open": "{{name}}を開く",
+      "playVideo": "動画を再生"
+    },
+    "fileSize": {
+      "b": "{{size}} B",
+      "kb": "{{size}} KB",
+      "mb": "{{size}} MB",
+      "gb": "{{size}} GB"
+    },
+    "message": {
+      "label": "{{name}}、{{time}}",
+      "reactions": "リアクション：{{reactions}}"
+    },
+    "empty": {
+      "title": "まだメッセージはありません",
+      "message": "あいさつして会話を始めましょう。"
+    },
+    "participants": {
+      "members": "メンバー {{count}} 人",
+      "online": "{{count}} 人がオンライン"
+    },
+    "jumpToLatest": "最新のメッセージへ移動",
+    "jumpToLatestUnseen": "最新のメッセージへ移動、新着 {{count}} 件",
+    "openProfile": "{{name}}さんのプロフィールを表示",
+    "openLink": "{{link}} を開く"
+  },
+  "colorPicker": {
+    "area": "彩度と明度",
+    "areaValue": "彩度 {{saturation}}%、明度 {{brightness}}%",
+    "hue": "色相",
+    "hueValue": "{{degrees}} 度",
+    "preset": "色 {{hex}}",
+    "hex": "16進数"
+  },
+  "validation": {
+    "required": "必須項目です",
+    "email": "有効なメールアドレスを入力してください",
+    "passwordMin": "{{min}}文字以上",
+    "passwordLetter": "文字を1つ以上含めてください",
+    "passwordDigit": "数字を1つ以上含めてください",
+    "passwordSymbol": "記号を1つ以上含めてください",
+    "name": "文字のみを使用してください",
+    "tooShort": "{{min}}文字以上",
+    "tooLong": "{{max}}文字以内",
+    "phone": "有効な電話番号を入力してください",
+    "url": "有効なウェブアドレスを入力してください",
+    "mismatch": "一致しません"
+  }
+}

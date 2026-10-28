@@ -1,0 +1,7 @@
+# Maestro workspace: every flow under flows/, run by `yarn e2e:test` and the
+# Regression workflow. Flows run against a release build made with EXPO_PUBLIC_E2E=1
+# (`yarn e2e:ios` / `yarn e2e:android`), which holds the app still: English,
+# no autoplay, no dev menu or LogBox. The same flows run on web through
+# `yarn e2e:test:web` — see docs/getting-started.md › End-to-end tests.
+flows:
+  - flows/*

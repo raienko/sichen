@@ -1,0 +1,14 @@
+node_modules
+.expo
+dist
+web-build
+ios
+android
+.rnstorybook/storybook.requires.ts
+storybook-static
+templates
+coverage
+.jest-cache
+.maestro/.web
+e2e-output
+.native-cache

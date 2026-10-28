@@ -1,0 +1,11 @@
+import { render, screen } from "@/root/testing";
+
+import Component from "./index";
+
+describe(`${Component.name}`, () => {
+  it("renders", async () => {
+    await render(<Component testID="{{kebabCase name}}" />);
+
+    expect(screen.getByTestId("{{kebabCase name}}")).toBeTruthy();
+  });
+});

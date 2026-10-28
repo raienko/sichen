@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "back": "Atrás",
+    "confirm": "Confirmar",
+    "ok": "Aceptar",
+    "loading": "Cargando",
+    "done": "Hecho"
+  },
+  "input": {
+    "name": {
+      "label": "Nombre",
+      "placeholder": "Ada Lovelace",
+      "helper": "Esto se muestra en tu perfil"
+    },
+    "age": {
+      "label": "Edad",
+      "placeholder": "0",
+      "helper": "0–120, los caracteres no numéricos se eliminan al escribir"
+    },
+    "email": {
+      "label": "Correo electrónico",
+      "placeholder": "ada@example.com",
+      "error": "Introduce un correo electrónico válido"
+    },
+    "focusEmail": "Enfocar correo",
+    "password": {
+      "label": "Contraseña",
+      "show": "Mostrar contraseña",
+      "hide": "Ocultar contraseña"
+    },
+    "disabled": {
+      "label": "Deshabilitado",
+      "placeholder": "no editable"
+    },
+    "country": {
+      "label": "País",
+      "placeholder": "Elige un país",
+      "helper": "Abre un panel inferior: toca el fondo para conservar la selección actual",
+      "options": {
+        "uk": "Reino Unido",
+        "ua": "Ucrania",
+        "es": "España",
+        "jp": "Japón",
+        "cn": "China"
+      }
+    },
+    "startsAt": {
+      "label": "Comienza a las",
+      "placeholder": "Elige fecha y hora",
+      "helper": "Fecha y hora, en borrador hasta que pulses Hecho"
+    },
+    "birthday": {
+      "label": "Cumpleaños",
+      "placeholder": "Elige un día",
+      "helper": "Solo fecha, y no se puede elegir el futuro"
+    },
+    "alarm": {
+      "label": "Alarma",
+      "placeholder": "Elige una hora",
+      "helper": "Solo hora: el calendario se oculta por completo"
+    },
+    "code": {
+      "label": "Código de verificación",
+      "helper": "6 dígitos: iOS ofrece el código del SMS sobre el teclado"
+    },
+    "phone": {
+      "label": "Teléfono",
+      "placeholder": "(213) 373-4253",
+      "helper": "Se agrupa al escribir y se guarda en formato internacional",
+      "countryPicker": {
+        "label": "Prefijo internacional",
+        "title": "País o región",
+        "search": "Buscar país o prefijo",
+        "empty": "No se encontraron países"
+      }
+    },
+    "checklist": {
+      "label": "Intereses",
+      "helper": "Elige todas las opciones que correspondan",
+      "options": {
+        "design": "Diseño",
+        "engineering": "Ingeniería",
+        "research": "Investigación",
+        "unavailable": "Opción no disponible"
+      }
+    },
+    "switchGroup": {
+      "label": "Notificaciones",
+      "helper": "Cada canal se puede controlar por separado",
+      "options": {
+        "product": "Novedades del producto",
+        "security": "Alertas de seguridad",
+        "marketing": "Marketing",
+        "managed": "Gestionado por tu organización"
+      }
+    },
+    "radioGroup": {
+      "label": "Plan",
+      "helper": "Elige una opción",
+      "options": {
+        "free": "Gratis",
+        "pro": "Pro",
+        "business": "Negocios",
+        "enterprise": "Contactar con ventas"
+      }
+    },
+    "range": {
+      "label": "Presupuesto",
+      "helper": "Elige el mínimo y el máximo",
+      "minimum": "Presupuesto mínimo",
+      "maximum": "Presupuesto máximo"
+    },
+    "characterCount": "{{count}} de {{max}} caracteres",
+    "notes": {
+      "label": "Notas",
+      "placeholder": "¿Algo que debamos saber?",
+      "helper": "Crece con el texto hasta seis líneas y luego se desplaza"
+    },
+    "color": {
+      "label": "Color de acento",
+      "placeholder": "Elige un color",
+      "helper": "Arrastra, elige un color predefinido o escribe un valor hex; se aplica al pulsar Listo"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "Ventana emergente",
+      "content": "Modal emergente"
+    },
+    "bottomSheet": {
+      "trigger": "Panel inferior",
+      "content": "Modal de panel inferior"
+    },
+    "actions": {
+      "trigger": "Acciones",
+      "optionA": "Opción A",
+      "optionB": "Opción B"
+    },
+    "fullscreen": {
+      "trigger": "Pantalla completa",
+      "content": "Modal a pantalla completa"
+    }
+  },
+  "mediaPlayer": {
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "mute": "Silenciar",
+    "unmute": "Activar sonido",
+    "progress": "Posición de reproducción",
+    "time": "{{current}} de {{total}}"
+  },
+  "markdown": {
+    "bulletPoint": "Viñeta",
+    "nestedBulletPoint": "Viñeta anidada",
+    "orderedItem": "Elemento {n}",
+    "nestedOrderedItem": "Elemento anidado {n}",
+    "quote": "Cita",
+    "nestedQuote": "Cita anidada",
+    "row": "Fila {n}: {content}",
+    "equation": "Fórmula: {latex}",
+    "headings": "Encabezados",
+    "links": "Enlaces",
+    "images": "Imágenes"
+  },
+  "carousel": {
+    "slide": "Diapositiva {{current}} de {{total}}"
+  },
+  "toast": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "openHint": "Abre la pantalla enlazada",
+    "showcase": {
+      "message": "Se han guardado tus cambios.",
+      "errorTitle": "Error al subir",
+      "errorMessage": "Toca para ver qué ha fallado.",
+      "action": "Ver",
+      "sticky": "Este permanece hasta que lo cierres.",
+      "expiring": "Este caduca en tres segundos."
+    }
+  },
+  "stateView": {
+    "loading": "Cargando",
+    "empty": "Aún no hay nada aquí",
+    "error": "Algo salió mal",
+    "success": "Todo listo",
+    "offline": "No tienes conexión"
+  },
+  "theme": {
+    "label": "Apariencia",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "locale": {
+    "label": "Idioma",
+    "system": "Sistema"
+  },
+  "showcase": {
+    "summary": "nombre: {{name}} / edad: {{age}} / email: {{email}}",
+    "typography": "Tipografía",
+    "markdown": "Markdown",
+    "webView": "Vista web",
+    "theme": "Tema y colores",
+    "localization": "Localización",
+    "accessibility": "Accesibilidad",
+    "responsive": "Unidades adaptables",
+    "grid": "Cuadrícula",
+    "spacer": "Espaciador",
+    "divider": "Separador",
+    "icons": "Iconos",
+    "buttons": "Botones",
+    "tags": "Etiquetas",
+    "badges": "Insignias",
+    "avatars": "Avatares",
+    "header": "Encabezado",
+    "tabBar": "Barra de pestañas",
+    "checkboxes": "Casillas",
+    "radioButtons": "Botones de opción",
+    "switches": "Interruptores",
+    "sliders": "Deslizadores",
+    "stepper": "Contador",
+    "skeleton": "Esqueleto",
+    "chart": "Gráfico",
+    "map": "Mapa",
+    "barcode": "Código de barras",
+    "timer": "Temporizador",
+    "share": "Compartir",
+    "progress": "Progreso",
+    "segmentedControl": "Control segmentado",
+    "stateViews": "Estados",
+    "inputs": "Campos de entrada",
+    "formField": "Campo de formulario",
+    "images": "Imágenes",
+    "imageViewer": "Visor de imágenes",
+    "chat": "Chat",
+    "cards": "Tarjetas",
+    "section": "Sección",
+    "listItems": "Elementos de lista",
+    "list": "Lista",
+    "carousel": "Carrusel",
+    "pagination": "Paginación",
+    "mediaPlayer": "Reproductor multimedia",
+    "imagePicker": "Selector de imágenes",
+    "filePicker": "Selector de archivos",
+    "modals": "Ventanas modales",
+    "popups": "Diálogos emergentes",
+    "toasts": "Avisos",
+    "alerts": "Alertas",
+    "permissions": "Permisos",
+    "deepLinks": "Enlaces profundos",
+    "storage": "Almacenamiento",
+    "logger": "Registro",
+    "utilities": "Utilidades",
+    "sampleSentence": "El veloz murciélago hindú comía feliz cardillo y kiwi.",
+    "colorPicker": "Selector de color",
+    "api": "API",
+    "forms": "Formularios",
+    "formatting": "Formato",
+    "network": "Red",
+    "haptics": "Háptica"
+  },
+  "checkbox": {
+    "custom": "Casilla personalizada",
+    "expo": "Casilla de Expo UI",
+    "disabled": "Deshabilitada y marcada"
+  },
+  "radioButton": {
+    "custom": "Botón de opción personalizado",
+    "expo": "Botón de opción estilo Expo",
+    "disabled": "Botón de opción deshabilitado"
+  },
+  "switch": {
+    "custom": "Interruptor personalizado",
+    "expo": "Interruptor de Expo UI",
+    "disabled": "Deshabilitado y activado"
+  },
+  "slider": {
+    "custom": "Deslizador personalizado",
+    "expo": "Deslizador de Expo UI",
+    "multiple": "Varios controles",
+    "multipleFirst": "Primer valor",
+    "multipleSecond": "Segundo valor",
+    "multipleThird": "Tercer valor",
+    "disabled": "Deslizador deshabilitado"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "page": "Página {{page}} de {{total}}",
+    "label": "Paginación"
+  },
+  "share": {
+    "action": "Compartir",
+    "copy": "Copiar",
+    "copied": "Copiado al portapapeles",
+    "failed": "No se pudo compartir"
+  },
+  "tag": {
+    "remove": "Quitar {{value}}"
+  },
+  "stepper": {
+    "decrease": "Reducir {{label}}",
+    "increase": "Aumentar {{label}}"
+  },
+  "formField": {
+    "required": "Obligatorio"
+  },
+  "alert": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información"
+  },
+  "map": {
+    "directions": "Cómo llegar",
+    "yourLocation": "Tu ubicación"
+  },
+  "imageViewer": {
+    "close": "Cerrar",
+    "share": "Compartir",
+    "position": "{{index}} / {{total}}",
+    "label": "Foto {{index}} de {{total}}"
+  },
+  "imagePicker": {
+    "title": "Elegir imagen",
+    "gallery": "Galería",
+    "camera": "Cámara"
+  },
+  "avatarGroup": {
+    "separator": ", ",
+    "andMore": "{{names}} y {{count}} más",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "you": "Tú",
+    "placeholder": "Mensaje",
+    "send": "Enviar",
+    "attach": "Adjuntar archivo",
+    "attachPhoto": "Adjuntar foto",
+    "removeAttachment": "Quitar {{name}}",
+    "replyingTo": "Respondiendo a {{name}}",
+    "cancelReply": "Cancelar respuesta",
+    "editing": "Editando mensaje",
+    "cancelEdit": "Cancelar edición",
+    "edited": "editado",
+    "deleted": "Se eliminó este mensaje",
+    "retry": "Reintentar",
+    "loadingEarlier": "Cargando mensajes anteriores",
+    "activity": {
+      "typingOne": "{{name}} está escribiendo…",
+      "typingTwo": "{{first}} y {{second}} están escribiendo…",
+      "typingMany": "{{count}} personas están escribiendo…",
+      "recordingOne": "{{name}} está grabando audio…",
+      "recordingTwo": "{{first}} y {{second}} están grabando audio…",
+      "recordingMany": "{{count}} personas están grabando audio…",
+      "uploadingOne": "{{name}} está enviando un archivo…",
+      "uploadingTwo": "{{first}} y {{second}} están enviando archivos…",
+      "uploadingMany": "{{count}} personas están enviando archivos…"
+    },
+    "receipt": {
+      "sending": "Enviando",
+      "sent": "Enviado",
+      "delivered": "Entregado",
+      "read": "Leído",
+      "failed": "No enviado. Toca para reintentar"
+    },
+    "actions": {
+      "title": "Acciones del mensaje",
+      "reply": "Responder",
+      "copy": "Copiar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "react": "Reaccionar con {{emoji}}",
+      "deleteTitle": "¿Eliminar este mensaje?",
+      "deleteMessage": "Se eliminará para todos en el chat.",
+      "hint": "Mantén pulsado para ver acciones"
+    },
+    "attachment": {
+      "image": "Foto",
+      "video": "Vídeo",
+      "audio": "Mensaje de voz",
+      "file": "Archivo",
+      "more": "+{{count}}",
+      "open": "Abrir {{name}}",
+      "playVideo": "Reproducir vídeo"
+    },
+    "fileSize": {
+      "b": "{{size}} B",
+      "kb": "{{size}} KB",
+      "mb": "{{size}} MB",
+      "gb": "{{size}} GB"
+    },
+    "message": {
+      "label": "{{name}}, {{time}}",
+      "reactions": "Reacciones: {{reactions}}"
+    },
+    "empty": {
+      "title": "Aún no hay mensajes",
+      "message": "Saluda para empezar la conversación."
+    },
+    "participants": {
+      "members": "{{count}} miembros",
+      "online": "{{count}} en línea"
+    },
+    "jumpToLatest": "Ir a los mensajes más recientes",
+    "jumpToLatestUnseen": "Ir a los mensajes más recientes, {{count}} nuevos",
+    "openProfile": "Ver el perfil de {{name}}",
+    "openLink": "Abrir {{link}}"
+  },
+  "colorPicker": {
+    "area": "Saturación y brillo",
+    "areaValue": "{{saturation}} % de saturación, {{brightness}} % de brillo",
+    "hue": "Tono",
+    "hueValue": "{{degrees}} grados",
+    "preset": "Color {{hex}}",
+    "hex": "Hex"
+  },
+  "validation": {
+    "required": "Obligatorio",
+    "email": "Introduce un correo válido",
+    "passwordMin": "Al menos {{min}} caracteres",
+    "passwordLetter": "Incluye al menos una letra",
+    "passwordDigit": "Incluye al menos un dígito",
+    "passwordSymbol": "Incluye al menos un símbolo",
+    "name": "Usa solo letras",
+    "tooShort": "Al menos {{min}} caracteres",
+    "tooLong": "Como máximo {{max}} caracteres",
+    "phone": "Introduce un teléfono válido",
+    "url": "Introduce una dirección web válida",
+    "mismatch": "No coincide"
+  }
+}

@@ -1,0 +1,145 @@
+name: App build
+
+# Verify, then one Build job per platform, side by side: the run page shows
+# "Build iOS" and "Build Android" on their own, each with its own log,
+# summary and re-run, and one platform failing leaves the other running.
+# Every job writes its summary through .github/actions/summary, so the
+# blocks read the same as other workflows'.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform
+        type: choice
+        options: [all, ios, android]
+        default: all
+      environment:
+        description: Environment to use for GitHub credentials and Expo app settings
+        type: environment
+        required: true
+      submit:
+        description: Submit this build to TestFlight / Play internal testing
+        type: boolean
+        default: true
+      wait:
+        description: Wait for the EAS builds to finish (off — free-tier queues can take hours; the summary links the queued builds)
+        type: boolean
+        default: false
+
+run-name: App build · ${{ inputs.environment }} · ${{ inputs.platform }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-build-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  TARGET_ENVIRONMENT: ${{ inputs.environment }}
+  SUBMIT: ${{ inputs.submit }}
+  WAIT: ${{ inputs.wait }}
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment }}
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_EAS_PROJECT_ID: ${{ secrets.EXPO_PUBLIC_EAS_PROJECT_ID }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Validate inputs and account setup
+        run: |
+          test -n "$EXPO_TOKEN" || { echo "Missing EXPO_TOKEN secret"; exit 1; }
+          test -n "$EXPO_PUBLIC_EAS_PROJECT_ID" || { echo "Missing EXPO_PUBLIC_EAS_PROJECT_ID secret"; exit 1; }
+          case "$TARGET_ENVIRONMENT" in
+            development|preview|production) ;;
+            *) echo "Select development, preview or production"; exit 1 ;;
+          esac
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Pull app configuration from Expo
+        run: yarn env:pull --environment "$TARGET_ENVIRONMENT"
+      - name: Validate iOS submission destination
+        if: inputs.submit && inputs.platform != 'android'
+        run: test -n "$APP_STORE_CONNECT_ID" || { echo "Set APP_STORE_CONNECT_ID (the app's Apple ID from App Store Connect) in the selected Expo environment"; exit 1; }
+      - name: Lint
+        run: yarn lint
+      - name: Check types
+        run: yarn typecheck
+      - name: Test build config
+        run: yarn test:build-config
+      - name: Run unit tests
+        run: yarn test --runInBand
+      - name: Resolve app config
+        run: npx expo config --type public > /dev/null
+      - name: Write summary
+        if: always()
+        uses: ./.github/actions/summary
+        with:
+          title: App build · ${{ inputs.environment }}
+          status: ${{ job.status }}
+          fields: |
+            Platforms: ${{ inputs.platform == 'all' && 'iOS, Android' || inputs.platform == 'ios' && 'iOS' || 'Android' }}
+            Submission: ${{ inputs.submit && 'TestFlight / Google Play internal testing' || 'Off' }}
+            Wait for builds: ${{ inputs.wait && 'Yes' || 'No' }}
+            Commit: ${{ github.sha }}
+
+  build:
+    name: Build ${{ matrix.platform == 'ios' && 'iOS' || 'Android' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(inputs.platform == 'all' && '["ios","android"]' || format('["{0}"]', inputs.platform)) }}
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_EAS_PROJECT_ID: ${{ secrets.EXPO_PUBLIC_EAS_PROJECT_ID }}
+      PLATFORM: ${{ matrix.platform }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Pull app configuration from Expo
+        run: yarn env:pull --environment "$TARGET_ENVIRONMENT"
+      # eas-cli reads ascAppId only from the eas.json submit profile, and asks
+      # for it unless it's there. Each environment is a different store app,
+      # so it's written in here from that environment's APP_STORE_CONNECT_ID
+      # rather than committed.
+      - name: Point iOS submission at this environment's app
+        if: inputs.submit && matrix.platform == 'ios'
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const config = JSON.parse(fs.readFileSync("eas.json", "utf8"));
+            const profile = config.submit[process.env.TARGET_ENVIRONMENT];
+            profile.ios = { ...profile.ios, ascAppId: process.env.APP_STORE_CONNECT_ID };
+            fs.writeFileSync("eas.json", JSON.stringify(config, null, 2) + "\n");
+          '
+      - name: Start EAS build
+        run: |
+          flags=(--platform "$PLATFORM" --profile "$TARGET_ENVIRONMENT" --non-interactive --json)
+          if [ "$WAIT" = true ]; then flags+=(--wait); else flags+=(--no-wait); fi
+          # EAS submits the build with the submit profile of the same name
+          # once it succeeds, whether or not this job is still waiting.
+          if [ "$SUBMIT" = true ]; then flags+=(--auto-submit); fi
+          npx --yes eas-cli@18.4.0 build "${flags[@]}" > "$RUNNER_TEMP/eas-build.json"
+      - name: Read build result
+        id: result
+        run: node scripts/ci/build-result.mjs "$RUNNER_TEMP/eas-build.json"
+      - name: Write summary
+        if: always()
+        uses: ./.github/actions/summary
+        with:
+          title: ${{ matrix.platform == 'ios' && 'iOS' || 'Android' }} build · ${{ inputs.environment }}
+          status: ${{ steps.result.outputs.state || job.status }}
+          fields: "${{ steps.result.outputs.fields || 'Build: not started, see this job''s log' }}"
+          notes: ${{ steps.result.outputs.notes }}

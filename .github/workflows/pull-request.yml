@@ -1,0 +1,46 @@
+name: Pull request
+
+# Squash merges make the pull request title the commit on main, so it has
+# to follow the house style:  type: 'Message'
+#
+#   feat: 'Dev menu added'      fix: 'Toast fixed for web'
+#   chore(deps): 'Expo SDK patch updates'
+#
+# Manual for now: run it from the Actions tab with the pull request number.
+# To check every pull request as it's opened or renamed, add:
+#
+#   pull_request:
+#     types: [opened, edited, synchronize, reopened]
+#
+# and read the title from github.event.pull_request.title instead.
+on:
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Pull request number
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  title:
+    name: Title format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check the title
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ inputs.number }}
+        run: |
+          title=$(gh pr view "$NUMBER" --repo "$GITHUB_REPOSITORY" --json title --jq .title)
+          pattern="^(feat|fix|perf|refactor|docs|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: '.+'$"
+          if [[ "$title" =~ $pattern ]]; then
+            echo "✓ \"$title\""
+          else
+            echo "::error title=Pull request title::\"$title\" doesn't match type: 'Message' — e.g. feat: 'Dev menu added'"
+            exit 1
+          fi

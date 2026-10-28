@@ -1,0 +1,19 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "types": ["jest", "node"],
+    // `@/assets/*` is listed first on purpose. TypeScript matches the
+    // longest prefix whatever the order, but jest-expo turns these into a
+    // `moduleNameMapper` in this order and Jest takes the first regex that
+    // matches — so with `@/*` first, `@/assets/foo.svg` resolved to
+    // `src/assets/foo.svg` and every suite importing one failed to run.
+    "paths": {
+      "@/assets/*": ["./assets/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  // Node scripts with their own tsconfig (Node types, ES modules).
+  "exclude": ["node_modules", "scripts/brand"]
+}

@@ -1,0 +1,11 @@
+import { render, screen } from "@/root/testing";
+
+import Component from "./index";
+
+describe(`${Component.name}`, () => {
+  it("renders its title", async () => {
+    await render(<Component />);
+
+    expect(screen.getAllByText("{{titleCase name}}").length).toBeGreaterThan(0);
+  });
+});

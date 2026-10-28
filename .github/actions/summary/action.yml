@@ -1,0 +1,43 @@
+name: Job summary
+description: >
+  Adds one block to the job summary in the shape every workflow shares: the
+  title with a status icon, a table of fields, then notes. Workflows compute
+  the values (scripts/ci) and leave the Markdown to this action, so a build,
+  a coverage report and a release plan all read the same on the run page.
+  Plain Node, no install needed. Run it with `if: always()` to report
+  failures too.
+
+inputs:
+  title:
+    description: The block's heading, e.g. "iOS build · preview"
+    required: true
+  status:
+    description: >
+      queued, in-progress, finished, success, failed, failure, cancelled or
+      skipped (job.status works as is). Shown as an icon and a Status row;
+      empty leaves both out
+    required: false
+    default: ""
+  fields:
+    description: >
+      One "Label: value" per line; values may carry Markdown links
+    required: false
+    default: ""
+  notes:
+    description: One note per line, shown under the table
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Write the summary
+      shell: bash
+      # Through env, never interpolated into the script: fields can carry
+      # text from outside the workflow (build output, inputs).
+      env:
+        TITLE: ${{ inputs.title }}
+        STATUS: ${{ inputs.status }}
+        FIELDS: ${{ inputs.fields }}
+        NOTES: ${{ inputs.notes }}
+      run: node "$GITHUB_ACTION_PATH/summary.mjs"

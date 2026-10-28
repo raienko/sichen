@@ -1,0 +1,23 @@
+# Changes to these paths need a review from their owner once branch
+# protection requires code-owner reviews (docs/security/plan.md, SEC-16).
+# They're where a mistake becomes a security problem: credentials and
+# storage, network and auth, incoming links, server routes and headers, the
+# CI/CD pipeline, and the native app configuration.
+
+/src/features/api/              @raienko
+/src/features/storage/          @raienko
+/src/features/deep-links/       @raienko
+/src/features/logger/           @raienko
+/src/features/security-headers/ @raienko
+/src/components/web-view/       @raienko
+/src/app/api/                   @raienko
+/src/app/+middleware.ts         @raienko
+/src/constants/env/             @raienko
+/app.config.ts                  @raienko
+/.github/                       @raienko
+/osv-scanner.toml               @raienko
+/SECURITY.md                    @raienko
+/docs/security/                 @raienko
+/package.json                   @raienko
+/yarn.lock                      @raienko
+/patches/                       @raienko

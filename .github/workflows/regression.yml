@@ -1,0 +1,180 @@
+name: Regression
+
+# Runs the app's user flows (Maestro, .maestro/flows) end to end, to catch
+# regressions a unit test can't: real builds on a simulator, an emulator and
+# a browser. The app is a Release build with EXPO_PUBLIC_E2E=1 — English,
+# no autoplay, no dev menu or LogBox (`isE2E` in @/utils). One job per
+# platform, so a pull request lists "Regression / iOS", "Regression /
+# Android" and "Regression / Web" separately. All three run the same flows;
+# web runs them in headless Chromium, which Maestro downloads itself.
+#
+# Manual for now: run it from the Actions tab and pick a platform. To run it
+# on pull requests later, add `pull_request:` (it's slow — ~20 min a
+# platform — so a label or path filter is worth having).
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to run on
+        type: choice
+        # native = iOS and Android, without web.
+        options: [all, native, ios, android, web]
+        default: all
+      flows:
+        description: Which flows, by tag — e.g. smoke, or smoke,carousel (empty = all)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAESTRO_VERSION: 2.11.0
+  # Maestro's own analytics prompt and upload, off for CI.
+  MAESTRO_CLI_NO_ANALYTICS: "1"
+  MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: "true"
+
+jobs:
+  ios:
+    name: iOS
+    if: contains(fromJSON('["all","native","ios"]'), inputs.platform)
+    # macOS 26 ships Xcode 26 as its default — the app's iOS 26 icon
+    # (assets/brand icon-ios.icon, an Icon Composer bundle) only compiles
+    # with Xcode 26, and it's what the project is built with locally.
+    runs-on: macos-26
+    # A cold Release build is ~55 min on a hosted macOS runner.
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Install Maestro
+        uses: ./.github/actions/maestro
+        with:
+          version: ${{ env.MAESTRO_VERSION }}
+      - name: Select Xcode 26
+        run: |
+          if ! xcodebuild -version | grep -q "^Xcode 26"; then
+            latest=$(find /Applications -maxdepth 1 -name "Xcode_26*.app" | sort -V | tail -1)
+            sudo xcode-select -s "$latest/Contents/Developer"
+          fi
+          xcodebuild -version
+      # The native app is rebuilt only when its fingerprint changes (native
+      # packages, app config); otherwise the cached app gets this commit's
+      # JS repacked into it — minutes instead of a ~55 min Release build.
+      - name: Restore the native app (or full-build caches)
+        uses: ./.github/actions/native-app
+        with:
+          platform: ios
+          profile: e2e
+      - name: Boot a simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))] | last | .udid')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+      - name: Build (or repack) and install the E2E app
+        run: yarn e2e:ios
+      - name: Run flows
+        run: yarn e2e:test ${{ inputs.flows && format('--include-tags {0}', inputs.flows) || '' }}
+      - name: Upload Maestro report and screenshots
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: regression-ios
+          # Screenshots of each step up to the failure, the view
+          # hierarchy at that point, Maestro's log and the junit report.
+          path: e2e-output/
+          retention-days: 7
+
+  android:
+    name: Android
+    if: contains(fromJSON('["all","native","android"]'), inputs.platform)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      # Hardware acceleration for the emulator on a Linux runner.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Maestro
+        uses: ./.github/actions/maestro
+        with:
+          version: ${{ env.MAESTRO_VERSION }}
+      - name: Restore the native app (or full-build caches)
+        uses: ./.github/actions/native-app
+        with:
+          platform: android
+          profile: e2e
+      - name: Build (or repack), install and run flows on an emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            yarn e2e:android
+            yarn e2e:test ${{ inputs.flows && format('--include-tags {0}', inputs.flows) || '' }}
+      - name: Upload Maestro report and screenshots
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: regression-android
+          # Screenshots of each step up to the failure, the view
+          # hierarchy at that point, Maestro's log and the junit report.
+          path: e2e-output/
+          retention-days: 7
+
+  web:
+    name: Web
+    if: inputs.platform == 'all' || inputs.platform == 'web'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up project
+        uses: ./.github/actions/setup
+      - name: Install Maestro
+        uses: ./.github/actions/maestro
+        with:
+          version: ${{ env.MAESTRO_VERSION }}
+      - name: Export the E2E web app
+        run: yarn web:build
+        env:
+          EXPO_PUBLIC_E2E: "1"
+      - name: Serve it
+        run: |
+          npx expo serve --port 8081 > serve.log 2>&1 &
+          for _ in $(seq 1 60); do curl -fs http://localhost:8081 > /dev/null && exit 0; sleep 1; done
+          cat serve.log; exit 1
+      - name: Run flows
+        run: yarn e2e:test:web ${{ inputs.flows && format('--include-tags {0}', inputs.flows) || '' }}
+        env:
+          WEB_URL: http://localhost:8081
+      - name: Upload Maestro report and screenshots
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: regression-web
+          # Screenshots of each step up to the failure, the view
+          # hierarchy at that point, Maestro's log and the junit report.
+          path: e2e-output/
+          retention-days: 7

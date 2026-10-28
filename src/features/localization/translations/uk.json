@@ -1,0 +1,441 @@
+{
+  "common": {
+    "close": "Закрити",
+    "cancel": "Скасувати",
+    "back": "Назад",
+    "confirm": "Підтвердити",
+    "ok": "Гаразд",
+    "loading": "Завантаження",
+    "done": "Готово"
+  },
+  "input": {
+    "name": {
+      "label": "Ім'я",
+      "placeholder": "Ada Lovelace",
+      "helper": "Це відображається у вашому профілі"
+    },
+    "age": {
+      "label": "Вік",
+      "placeholder": "0",
+      "helper": "0–120, нецифрові символи видаляються під час введення"
+    },
+    "email": {
+      "label": "Електронна пошта",
+      "placeholder": "ada@example.com",
+      "error": "Введіть дійсну електронну адресу"
+    },
+    "focusEmail": "Фокус на email",
+    "password": {
+      "label": "Пароль",
+      "show": "Показати пароль",
+      "hide": "Приховати пароль"
+    },
+    "disabled": {
+      "label": "Вимкнено",
+      "placeholder": "не редагується"
+    },
+    "country": {
+      "label": "Країна",
+      "placeholder": "Оберіть країну",
+      "helper": "Відкриває нижню панель — торкніться тла, щоб залишити поточний вибір",
+      "options": {
+        "uk": "Велика Британія",
+        "ua": "Україна",
+        "es": "Іспанія",
+        "jp": "Японія",
+        "cn": "Китай"
+      }
+    },
+    "startsAt": {
+      "label": "Початок",
+      "placeholder": "Оберіть дату й час",
+      "helper": "Дата й час зберігаються як чернетка, доки не натиснете «Готово»"
+    },
+    "birthday": {
+      "label": "День народження",
+      "placeholder": "Оберіть день",
+      "helper": "Лише дата, майбутні дні недоступні"
+    },
+    "alarm": {
+      "label": "Будильник",
+      "placeholder": "Оберіть час",
+      "helper": "Лише час — календар повністю прихований"
+    },
+    "code": {
+      "label": "Код підтвердження",
+      "helper": "6 цифр — iOS пропонує код із SMS над клавіатурою"
+    },
+    "phone": {
+      "label": "Телефон",
+      "placeholder": "(213) 373-4253",
+      "helper": "Групується під час введення та зберігається в міжнародному форматі",
+      "countryPicker": {
+        "label": "Телефонний код країни",
+        "title": "Країна або регіон",
+        "search": "Пошук країни або коду",
+        "empty": "Країн не знайдено"
+      }
+    },
+    "checklist": {
+      "label": "Інтереси",
+      "helper": "Оберіть усі відповідні варіанти",
+      "options": {
+        "design": "Дизайн",
+        "engineering": "Розробка",
+        "research": "Дослідження",
+        "unavailable": "Недоступний варіант"
+      }
+    },
+    "switchGroup": {
+      "label": "Сповіщення",
+      "helper": "Кожен канал можна налаштувати окремо",
+      "options": {
+        "product": "Оновлення продукту",
+        "security": "Сповіщення безпеки",
+        "marketing": "Маркетинг",
+        "managed": "Керується вашою організацією"
+      }
+    },
+    "radioGroup": {
+      "label": "План",
+      "helper": "Оберіть один варіант",
+      "options": {
+        "free": "Безкоштовний",
+        "pro": "Про",
+        "business": "Бізнес",
+        "enterprise": "Зв’язатися з відділом продажів"
+      }
+    },
+    "range": {
+      "label": "Бюджет",
+      "helper": "Виберіть мінімум і максимум",
+      "minimum": "Мінімальний бюджет",
+      "maximum": "Максимальний бюджет"
+    },
+    "characterCount": "{{count}} з {{max}} символів",
+    "notes": {
+      "label": "Нотатки",
+      "placeholder": "Що нам варто знати?",
+      "helper": "Росте разом із текстом до шести рядків, далі прокручується"
+    },
+    "color": {
+      "label": "Акцентний колір",
+      "placeholder": "Оберіть колір",
+      "helper": "Перетягніть, оберіть готовий колір або введіть hex — зберігається після «Готово»"
+    }
+  },
+  "modal": {
+    "popup": {
+      "trigger": "Спливне вікно",
+      "content": "Спливне модальне вікно"
+    },
+    "bottomSheet": {
+      "trigger": "Нижня панель",
+      "content": "Модальне вікно знизу"
+    },
+    "actions": {
+      "trigger": "Дії",
+      "optionA": "Варіант A",
+      "optionB": "Варіант B"
+    },
+    "fullscreen": {
+      "trigger": "На весь екран",
+      "content": "Повноекранне модальне вікно"
+    }
+  },
+  "mediaPlayer": {
+    "play": "Відтворити",
+    "pause": "Пауза",
+    "mute": "Вимкнути звук",
+    "unmute": "Увімкнути звук",
+    "progress": "Позиція відтворення",
+    "time": "{{current}} з {{total}}"
+  },
+  "markdown": {
+    "bulletPoint": "Маркер",
+    "nestedBulletPoint": "Вкладений маркер",
+    "orderedItem": "Пункт списку {n}",
+    "nestedOrderedItem": "Вкладений пункт списку {n}",
+    "quote": "Цитата",
+    "nestedQuote": "Вкладена цитата",
+    "row": "Рядок {n}: {content}",
+    "equation": "Формула: {latex}",
+    "headings": "Заголовки",
+    "links": "Посилання",
+    "images": "Зображення"
+  },
+  "carousel": {
+    "slide": "Слайд {{current}} з {{total}}"
+  },
+  "toast": {
+    "success": "Успіх",
+    "error": "Помилка",
+    "warning": "Попередження",
+    "info": "Інформація",
+    "openHint": "Відкриває пов'язаний екран",
+    "showcase": {
+      "message": "Ваші зміни збережено.",
+      "errorTitle": "Не вдалося завантажити",
+      "errorMessage": "Торкніться, щоб побачити, що сталося.",
+      "action": "Переглянути",
+      "sticky": "Це сповіщення залишиться, доки ви його не закриєте.",
+      "expiring": "Це сповіщення зникне за три секунди."
+    }
+  },
+  "stateView": {
+    "loading": "Завантаження",
+    "empty": "Тут поки нічого немає",
+    "error": "Щось пішло не так",
+    "success": "Усе готово",
+    "offline": "Немає з’єднання"
+  },
+  "theme": {
+    "label": "Вигляд",
+    "light": "Світла",
+    "dark": "Темна",
+    "system": "Системна"
+  },
+  "locale": {
+    "label": "Мова",
+    "system": "Системна"
+  },
+  "showcase": {
+    "summary": "ім'я: {{name}} / вік: {{age}} / email: {{email}}",
+    "typography": "Типографіка",
+    "markdown": "Markdown",
+    "webView": "Вебперегляд",
+    "theme": "Тема та кольори",
+    "localization": "Локалізація",
+    "accessibility": "Доступність",
+    "responsive": "Адаптивні одиниці",
+    "grid": "Сітка",
+    "spacer": "Проміжок",
+    "divider": "Роздільник",
+    "icons": "Іконки",
+    "buttons": "Кнопки",
+    "tags": "Теги",
+    "badges": "Значки",
+    "avatars": "Аватари",
+    "header": "Шапка",
+    "tabBar": "Панель вкладок",
+    "checkboxes": "Прапорці",
+    "radioButtons": "Перемикачі вибору",
+    "switches": "Перемикачі",
+    "sliders": "Повзунки",
+    "stepper": "Лічильник",
+    "skeleton": "Каркас",
+    "chart": "Графік",
+    "map": "Мапа",
+    "barcode": "Штрихкод",
+    "timer": "Таймер",
+    "share": "Поділитися",
+    "progress": "Прогрес",
+    "segmentedControl": "Сегментований контрол",
+    "stateViews": "Стани",
+    "inputs": "Поля введення",
+    "formField": "Поле форми",
+    "images": "Зображення",
+    "imageViewer": "Перегляд зображень",
+    "chat": "Чат",
+    "cards": "Картки",
+    "section": "Секція",
+    "listItems": "Елементи списку",
+    "list": "Список",
+    "carousel": "Карусель",
+    "pagination": "Пагінація",
+    "mediaPlayer": "Медіаплеєр",
+    "imagePicker": "Вибір зображення",
+    "filePicker": "Вибір файлів",
+    "modals": "Модальні вікна",
+    "popups": "Спливні вікна",
+    "toasts": "Сповіщення",
+    "alerts": "Оповіщення",
+    "permissions": "Дозволи",
+    "deepLinks": "Глибокі посилання",
+    "storage": "Сховище",
+    "logger": "Журнал",
+    "utilities": "Утиліти",
+    "sampleSentence": "Жвавий чорний пес перестрибнув через ліниву руду лисицю.",
+    "colorPicker": "Вибір кольору",
+    "api": "API",
+    "forms": "Форми",
+    "formatting": "Форматування",
+    "network": "Мережа",
+    "haptics": "Тактильний відгук"
+  },
+  "checkbox": {
+    "custom": "Власний прапорець",
+    "expo": "Прапорець Expo UI",
+    "disabled": "Вимкнений і позначений"
+  },
+  "radioButton": {
+    "custom": "Власний перемикач вибору",
+    "expo": "Перемикач вибору в стилі Expo",
+    "disabled": "Вимкнений перемикач вибору"
+  },
+  "switch": {
+    "custom": "Власний перемикач",
+    "expo": "Перемикач Expo UI",
+    "disabled": "Вимкнений та увімкнений"
+  },
+  "slider": {
+    "custom": "Власний повзунок",
+    "expo": "Повзунок Expo UI",
+    "multiple": "Кілька регуляторів",
+    "multipleFirst": "Перше значення",
+    "multipleSecond": "Друге значення",
+    "multipleThird": "Третє значення",
+    "disabled": "Вимкнений повзунок"
+  },
+  "badge": {
+    "overflow": "{{count}}+"
+  },
+  "pagination": {
+    "previous": "Попередня сторінка",
+    "next": "Наступна сторінка",
+    "page": "Сторінка {{page}} з {{total}}",
+    "label": "Нумерація сторінок"
+  },
+  "share": {
+    "action": "Поділитися",
+    "copy": "Копіювати",
+    "copied": "Скопійовано в буфер обміну",
+    "failed": "Не вдалося поділитися"
+  },
+  "tag": {
+    "remove": "Видалити «{{value}}»"
+  },
+  "stepper": {
+    "decrease": "Зменшити: {{label}}",
+    "increase": "Збільшити: {{label}}"
+  },
+  "formField": {
+    "required": "Обов'язково"
+  },
+  "alert": {
+    "success": "Успіх",
+    "error": "Помилка",
+    "warning": "Попередження",
+    "info": "Інформація"
+  },
+  "map": {
+    "directions": "Маршрут",
+    "yourLocation": "Ваше місцезнаходження"
+  },
+  "imageViewer": {
+    "close": "Закрити",
+    "share": "Поділитися",
+    "position": "{{index}} / {{total}}",
+    "label": "Фото {{index}} з {{total}}"
+  },
+  "imagePicker": {
+    "title": "Виберіть зображення",
+    "gallery": "Галерея",
+    "camera": "Камера"
+  },
+  "avatarGroup": {
+    "separator": ", ",
+    "andMore": "{{names}} та ще {{count}}",
+    "overflow": "+{{count}}"
+  },
+  "chat": {
+    "today": "Сьогодні",
+    "yesterday": "Учора",
+    "you": "Ви",
+    "placeholder": "Повідомлення",
+    "send": "Надіслати",
+    "attach": "Прикріпити файл",
+    "attachPhoto": "Прикріпити фото",
+    "removeAttachment": "Прибрати {{name}}",
+    "replyingTo": "Відповідь для {{name}}",
+    "cancelReply": "Скасувати відповідь",
+    "editing": "Редагування повідомлення",
+    "cancelEdit": "Скасувати редагування",
+    "edited": "змінено",
+    "deleted": "Повідомлення видалено",
+    "retry": "Повторити",
+    "loadingEarlier": "Завантаження попередніх повідомлень",
+    "activity": {
+      "typingOne": "{{name}} друкує…",
+      "typingTwo": "{{first}} і {{second}} друкують…",
+      "typingMany": "Друкують: {{count}}…",
+      "recordingOne": "{{name}} записує аудіо…",
+      "recordingTwo": "{{first}} і {{second}} записують аудіо…",
+      "recordingMany": "Записують аудіо: {{count}}…",
+      "uploadingOne": "{{name}} надсилає файл…",
+      "uploadingTwo": "{{first}} і {{second}} надсилають файли…",
+      "uploadingMany": "Надсилають файли: {{count}}…"
+    },
+    "receipt": {
+      "sending": "Надсилається",
+      "sent": "Надіслано",
+      "delivered": "Доставлено",
+      "read": "Прочитано",
+      "failed": "Не надіслано. Торкніться, щоб повторити"
+    },
+    "actions": {
+      "title": "Дії з повідомленням",
+      "reply": "Відповісти",
+      "copy": "Копіювати",
+      "edit": "Редагувати",
+      "delete": "Видалити",
+      "react": "Реакція {{emoji}}",
+      "deleteTitle": "Видалити це повідомлення?",
+      "deleteMessage": "Його буде видалено для всіх учасників чату.",
+      "hint": "Утримуйте для дій"
+    },
+    "attachment": {
+      "image": "Фото",
+      "video": "Відео",
+      "audio": "Голосове повідомлення",
+      "file": "Файл",
+      "more": "+{{count}}",
+      "open": "Відкрити {{name}}",
+      "playVideo": "Відтворити відео"
+    },
+    "fileSize": {
+      "b": "{{size}} Б",
+      "kb": "{{size}} КБ",
+      "mb": "{{size}} МБ",
+      "gb": "{{size}} ГБ"
+    },
+    "message": {
+      "label": "{{name}}, {{time}}",
+      "reactions": "Реакції: {{reactions}}"
+    },
+    "empty": {
+      "title": "Поки немає повідомлень",
+      "message": "Привітайтеся, щоб почати розмову."
+    },
+    "participants": {
+      "members": "Учасників: {{count}}",
+      "online": "У мережі: {{count}}"
+    },
+    "jumpToLatest": "До найновіших повідомлень",
+    "jumpToLatestUnseen": "До найновіших повідомлень, нових: {{count}}",
+    "openProfile": "Профіль: {{name}}",
+    "openLink": "Відкрити {{link}}"
+  },
+  "colorPicker": {
+    "area": "Насиченість і яскравість",
+    "areaValue": "Насиченість {{saturation}}%, яскравість {{brightness}}%",
+    "hue": "Відтінок",
+    "hueValue": "{{degrees}} градусів",
+    "preset": "Колір {{hex}}",
+    "hex": "Hex"
+  },
+  "validation": {
+    "required": "Обов’язкове поле",
+    "email": "Введіть дійсну адресу ел. пошти",
+    "passwordMin": "Щонайменше {{min}} символів",
+    "passwordLetter": "Додайте хоча б одну літеру",
+    "passwordDigit": "Додайте хоча б одну цифру",
+    "passwordSymbol": "Додайте хоча б один спецсимвол",
+    "name": "Використовуйте лише літери",
+    "tooShort": "Щонайменше {{min}} символів",
+    "tooLong": "Не більше {{max}} символів",
+    "phone": "Введіть дійсний номер телефону",
+    "url": "Введіть дійсну вебадресу",
+    "mismatch": "Не збігається"
+  }
+}

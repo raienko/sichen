@@ -1,0 +1,21 @@
+# Swipes back from slide 2 and wraps past the first slide with loop on.
+# Touch platforms only: called from flows/showcase-carousel.yaml under
+# `when: platform`, since a web test can't drive the pan gesture.
+# runFlow runs in the caller's app; Maestro only insists on a header.
+appId: ${APP_ID}
+name: Carousel swipes
+---
+- swipe:
+    from:
+      id: "carousel"
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: "A river running through a canyon, Slide 1 of 4"
+    timeout: 15000
+- swipe:
+    from:
+      id: "carousel"
+    direction: RIGHT
+- extendedWaitUntil:
+    visible: ".*Slide 4 of 4"
+    timeout: 15000

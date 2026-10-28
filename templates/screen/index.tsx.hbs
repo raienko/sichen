@@ -1,0 +1,12 @@
+import Header from "@/components/header";
+import Screen from "@/components/screen";
+import Text from "@/components/text";
+
+/** {{{description}}} */
+export default function {{pascalCase name}}Screen() {
+  return (
+    <Screen scrollable header={<Header title="{{titleCase name}}" />}>
+      <Text value="{{titleCase name}}" />
+    </Screen>
+  );
+}

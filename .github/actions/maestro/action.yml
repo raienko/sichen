@@ -1,0 +1,38 @@
+name: Install Maestro
+description: >
+  Installs the Maestro CLI from its GitHub release, checked against a pinned
+  SHA-256, instead of piping an install script into bash. Changing
+  MAESTRO_VERSION means changing the checksum here too.
+
+inputs:
+  version:
+    description: Maestro CLI version (the release is tagged cli-<version>)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download, verify and install
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        # sha256 of maestro.zip per release, as GitHub lists it on the
+        # release's assets (the "digest" field of the releases API).
+        case "$VERSION" in
+          2.11.0) expected=5384593cb4e7a106489e75a821d157dd43f4e438df6bc308b72e82c685e1283a ;;
+          *) echo "::error::No checksum pinned for Maestro $VERSION — add it to .github/actions/maestro/action.yml"; exit 1 ;;
+        esac
+
+        archive="$RUNNER_TEMP/maestro.zip"
+        curl -fsSL --retry 3 -o "$archive" \
+          "https://github.com/mobile-dev-inc/maestro/releases/download/cli-$VERSION/maestro.zip"
+        echo "$expected  $archive" | shasum -a 256 -c -
+
+        # Where Maestro's own installer puts it, which scripts/e2e/test.mjs
+        # also looks in.
+        unzip -q "$archive" -d "$RUNNER_TEMP/maestro-cli"
+        mkdir -p "$HOME/.maestro"
+        cp -R "$RUNNER_TEMP/maestro-cli/maestro/." "$HOME/.maestro/"
+        echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+        "$HOME/.maestro/bin/maestro" --version
