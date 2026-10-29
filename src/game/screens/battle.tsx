@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -218,6 +218,7 @@ function Unit({
   dimmed,
   onPress,
   marked,
+  compact,
 }: {
   actor: Combatant;
   floaters: Floater[];
@@ -227,6 +228,8 @@ function Unit({
   dimmed: boolean;
   onPress?: () => void;
   marked: number;
+  /** Smaller portraits for short (landscape phone) screens. */
+  compact: boolean;
 }) {
   const { tr } = useT();
   const blink = useSharedValue(0);
@@ -265,20 +268,27 @@ function Unit({
       onPress={onPress}
       disabled={!onPress}
       accessibilityLabel={tr(actor.name)}
-      style={[styles.unit, dead && styles.dead, dimmed && styles.dimmed]}
+      style={[
+        styles.unit,
+        compact && styles.unitCompact,
+        dead && styles.dead,
+        dimmed && styles.dimmed,
+      ]}
     >
       <Animated.View style={[styles.unitInner, moveStyle]}>
         <View
           style={[
             styles.portrait,
             boss && styles.bossPortrait,
+            compact &&
+              (boss ? styles.bossPortraitCompact : styles.portraitCompact),
             { borderColor: targetable ? palette.white : ring },
             acting && styles.actingPortrait,
           ]}
         >
           <GIcon
             name={dead ? "skull" : actor.icon}
-            size={boss ? 40 : 28}
+            size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
             color={dead ? palette.faint : ring}
           />
           <Animated.View
@@ -295,20 +305,29 @@ function Unit({
             </View>
           ) : null}
         </View>
-        <Label value={tr(actor.name)} type="caption2" numberOfLines={1} />
         <Label
-          value={`Lv ${actor.level}`}
+          value={
+            compact ? `${tr(actor.name)} · ${actor.level}` : tr(actor.name)
+          }
           type="caption2"
-          color={palette.muted}
+          numberOfLines={1}
         />
+        {compact ? null : (
+          <Label
+            value={`Lv ${actor.level}`}
+            type="caption2"
+            color={palette.muted}
+          />
+        )}
         <Bar
           value={actor.hp}
           max={actor.base.maxHp}
           color={palette.hp}
-          height={8}
+          height={compact ? 6 : 8}
           style={styles.unitBar}
         />
-        {actor.base.maxMana > 0 ? (
+        {/* Foes with a token mana pool (growth only) don't need the bar. */}
+        {actor.side === 0 || actor.base.maxMana >= 20 ? (
           <Bar
             value={actor.mana}
             max={actor.base.maxMana}
@@ -357,6 +376,7 @@ function SideGrid({
   pick: { reachable: Set<string>; onPick: (id: string) => void } | null;
   marks: Record<string, number>;
 }) {
+  const compact = useWindowDimensions().height < 520;
   // Front rows face each other in the middle of the field.
   const rows: (0 | 1)[] = side === 0 ? [1, 0] : [0, 1];
   return (
@@ -369,7 +389,13 @@ function SideGrid({
                 (a) => a.side === side && a.row === row && a.slot === slot,
               )
               .sort((a, b) => b.hp - a.hp)[0];
-            if (!actor) return <View key={slot} style={styles.unit} />;
+            if (!actor)
+              return (
+                <View
+                  key={slot}
+                  style={[styles.unit, compact && styles.unitCompact]}
+                />
+              );
             const can = !!pick && pick.reachable.has(actor.id);
             return (
               <Unit
@@ -382,6 +408,7 @@ function SideGrid({
                 dimmed={!!pick && side === 1 && !can && actor.hp > 0}
                 onPress={can ? () => pick.onPick(actor.id) : undefined}
                 marked={marks[actor.id] ?? 0}
+                compact={compact}
               />
             );
           })}
@@ -671,6 +698,8 @@ export default function BattleScreen() {
   const battle = useGame((s) => s.battle);
   const auto = useGame((s) => s.save?.settings.autoBattle ?? false);
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const portrait = height > width;
   const [pending, setPending] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -803,8 +832,8 @@ export default function BattleScreen() {
           </View>
         ) : null}
       </View>
-      <Row gap={10} style={styles.bottom}>
-        <View style={styles.flex}>
+      <View style={portrait ? styles.bottomPortrait : styles.bottom}>
+        <View style={portrait ? null : styles.flex}>
           <Planner battle={battle} pending={pending} setPending={setPending} />
         </View>
         <GButton
@@ -816,9 +845,9 @@ export default function BattleScreen() {
             setPending(null);
             actions.ready();
           }}
-          style={styles.ready}
+          style={portrait ? styles.readyPortrait : styles.ready}
         />
-      </Row>
+      </View>
       {battle.phase === "over" ? <Results battle={battle} /> : null}
       <Toasts />
     </View>
@@ -846,6 +875,7 @@ const styles = StyleSheet.create({
   column: { justifyContent: "space-evenly", gap: 4 },
   versus: { width: 30, alignItems: "center" },
   unit: { width: 92, minHeight: 64, alignItems: "center" },
+  unitCompact: { width: 84, minHeight: 44 },
   unitInner: { alignItems: "center", gap: 1, width: "100%" },
   dead: { opacity: 0.35 },
   dimmed: { opacity: 0.4 },
@@ -860,6 +890,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   bossPortrait: { width: 74, height: 74, borderRadius: 37 },
+  portraitCompact: { width: 34, height: 34, borderRadius: 17 },
+  bossPortraitCompact: { width: 46, height: 46, borderRadius: 23 },
   actingPortrait: { borderWidth: 3, borderColor: palette.white },
   blink: { ...StyleSheet.absoluteFill, backgroundColor: palette.white },
   mark: {
@@ -884,7 +916,8 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: palette.overlay,
   },
-  bottom: { alignItems: "flex-end" },
+  bottom: { flexDirection: "row", gap: 10, alignItems: "flex-end" },
+  bottomPortrait: { gap: 8 },
   planner: {
     gap: 6,
     padding: 8,
@@ -947,6 +980,7 @@ const styles = StyleSheet.create({
   actionPending: { borderColor: palette.white, borderWidth: 2 },
   actionOff: { opacity: 0.35 },
   ready: { minHeight: 64, minWidth: 110 },
+  readyPortrait: { minHeight: 52 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,

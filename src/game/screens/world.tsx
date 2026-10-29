@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getNpc, getZone } from "../data";
@@ -49,6 +49,9 @@ function Hud() {
   const { t, tr } = useT();
   const save = useSave();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  // Portrait stacks the joystick, centred, above one row of menu buttons.
+  const portrait = height > width;
   const stats = heroStats(save.hero);
   const { hero } = save;
   const tracked = trackedQuests(save.quests).slice(0, 3);
@@ -125,13 +128,19 @@ function Hud() {
             </Row>
           </Row>
         </View>
-        <View pointerEvents="box-none" style={styles.topRight}>
-          <Minimap save={save} size={120} />
+        <View
+          pointerEvents="box-none"
+          style={[styles.topRight, portrait && styles.topRightPortrait]}
+        >
+          <Minimap save={save} size={portrait ? 104 : 120} />
           <Label value={tr(zone.name)} type="caption2" color={palette.muted} />
           {tracked.map((q) => {
             const st = save.quests[q.id]!;
             return (
-              <View key={q.id} style={styles.tracker}>
+              <View
+                key={q.id}
+                style={[styles.tracker, portrait && styles.trackerPortrait]}
+              >
                 <GIcon
                   name={st.status === "ready" ? "check" : q.icon}
                   size={12}
@@ -154,9 +163,17 @@ function Hud() {
           })}
         </View>
       </View>
-      <View pointerEvents="box-none" style={styles.bottom}>
-        <Joystick />
-        <View style={styles.menu}>
+      <View
+        pointerEvents="box-none"
+        style={portrait ? styles.bottomPortrait : styles.bottom}
+      >
+        <View
+          pointerEvents="box-none"
+          style={portrait ? styles.joystickPortrait : null}
+        >
+          <Joystick />
+        </View>
+        <View style={portrait ? styles.menuPortrait : styles.menu}>
           {MENU.map((m) => (
             <GButton
               key={m.panel}
@@ -176,8 +193,13 @@ function Hud() {
 export function Toasts() {
   const { t } = useT();
   const toasts = useGame((s) => s.toasts);
+  const { width, height } = useWindowDimensions();
+  // In portrait, below the top HUD so they don't cover the status card.
   return (
-    <View pointerEvents="none" style={styles.toasts}>
+    <View
+      pointerEvents="none"
+      style={[styles.toasts, height > width && styles.toastsPortrait]}
+    >
       {toasts.map((toast) => (
         <View
           key={toast.id}
@@ -262,6 +284,7 @@ const styles = StyleSheet.create({
   },
   status: {
     width: 220,
+    flexShrink: 1,
     gap: 4,
     padding: 8,
     borderRadius: 8,
@@ -270,6 +293,7 @@ const styles = StyleSheet.create({
     borderColor: palette.lineSoft,
   },
   topRight: { alignItems: "flex-end", gap: 4, width: 170 },
+  topRightPortrait: { width: 112, marginStart: 8 },
   tracker: {
     flexDirection: "row",
     alignItems: "center",
@@ -279,6 +303,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: "rgba(15, 12, 9, 0.72)",
   },
+  trackerPortrait: { width: 112 },
   bottom: {
     flex: 1,
     flexDirection: "row",
@@ -292,6 +317,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     maxWidth: 260,
   },
+  bottomPortrait: { flex: 1, justifyContent: "flex-end", gap: 28 },
+  joystickPortrait: { alignItems: "center" },
+  menuPortrait: {
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "flex-start",
+  },
   menuButton: { minWidth: 40, minHeight: 40 },
   toasts: {
     position: "absolute",
@@ -301,6 +333,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
+  toastsPortrait: { top: "22%" },
   toast: {
     flexDirection: "row",
     alignItems: "center",
