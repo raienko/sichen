@@ -8,25 +8,31 @@ A casual dark-fantasy RPG on Ukrainian/Slavic folklore, cossacks as heroes: free
 
 **Hard deadline: 2026-11-04** (cloud credits end). The agreed target for that date is a **vertical slice**: Kyiv hub + one zone + the level 5-10 boss, all three classes to level 10, full battle loop, loot, sets, saves, deployed to GitHub Pages. Cut scope before slipping the date.
 
-## State on 2026-10-29 (second session)
+## State on 2026-10-29 (end of the second session)
 
-`main` has the first slice (PR #1, deployed: `https://raienko.github.io/sichen/`, Pages run #1 green). Branch `claude/sichen-game-dev-ra6guu` adds, all verified in a browser:
+`main` (PR #2 merged, Pages run #2 green, `https://raienko.github.io/sichen/`) has the slice plus:
 
-- **Portrait and landscape** (owner request): in portrait the joystick is centred above one left-aligned row of menu buttons, the minimap/trackers shrink, toasts and hints sit below the status card; the battle's Auto + Ready stack full width under the planner. Short landscape screens get compact battle portraits.
-- **Battle rework** (owner requests): defence is an on/off toggle per delivery (max 3 AP, −25% to be hit for the whole round); each round starts from last round's plan (`fitPlan`); **3 tactics** (saved plans, tap 1-3 to switch, long-press/save button to store); **Flee is a bar action** with its % shown, several tries per round; Auto sits above Ready. Saves are version 2 (tactics + tutorial), v1 migrates.
-- **Balance**: Likho is beatable at level 9 by every class (25-42% on auto over 100 seeds, 42-50% at 10); the boss test covers all three classes.
-- **Polish**: vector battle backdrop tinted by the zone; one mesh per house/church (gable roofs, St. Sophia's domes); a skippable tutorial of 9 one-time hints in Sirko's voice (pauses the battle clock; toggle in the menu); a turning 3D hero preview on character creation; mana bars hidden for foes with a token pool.
-- **Playthrough script** `scripts/e2e/playthrough.mjs` (Playwright, dev build): creation → tutorial → Sirko's chain → grand master → shrine → kurgan (spare or slay) → boss with death cards → turn-in. Passed for all three classes, both kurgan branches, no page errors. The boss phase (banner, upyr summons), the win path (q_likho ready, Likho's Eye drop) and the production `expo export` under `/sichen/` were also checked.
+- **Portrait and landscape**, a **floating joystick** (appears under the finger anywhere on the world that isn't an NPC/foe/quest object; a quick tap walks there), the battle's one **Ready button** carrying round + countdown, Auto above it.
+- **Battle rework**: on/off defence per delivery (max 3 AP, −25% to be hit all round); plans carry over (`fitPlan`); **3 tactics**; **Flee** as a bar action with its %. Saves are version 2.
+- **Balance**: Likho at level 9 is 25-42% on auto for every class.
+- **Polish**: zone-tinted battle backdrop, one mesh per building, a skippable tutorial in Sirko's voice, a turning hero preview on creation.
+- **Native works on iOS and Android** (owner-verified): one three.js in the bundle (`metro.config.js`), `paceFrames` + `GLFrame` (`render/native-gl.tsx`) so the simulator's software GL doesn't queue stale frames, and patches so a build without an EAS project ID doesn't crash on Android (`patches/expo-observe+…`, `patches/expo-image+…`, `expo.autolinking.android.buildFromSource` in package.json).
 
-Still not done: native (iOS/Android) never run; vendor/stash/relic UI only lightly exercised.
+Branch `claude/sichen-followups` (from `main`, not merged yet) adds:
+
+- Battle unit names wrap to two lines in a fixed-height box; units are 80 pt wide on narrow screens so four columns fit.
+- **Level badges** on battle portraits and in the pack inspect panel, coloured by danger vs the hero: grey ≤−5, green −4…−2, amber −1…+1, orange +2, red +3…+4 (packs charge on sight from +3), purple ≥+5; gold for the hero. `levelTone()` in `ui/palette.ts`, `LevelBadge` in `ui/level-badge.tsx`.
+- Inventory on phones: under 760 pt the selected item's card and buttons dock in a `Sheet` footer instead of sitting below 40-80 slots. The merchant's sheet carries the merchant's name. Item tiles have accessibility labels.
+- A tenth tutorial hint on the death screen; the landscape world menu on one row.
+- The native GL debug logging is removed.
+- `scripts/e2e/items.mjs`: vendor, stash and relic flows through the UI (passes at 1280×800 and 390×844).
 
 ## What next, in priority order
 
-1. **Merge this branch into `main`** (PR) so Pages redeploys; check the Pages run.
-2. **Native**: `expo-gl` is installed and R3F resolves its native entry, but nothing ran on a device. Build a dev client (`yarn ios` / `yarn android`) and fix what's needed. Check portrait/landscape and safe areas there.
-3. **Play-test with people** and tune: the boss numbers above are for auto-battle; hand-planned fights with tactics should do better. Watch the Plastun (weakest on auto) and how often players flee.
-4. **Small polish**: vendor/stash/relic flows by hand, a hint for the death cards, the landscape world menu wraps to two rows on phones (fine, but a single row would match portrait).
-5. After the slice: zones/bosses for levels 0-5, 10-15, 15-20, ascendancies, sockets/runes, crafting bench, coop/PvP on a Supabase authoritative turn server, Google/Apple sign-in, music, more languages.
+1. **Merge `claude/sichen-followups`** (PR) and check the Pages run.
+2. **Play-test with people** on real phones (the simulator speed-ups are off on devices; the full-resolution MSAA path is only owner-checked). Tune from what they say: the boss numbers are for auto-battle; watch the Plastun (weakest on auto) and how often players flee.
+3. **Content to fill the slice's band**: the slice has one zone for levels 1-10. If testers run out of fights before level 9, add packs to Vyshhorod (data only, `data/zones.ts`) before anything else.
+4. After the slice: zones/bosses for levels 0-5, 10-15, 15-20, ascendancies, sockets/runes, crafting bench, coop/PvP on a Supabase authoritative turn server, Google/Apple sign-in, music, more languages.
 
 ## Decisions already made with the owner (do not re-ask)
 
@@ -67,6 +73,7 @@ Rules of thumb: the sim never imports React; UI never mutates state except throu
 - Checks: `npx tsc --noEmit`, `npx jest src/game`, `npx eslint src/game src/app`. Pre-commit runs prettier + eslint + secretlint.
 - Production build like Pages: `EXPO_BASE_URL=/sichen npx expo export -p web --output-dir dist`, then serve `dist` under `/sichen/` (copy into `site/sichen/` and `python3 -m http.server` in `site/`).
 - Headless browser testing: Playwright's Chromium with `--use-gl=swiftshader --enable-unsafe-swiftshader` renders the WebGL scene; drive the UI with `getByText` / `getByLabel` (buttons carry accessibility labels).
+- Vendor/stash/relic check: `NODE_PATH=<a global playwright install> node scripts/e2e/items.mjs http://localhost:8081/ 390 844`.
 - Full playthrough: with `yarn web` running, `NODE_PATH=<a global playwright install> node scripts/e2e/playthrough.mjs http://localhost:8081/ <classId> <spare|slay>` (Playwright is not a project dependency). It writes screenshots to `$SHOTS`.
 
 ## Gotchas found so far
@@ -77,4 +84,6 @@ Rules of thumb: the sim never imports React; UI never mutates state except throu
 - Metro can run out of memory after a long dev session; start it with `NODE_OPTIONS=--max-old-space-size=6144`.
 - lint-staged formats only `js/jsx/ts/tsx/json/md`, but the pre-push `yarn verify` runs `prettier --check .`, so run prettier on `.mjs` scripts yourself.
 - A save-shape change needs a `SAVE_VERSION` bump and a migration in `state/save.ts` (v1→v2 is the example).
+- Don't edit `src/` while a Playwright run is going against `yarn web`: Metro hot-reloads a half-written file and the run fails on the page error.
+- expo-gl doesn't support every `gl.getParameter` (e.g. `FRAMEBUFFER_BINDING` throws), and three 0.184 defines `render` on the renderer instance, not the prototype.
 - `docs.expo.dev` was blocked from the cloud container; AGENTS.md asks to read the v57 docs before writing code, so use them when the network allows.
