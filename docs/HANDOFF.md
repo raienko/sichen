@@ -8,31 +8,25 @@ A casual dark-fantasy RPG on Ukrainian/Slavic folklore, cossacks as heroes: free
 
 **Hard deadline: 2026-11-04** (cloud credits end). The agreed target for that date is a **vertical slice**: Kyiv hub + one zone + the level 5-10 boss, all three classes to level 10, full battle loop, loot, sets, saves, deployed to GitHub Pages. Cut scope before slipping the date.
 
-## State on 2026-10-29
+## State on 2026-10-29 (second session)
 
-Branch `claude/project-thread-jxlje4` (PR into `main`). **Playable end to end in the browser**, verified with Playwright on a production `expo export` served under `/sichen/`:
+`main` has the first slice (PR #1, deployed: `https://raienko.github.io/sichen/`, Pages run #1 green). Branch `claude/sichen-game-dev-ra6guu` adds, all verified in a browser:
 
-title + 3 save slots → character creation → Kyiv (NPCs, quest markers) → walk (WASD / joystick / click-to-move / gamepad) → Vyshhorod zone → battle (planning, AP, defence pools, targets, timer, auto-battle, playback with floating numbers, white blink, lunge) → victory loot + XP + level up → back to the world.
+- **Portrait and landscape** (owner request): in portrait the joystick is centred above one left-aligned row of menu buttons, the minimap/trackers shrink, toasts and hints sit below the status card; the battle's Auto + Ready stack full width under the planner. Short landscape screens get compact battle portraits.
+- **Battle rework** (owner requests): defence is an on/off toggle per delivery (max 3 AP, −25% to be hit for the whole round); each round starts from last round's plan (`fitPlan`); **3 tactics** (saved plans, tap 1-3 to switch, long-press/save button to store); **Flee is a bar action** with its % shown, several tries per round; Auto sits above Ready. Saves are version 2 (tactics + tutorial), v1 migrates.
+- **Balance**: Likho is beatable at level 9 by every class (25-42% on auto over 100 seeds, 42-50% at 10); the boss test covers all three classes.
+- **Polish**: vector battle backdrop tinted by the zone; one mesh per house/church (gable roofs, St. Sophia's domes); a skippable tutorial of 9 one-time hints in Sirko's voice (pauses the battle clock; toggle in the menu); a turning 3D hero preview on character creation; mana bars hidden for foes with a token pool.
+- **Playthrough script** `scripts/e2e/playthrough.mjs` (Playwright, dev build): creation → tutorial → Sirko's chain → grand master → shrine → kurgan (spare or slay) → boss with death cards → turn-in. Passed for all three classes, both kurgan branches, no page errors. The boss phase (banner, upyr summons), the win path (q_likho ready, Likho's Eye drop) and the production `expo export` under `/sichen/` were also checked.
 
-Done:
-
-- `src/game/sim/` pure TS engine, 21 Jest tests (`npx jest src/game`): seeded RNG, battle engine + AI, stats, loot + 4 crafting relics, hero/tree/equip, quests (kill / explore / defeat / branching choice), death cards, balance checks per class and for the boss.
-- `src/game/data/` all slice content, validated by `validateContent()` (zod + cross-references; a test fails on any problem, icons included).
-- `src/game/state/` store, actions, encrypted versioned saves (3 slots), anonymous auth wrapper.
-- `src/game/render/` R3F world + low-poly art kit (no downloaded assets).
-- `src/game/screens/` + `ui/` every screen and panel: title, create, world HUD (bars, minimap, quest tracker, menu), inventory/vendor/stash, NPC (quests, grand master skills, healer/respec), skills bar, passive tree, character stats, quest log, menu (language uk/en, loot filter, save/quit), mob inspect, interact (quest choice), battle, death cards.
-- Static web build that works on a sub-path (manifest, service worker and page links are base-relative), and `.github/workflows/pages.yml` to deploy on push to `main`.
-
-Not yet verified in a browser (code exists, untested by hand): NPC dialogs and quest turn-in, grand master learning, death-card flow, quest choice at the kurgan, the boss phase/summons in the UI, tree allocation UI, relic use UI, vendor/stash. Not run on iOS/Android at all.
+Still not done: native (iOS/Android) never run; vendor/stash/relic UI only lightly exercised.
 
 ## What next, in priority order
 
-1. **Merge the PR and turn on Pages**: Settings → Pages → Source "GitHub Actions". Push to `main` runs `pages.yml`; the site is `https://raienko.github.io/sichen/`. Check the first run's log.
-2. **Play the whole slice once** (Playwright script below) and fix what breaks: Sirko's quest chain (`q_smoke` → `q_shrine` → `q_likho`), learning skills from your class's grand master, the kurgan choice (spare / slay), dying (death cards → Kyiv), the boss (phase at 50% HP, 2 upyr summons, Likho's Eye drop).
-3. **Balance pass**: the boss test expects 3-19 wins out of 20 for a geared level 9 Lytsar; mage was weakest in the debug run. Tune `data/enemies.ts` (GROWTH, boss HP) and `data/classes.ts`.
-4. **Polish that matters for testers**: battle backdrop (it's a flat panel now), hide the mana bar for enemies with almost no mana, merge multi-tile houses into one mesh (each tile draws its own roof), a 5-minute skippable tutorial (U), onboarding barks from Sirko, a 3D hero preview on character creation.
-5. Native: `expo-gl` is installed and R3F resolves its native entry automatically, but nothing was run on a device. Build a dev client (`yarn ios` / `yarn android`) and fix what's needed.
-6. After the slice: zones/bosses for levels 0-5, 10-15, 15-20, ascendancies, sockets/runes, crafting bench, coop/PvP on a Supabase authoritative turn server, Google/Apple sign-in, music, more languages.
+1. **Merge this branch into `main`** (PR) so Pages redeploys; check the Pages run.
+2. **Native**: `expo-gl` is installed and R3F resolves its native entry, but nothing ran on a device. Build a dev client (`yarn ios` / `yarn android`) and fix what's needed. Check portrait/landscape and safe areas there.
+3. **Play-test with people** and tune: the boss numbers above are for auto-battle; hand-planned fights with tactics should do better. Watch the Plastun (weakest on auto) and how often players flee.
+4. **Small polish**: vendor/stash/relic flows by hand, a hint for the death cards, the landscape world menu wraps to two rows on phones (fine, but a single row would match portrait).
+5. After the slice: zones/bosses for levels 0-5, 10-15, 15-20, ascendancies, sockets/runes, crafting bench, coop/PvP on a Supabase authoritative turn server, Google/Apple sign-in, music, more languages.
 
 ## Decisions already made with the owner (do not re-ask)
 
@@ -73,10 +67,14 @@ Rules of thumb: the sim never imports React; UI never mutates state except throu
 - Checks: `npx tsc --noEmit`, `npx jest src/game`, `npx eslint src/game src/app`. Pre-commit runs prettier + eslint + secretlint.
 - Production build like Pages: `EXPO_BASE_URL=/sichen npx expo export -p web --output-dir dist`, then serve `dist` under `/sichen/` (copy into `site/sichen/` and `python3 -m http.server` in `site/`).
 - Headless browser testing: Playwright's Chromium with `--use-gl=swiftshader --enable-unsafe-swiftshader` renders the WebGL scene; drive the UI with `getByText` / `getByLabel` (buttons carry accessibility labels).
+- Full playthrough: with `yarn web` running, `NODE_PATH=<a global playwright install> node scripts/e2e/playthrough.mjs http://localhost:8081/ <classId> <spare|slay>` (Playwright is not a project dependency). It writes screenshots to `$SHOTS`.
 
 ## Gotchas found so far
 
 - React Native 0.86 has no `StyleSheet.absoluteFillObject`; spread `StyleSheet.absoluteFill`.
 - The React Compiler's lint rules are on: no refs read during render, no `Date.now()` in render, no setState directly in an effect body, don't mutate one shared value from two effects.
 - FontAwesome6 is used in its **solid** set; the content test checks every icon name. There is no free sword glyph (the `khanda` glyph is a Sikh religious symbol, so don't use it); sabres use `slash`.
+- Metro can run out of memory after a long dev session; start it with `NODE_OPTIONS=--max-old-space-size=6144`.
+- lint-staged formats only `js/jsx/ts/tsx/json/md`, but the pre-push `yarn verify` runs `prettier --check .`, so run prettier on `.mjs` scripts yourself.
+- A save-shape change needs a `SAVE_VERSION` bump and a migration in `state/save.ts` (v1→v2 is the example).
 - `docs.expo.dev` was blocked from the cloud container; AGENTS.md asks to read the v57 docs before writing code, so use them when the network allows.
