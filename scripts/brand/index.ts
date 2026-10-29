@@ -114,20 +114,22 @@ function writeManifest(
   file: string,
 ) {
   const manifest = {
-    id: "/",
+    // Relative to the manifest, so the app installs from a sub-path host
+    // (GitHub Pages serves it under /<repo>/) as well as from a domain root.
+    id: "./",
     name,
     short_name: name,
-    start_url: "/",
-    scope: "/",
+    start_url: "./",
+    scope: "./",
     display: "standalone",
-    orientation: "portrait",
+    orientation: "any",
     background_color: brand.colors.splashBackground,
     theme_color: palette.light.background,
     icons: [
-      { src: "/icon-web-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/icon-web-512.png", sizes: "512x512", type: "image/png" },
+      { src: "icon-web-192.png", sizes: "192x192", type: "image/png" },
+      { src: "icon-web-512.png", sizes: "512x512", type: "image/png" },
       {
-        src: "/icon-web-maskable.png",
+        src: "icon-web-maskable.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

@@ -5,8 +5,8 @@
  * Metro's live ones.
  *
  * Three rules, all for same-origin GET requests (an API on another host, map
- * tiles and the like always go straight to the network, and so do the app's
- * own API routes under /api/ — a cached answer there would be a wrong one):
+ * tiles and the like always go straight to the network). Paths are relative
+ * to the worker's scope, so a sub-path host such as GitHub Pages works too:
  * - Pages: network first, so a deploy shows up on the next launch; the last
  *   page seen when offline. The build is a single-page app, so any cached
  *   page is the whole app shell.
@@ -18,7 +18,9 @@
  * Bump VERSION only to drop every cache at once, e.g. after changing these
  * rules; ordinary deploys need nothing.
  */
-const VERSION = "v1";
+const VERSION = "v2";
+/** The path the app is served under: "/" on a domain, "/<repo>/" on Pages. */
+const BASE = new URL(self.registration.scope).pathname;
 const PAGES = `pages-${VERSION}`;
 const FILES = `files-${VERSION}`;
 /** Hashed bundles pile up across deploys; the oldest go past this many. */
@@ -28,7 +30,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(PAGES)
-      .then((cache) => cache.add("/"))
+      .then((cache) => cache.add(BASE))
       .then(() => self.skipWaiting()),
   );
 });
@@ -52,13 +54,12 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request));
   } else if (
-    url.pathname.startsWith("/_expo/static/") ||
-    url.pathname.startsWith("/assets/")
+    url.pathname.startsWith(`${BASE}_expo/static/`) ||
+    url.pathname.startsWith(`${BASE}assets/`)
   ) {
     event.respondWith(cacheFirst(request));
   } else {
@@ -70,10 +71,10 @@ async function networkFirst(request) {
   const cache = await caches.open(PAGES);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put("/", response.clone());
+    if (response.ok) cache.put(BASE, response.clone());
     return response;
   } catch (error) {
-    const cached = await cache.match("/");
+    const cached = await cache.match(BASE);
     if (cached) return cached;
     throw error;
   }

@@ -9,10 +9,12 @@ import { useTheme } from "@/features/theme";
  */
 function registerServiceWorker() {
   if (__DEV__ || !("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("/sw.js").catch(() => {
-    // Not fatal: the app works without it, only not offline. Browsers
-    // refuse it on plain http and in some private modes.
-  });
+  navigator.serviceWorker
+    .register(`${process.env.EXPO_BASE_URL ?? ""}/sw.js`)
+    .catch(() => {
+      // Not fatal: the app works without it, only not offline. Browsers
+      // refuse it on plain http and in some private modes.
+    });
 }
 
 /**
