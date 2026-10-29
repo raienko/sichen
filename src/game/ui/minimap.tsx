@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import Svg, { Circle, G, Rect } from "react-native-svg";
+import Svg, { Circle, G, Path, Rect } from "react-native-svg";
 
 import { getZone } from "../data";
 import { runtime } from "../state/runtime";
@@ -36,6 +36,17 @@ function runs(map: readonly string[]) {
   return out;
 }
 
+function snapshot() {
+  return {
+    x: runtime.x,
+    z: runtime.z,
+    heading: runtime.heading,
+    mobs: new Map(
+      [...runtime.mobs].map(([id, m]) => [id, { x: m.x, z: m.z }] as const),
+    ),
+  };
+}
+
 export function Minimap({
   save,
   size = 128,
@@ -47,9 +58,12 @@ export function Minimap({
   const width = zone.map[0]?.length ?? 1;
   const height = zone.map.length;
   const rects = useMemo(() => runs(zone.map), [zone.map]);
-  const [, tick] = useState(0);
+  // Positions live in the per-frame runtime, not React state; a snapshot a
+  // few times a second is what the map draws (the React Compiler would
+  // otherwise keep the first render's positions).
+  const [where, setWhere] = useState(snapshot);
   useEffect(() => {
-    const id = setInterval(() => tick((n) => n + 1), 250);
+    const id = setInterval(() => setWhere(snapshot()), 250);
     return () => clearInterval(id);
   }, []);
   const scale = size / Math.max(width, height);
@@ -98,7 +112,7 @@ export function Minimap({
             <Circle key={it.id} cx={it.x} cy={it.z} r={0.7} fill="#e0e0e0" />
           ))}
           {packs.map((p) => {
-            const mob = runtime.mobs.get(p.id);
+            const mob = where.mobs.get(p.id);
             return (
               <Circle
                 key={p.id}
@@ -109,14 +123,18 @@ export function Minimap({
               />
             );
           })}
-          <Circle
-            cx={runtime.x}
-            cy={runtime.z}
-            r={0.9}
-            fill="#ffffff"
-            stroke="#000000"
-            strokeWidth={0.3}
-          />
+          {/* The hero: a gold arrow pointing the way they face. */}
+          <G
+            transform={`translate(${where.x} ${where.z}) rotate(${(-where.heading * 180) / Math.PI})`}
+          >
+            <Circle r={2.2} fill={palette.gold} opacity={0.18} />
+            <Path
+              d="M0 1.9 L1.3 -1.2 L0 -0.5 L-1.3 -1.2 Z"
+              fill={palette.gold}
+              stroke={palette.night}
+              strokeWidth={0.35}
+            />
+          </G>
         </G>
       </Svg>
     </View>
