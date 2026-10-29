@@ -8,7 +8,7 @@
 
 1. **Title → slot → create a hero.** Name (random cossack name button), kozak/kozachka, face, hair, hair colour, moustache, class.
 2. **Kyiv hub.** Ivan Sirko gives the main quest. Grand masters teach class skills: Olha (Kharakternyk, fire), Sviatoslav (Lytsar), Ustym Karmaliuk (Plastun). A merchant buys loot and sells potions; a chest is the stash. The gate leads to the zone.
-3. **Vyshhorod outskirts (levels 1-10).** Free movement with a fixed ~50° camera. Packs of upyrs, vovkulaky, mavky, chorty, potopelnyky and the orc horde. Tap a mob for Attack / View; aggressive mobs (or ones far above your level) charge on sight. A ruined shrine and a kurgan stone are quest objects.
+3. **Vyshhorod outskirts (levels 1-10).** Free movement with a fixed ~50° camera. Packs of upyrs, vovkulaky, mavky, chorty, potopelnyky and the orc horde. Tap a mob for Attack / View; aggressive mobs (or ones far above your level) charge on sight. Beaten packs respawn: common ones after 2 minutes, elite ones after 6, Likho after 20 (and all of them when you ride out from Kyiv). A ruined shrine and a kurgan stone are quest objects.
 4. **Battle** in a separate side-view scene, Taern style. Loot, XP and gold on a win; the death god's cards on a loss.
 5. **Boss: Likho One-Eye** at the zone's end, two phases, summons up to four upyrs. Beating it ends the slice's main quest.
 

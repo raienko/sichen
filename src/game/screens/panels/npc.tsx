@@ -31,7 +31,14 @@ export function NpcPanel({
   const { t, tr } = useT();
   const npc = getNpc(npcId);
   if (npc.roles.includes("merchant"))
-    return <InventoryPanel save={save} mode="vendor" onClose={onClose} />;
+    return (
+      <InventoryPanel
+        save={save}
+        mode="vendor"
+        title={tr(npc.name)}
+        onClose={onClose}
+      />
+    );
   if (npc.roles.includes("stash"))
     return <InventoryPanel save={save} mode="stash" onClose={onClose} />;
 

@@ -29,11 +29,13 @@ export function HintCard({
       pointerEvents="box-none"
       style={[
         styles.wrap,
-        where === "battle"
-          ? styles.battle
-          : portrait
-            ? styles.portrait
-            : styles.landscape,
+        where === "death"
+          ? styles.death
+          : where === "battle"
+            ? styles.battle
+            : portrait
+              ? styles.portrait
+              : styles.landscape,
       ]}
     >
       <View style={styles.card}>
@@ -71,6 +73,7 @@ const styles = StyleSheet.create({
   landscape: { top: 64 },
   portrait: { top: "30%" },
   battle: { top: 56 },
+  death: { top: 16 },
   card: {
     maxWidth: 360,
     marginHorizontal: 16,

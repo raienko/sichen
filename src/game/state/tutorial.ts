@@ -18,9 +18,10 @@ export type HintId =
   | "tactics"
   | "loot"
   | "tree"
-  | "master";
+  | "master"
+  | "death";
 
-export type HintWhere = "world" | "battle";
+export type HintWhere = "world" | "battle" | "death";
 
 type HintDef = {
   id: HintId;
@@ -33,6 +34,13 @@ type HintDef = {
 const inTown = (s: SaveData) => !!getZone(s.world.zoneId).town;
 
 export const HINTS: readonly HintDef[] = [
+  {
+    id: "death",
+    icon: "skull",
+    where: "death",
+    key: "hint.death",
+    when: () => true,
+  },
   {
     id: "battle",
     icon: "hand-fist",

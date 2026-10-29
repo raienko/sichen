@@ -16,6 +16,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptics } from "@/features/haptics";
+import { useTypography } from "@/features/responsive";
 
 import { getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
@@ -36,6 +37,7 @@ import { DELIVERIES } from "../sim/types";
 import { BattleBackdrop } from "../ui/backdrop";
 import { nextHint } from "../state/tutorial";
 import { HintCard } from "../ui/hint";
+import { LevelBadge } from "../ui/level-badge";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
@@ -220,6 +222,9 @@ function FloatText({ text, color }: { text: string; color: string }) {
   );
 }
 
+/** Lines a unit's name may wrap to; its box is always this tall. */
+const NAME_LINES = 2;
+
 function Unit({
   actor,
   floaters,
@@ -230,6 +235,8 @@ function Unit({
   onPress,
   marked,
   compact,
+  narrow,
+  heroLevel,
 }: {
   actor: Combatant;
   floaters: Floater[];
@@ -241,8 +248,13 @@ function Unit({
   marked: number;
   /** Smaller portraits for short (landscape phone) screens. */
   compact: boolean;
+  /** Slimmer units for narrow (portrait phone) screens. */
+  narrow: boolean;
+  /** Foes' level badges are coloured by danger against this. */
+  heroLevel: number;
 }) {
   const { tr } = useT();
+  const typography = useTypography();
   const blink = useSharedValue(0);
   const shake = useSharedValue(0);
   const lunge = useSharedValue(0);
@@ -282,54 +294,62 @@ function Unit({
       style={[
         styles.unit,
         compact && styles.unitCompact,
+        narrow && styles.unitNarrow,
         dead && styles.dead,
         dimmed && styles.dimmed,
       ]}
     >
       <Animated.View style={[styles.unitInner, moveStyle]}>
+        <View>
+          <View
+            style={[
+              styles.portrait,
+              boss && styles.bossPortrait,
+              compact &&
+                (boss ? styles.bossPortraitCompact : styles.portraitCompact),
+              { borderColor: targetable ? palette.white : ring },
+              acting && styles.actingPortrait,
+            ]}
+          >
+            <GIcon
+              name={dead ? "skull" : actor.icon}
+              size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
+              color={dead ? palette.faint : ring}
+            />
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.blink, blinkStyle]}
+            />
+            {marked > 0 ? (
+              <View style={styles.mark}>
+                <Label
+                  value={String(marked)}
+                  type="caption2"
+                  color={palette.night}
+                />
+              </View>
+            ) : null}
+          </View>
+          <LevelBadge
+            level={actor.level}
+            heroLevel={actor.side === 0 ? undefined : heroLevel}
+            style={styles.level}
+          />
+        </View>
+        {/* Two lines tall whatever the name, so units line up in a row. */}
         <View
           style={[
-            styles.portrait,
-            boss && styles.bossPortrait,
-            compact &&
-              (boss ? styles.bossPortraitCompact : styles.portraitCompact),
-            { borderColor: targetable ? palette.white : ring },
-            acting && styles.actingPortrait,
+            styles.name,
+            { height: typography.caption2.lineHeight * NAME_LINES },
           ]}
         >
-          <GIcon
-            name={dead ? "skull" : actor.icon}
-            size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
-            color={dead ? palette.faint : ring}
-          />
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.blink, blinkStyle]}
-          />
-          {marked > 0 ? (
-            <View style={styles.mark}>
-              <Label
-                value={String(marked)}
-                type="caption2"
-                color={palette.night}
-              />
-            </View>
-          ) : null}
-        </View>
-        <Label
-          value={
-            compact ? `${tr(actor.name)} · ${actor.level}` : tr(actor.name)
-          }
-          type="caption2"
-          numberOfLines={1}
-        />
-        {compact ? null : (
           <Label
-            value={`Lv ${actor.level}`}
+            value={tr(actor.name)}
             type="caption2"
-            color={palette.muted}
+            numberOfLines={NAME_LINES}
+            style={styles.nameText}
           />
-        )}
+        </View>
         <Bar
           value={actor.hp}
           max={actor.base.maxHp}
@@ -387,7 +407,11 @@ function SideGrid({
   pick: { reachable: Set<string>; onPick: (id: string) => void } | null;
   marks: Record<string, number>;
 }) {
-  const compact = useWindowDimensions().height < 520;
+  const window = useWindowDimensions();
+  const compact = window.height < 520;
+  // Four unit columns plus the gap must fit a phone held upright.
+  const narrow = window.width < 440;
+  const heroLevel = state.actors.find((a) => a.id === "hero")?.level ?? 1;
   // Front rows face each other in the middle of the field.
   const rows: (0 | 1)[] = side === 0 ? [1, 0] : [0, 1];
   return (
@@ -404,7 +428,11 @@ function SideGrid({
               return (
                 <View
                   key={slot}
-                  style={[styles.unit, compact && styles.unitCompact]}
+                  style={[
+                    styles.unit,
+                    compact && styles.unitCompact,
+                    narrow && styles.unitNarrow,
+                  ]}
                 />
               );
             const can = !!pick && pick.reachable.has(actor.id);
@@ -420,6 +448,8 @@ function SideGrid({
                 onPress={can ? () => pick.onPick(actor.id) : undefined}
                 marked={marks[actor.id] ?? 0}
                 compact={compact}
+                narrow={narrow}
+                heroLevel={heroLevel}
               />
             );
           })}
@@ -1028,7 +1058,12 @@ const styles = StyleSheet.create({
   versus: { width: 30, alignItems: "center" },
   unit: { width: 92, minHeight: 64, alignItems: "center" },
   unitCompact: { width: 84, minHeight: 44 },
+  unitNarrow: { width: 80 },
   unitInner: { alignItems: "center", gap: 1, width: "100%" },
+  name: { width: "100%", justifyContent: "center" },
+  nameText: { textAlign: "center" },
+  /** Overhangs the portrait's bottom corner, like a badge on an avatar. */
+  level: { position: "absolute", bottom: -4, end: -12 },
   dead: { opacity: 0.35 },
   dimmed: { opacity: 0.4 },
   portrait: {

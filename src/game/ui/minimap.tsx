@@ -54,7 +54,7 @@ export function Minimap({
   }, []);
   const scale = size / Math.max(width, height);
   const packs = zone.packs.filter(
-    (p) => !p.quest && !save.world.cleared.includes(p.id),
+    (p) => !p.quest && !(p.id in save.world.cleared),
   );
   return (
     <View

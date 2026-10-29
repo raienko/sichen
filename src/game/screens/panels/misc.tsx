@@ -11,6 +11,7 @@ import { questTarget } from "../../sim/quests";
 import { heroStats, setCounts } from "../../sim/stats";
 import { RARITIES, type StatKey } from "../../sim/types";
 import { Bar, Divider, GButton, GIcon, Label, Row, Sheet } from "../../ui/kit";
+import { LevelBadge } from "../../ui/level-badge";
 import { palette, rarityColor } from "../../ui/palette";
 import { startPackAttack } from "../../render/world-scene";
 import { runtime } from "../../state/runtime";
@@ -266,7 +267,6 @@ export function InspectPanel({
     >
       {pack.enemies.map((e, i) => {
         const def = getEnemy(e.enemyId);
-        const danger = e.level - save.hero.level;
         return (
           <Row key={i} gap={10}>
             <GIcon
@@ -279,17 +279,7 @@ export function InspectPanel({
               type="subheadline"
               style={styles.flex}
             />
-            <Label
-              value={t("mob.level", { level: e.level })}
-              type="caption1"
-              color={
-                danger >= 3
-                  ? palette.bad
-                  : danger <= -3
-                    ? palette.faint
-                    : palette.gold
-              }
-            />
+            <LevelBadge level={e.level} heroLevel={save.hero.level} />
           </Row>
         );
       })}

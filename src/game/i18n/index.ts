@@ -45,6 +45,8 @@ const en = {
   "menu.lootFilter": "Hide loot below",
   "menu.tutorial": "Tutorial hints",
   "hint.gotIt": "Got it",
+  "hint.death":
+    "Fell, did you? The death god deals his cards. Most cost little, some take gold or progress — never a level. Pick one and get up.",
   "hint.skip": "Skip tutorial",
   "hint.move":
     "Drag anywhere to walk, or tap the ground, or use WASD or a gamepad. A cossack on foot is still a cossack.",
@@ -68,7 +70,6 @@ const en = {
   "mob.attack": "Attack",
   "mob.view": "View",
   "mob.aggressive": "Aggressive",
-  "mob.level": "Level {{level}}",
   "npc.talk": "Talk",
   "npc.quests": "Quests",
   "npc.accept": "Accept",
@@ -224,6 +225,8 @@ const uk: Record<StringKey, string> = {
   "menu.lootFilter": "Ховати здобич нижче",
   "menu.tutorial": "Підказки",
   "hint.gotIt": "Зрозумів",
+  "hint.death":
+    "Що, впав? Бог смерті роздає карти. Більшість коштує мало, деякі забирають золото чи досвід — але не рівень. Тягни одну й вставай.",
   "hint.skip": "Пропустити навчання",
   "hint.move":
     "Тягни пальцем будь-де, щоб іти, або торкнися землі, або WASD чи геймпад. Пішим козак — теж козак.",
@@ -247,7 +250,6 @@ const uk: Record<StringKey, string> = {
   "mob.attack": "Атакувати",
   "mob.view": "Оглянути",
   "mob.aggressive": "Агресивний",
-  "mob.level": "Рівень {{level}}",
   "npc.talk": "Говорити",
   "npc.quests": "Завдання",
   "npc.accept": "Прийняти",

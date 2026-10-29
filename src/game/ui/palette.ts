@@ -48,3 +48,18 @@ export const HAIR_COLORS = [
   "#c9c1b2",
 ] as const;
 export const SKIN_TONES = ["#e0b48f", "#c79670", "#9c6b48"] as const;
+
+/**
+ * How dangerous a foe's level is next to the hero's, as a badge colour:
+ * grey trivial, green easy, amber even, orange hard, red dangerous (packs
+ * this far above the hero charge on sight), purple deadly.
+ */
+export function levelTone(level: number, heroLevel: number): string {
+  const diff = level - heroLevel;
+  if (diff <= -5) return "#5c554c";
+  if (diff <= -2) return "#3d8a3a";
+  if (diff <= 1) return "#a8832e";
+  if (diff === 2) return "#cf6f1f";
+  if (diff <= 4) return "#c0392b";
+  return "#8e3cc8";
+}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { RULES } from "../../data";
 import { useT } from "../../i18n";
@@ -46,13 +46,18 @@ type Selection = {
 export function InventoryPanel({
   save,
   mode = "inventory",
+  title,
   onClose,
 }: {
   save: SaveData;
   mode?: "inventory" | "vendor" | "stash";
+  /** Defaults to the inventory's or the stash's own name. */
+  title?: string;
   onClose: () => void;
 }) {
   const { t } = useT();
+  // Equipment, bag and details sit side by side from about this width.
+  const docked = useWindowDimensions().width < 760;
   const [selected, setSelected] = useState<Selection | null>(null);
   const { hero } = save;
 
@@ -84,12 +89,128 @@ export function InventoryPanel({
     </View>
   );
 
+  // The selected item's card and buttons. Where the columns don't fit side by
+  // side they dock under the scrolling grids, so a tap always shows them.
+  const details = (
+    <>
+      {item && selected ? (
+        <>
+          <ItemCard item={item} hero={hero} />
+          {!meetsRequirement(hero, item) && selected.from !== "equipped" ? (
+            <Label
+              value={t("inv.cantWear")}
+              type="caption1"
+              color={palette.bad}
+            />
+          ) : null}
+          <Row gap={6} wrap>
+            {selected.from === "inventory" ? (
+              <GButton
+                label={t("inv.equip")}
+                icon="user-shield"
+                compact
+                tone="primary"
+                disabled={!meetsRequirement(hero, item)}
+                onPress={() => {
+                  actions.equipItem(item.uid);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+            {selected.from === "equipped" && selected.slot ? (
+              <GButton
+                label={t("inv.unequip")}
+                icon="arrow-down"
+                compact
+                onPress={() => {
+                  actions.unequipItem(selected.slot!);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+            {selected.from === "inventory" && mode === "vendor" ? (
+              <GButton
+                label={t("inv.sellFor", { gold: sellValue(item) })}
+                icon="coins"
+                compact
+                onPress={() => {
+                  actions.sellItem(item.uid);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+            {selected.from === "inventory" && mode === "stash" ? (
+              <GButton
+                label={t("inv.toStash")}
+                icon="box-archive"
+                compact
+                onPress={() => {
+                  actions.moveToStash(item.uid);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+            {selected.from === "stash" ? (
+              <GButton
+                label={t("inv.fromStash")}
+                icon="box-open"
+                compact
+                onPress={() => {
+                  actions.takeFromStash(item.uid);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+            {selected.from === "inventory" && mode === "inventory" ? (
+              <GButton
+                label={t("inv.drop")}
+                icon="trash"
+                compact
+                tone="ghost"
+                onPress={() => {
+                  actions.dropItem(item.uid);
+                  setSelected(null);
+                }}
+              />
+            ) : null}
+          </Row>
+          {selected.from !== "stash" ? (
+            <Row gap={6} wrap>
+              {RELICS.map((relic) => (
+                <GButton
+                  key={relic}
+                  icon={RELIC_ICONS[relic]}
+                  label={String(save.relics[relic])}
+                  compact
+                  accessibilityLabel={t(`relic.${relic}`)}
+                  disabled={
+                    save.relics[relic] <= 0 || !canUseRelic(relic, item)
+                  }
+                  onPress={() => actions.applyRelic(relic, item.uid)}
+                />
+              ))}
+            </Row>
+          ) : null}
+        </>
+      ) : (
+        <Label value={t("inv.relics")} type="caption1" color={palette.faint} />
+      )}
+    </>
+  );
+
   return (
     <Sheet
-      title={mode === "stash" ? t("npc.stash") : t("menu.inventory")}
-      icon={mode === "stash" ? "box-archive" : "box-open"}
+      title={title ?? (mode === "stash" ? t("npc.stash") : t("menu.inventory"))}
+      icon={
+        mode === "stash"
+          ? "box-archive"
+          : mode === "vendor"
+            ? "coins"
+            : "box-open"
+      }
       onClose={onClose}
       wide
+      footer={docked && item ? details : undefined}
     >
       <View style={styles.columns}>
         <View style={styles.equipment}>
@@ -196,114 +317,7 @@ export function InventoryPanel({
             </>
           ) : null}
         </View>
-        <View style={styles.details}>
-          {item && selected ? (
-            <>
-              <ItemCard item={item} hero={hero} />
-              {!meetsRequirement(hero, item) && selected.from !== "equipped" ? (
-                <Label
-                  value={t("inv.cantWear")}
-                  type="caption1"
-                  color={palette.bad}
-                />
-              ) : null}
-              <Row gap={6} wrap>
-                {selected.from === "inventory" ? (
-                  <GButton
-                    label={t("inv.equip")}
-                    icon="user-shield"
-                    compact
-                    tone="primary"
-                    disabled={!meetsRequirement(hero, item)}
-                    onPress={() => {
-                      actions.equipItem(item.uid);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-                {selected.from === "equipped" && selected.slot ? (
-                  <GButton
-                    label={t("inv.unequip")}
-                    icon="arrow-down"
-                    compact
-                    onPress={() => {
-                      actions.unequipItem(selected.slot!);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-                {selected.from === "inventory" && mode === "vendor" ? (
-                  <GButton
-                    label={t("inv.sellFor", { gold: sellValue(item) })}
-                    icon="coins"
-                    compact
-                    onPress={() => {
-                      actions.sellItem(item.uid);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-                {selected.from === "inventory" && mode === "stash" ? (
-                  <GButton
-                    label={t("inv.toStash")}
-                    icon="box-archive"
-                    compact
-                    onPress={() => {
-                      actions.moveToStash(item.uid);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-                {selected.from === "stash" ? (
-                  <GButton
-                    label={t("inv.fromStash")}
-                    icon="box-open"
-                    compact
-                    onPress={() => {
-                      actions.takeFromStash(item.uid);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-                {selected.from === "inventory" && mode === "inventory" ? (
-                  <GButton
-                    label={t("inv.drop")}
-                    icon="trash"
-                    compact
-                    tone="ghost"
-                    onPress={() => {
-                      actions.dropItem(item.uid);
-                      setSelected(null);
-                    }}
-                  />
-                ) : null}
-              </Row>
-              {selected.from !== "stash" ? (
-                <Row gap={6} wrap>
-                  {RELICS.map((relic) => (
-                    <GButton
-                      key={relic}
-                      icon={RELIC_ICONS[relic]}
-                      label={String(save.relics[relic])}
-                      compact
-                      accessibilityLabel={t(`relic.${relic}`)}
-                      disabled={
-                        save.relics[relic] <= 0 || !canUseRelic(relic, item)
-                      }
-                      onPress={() => actions.applyRelic(relic, item.uid)}
-                    />
-                  ))}
-                </Row>
-              ) : null}
-            </>
-          ) : (
-            <Label
-              value={t("inv.relics")}
-              type="caption1"
-              color={palette.faint}
-            />
-          )}
-        </View>
+        {docked ? null : <View style={styles.details}>{details}</View>}
       </View>
     </Sheet>
   );

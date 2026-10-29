@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { content, getBase, getSkill, validateContent } from "../data";
+import { content, getBase, getSkill, getZone, validateContent } from "../data";
 import { deserialize, serialize, type SaveData } from "../state/save";
 import { decodeSave, encodeSave } from "../state/codec";
 
@@ -32,6 +32,7 @@ import {
 } from "./hero";
 import { canUseRelic, rollDrops, rollItem, applyRelicTo } from "./loot";
 import { accept, onKills, turnIn } from "./quests";
+import { packRank, respawnSeconds, respawning } from "./respawn";
 import { Rng } from "./rng";
 import { emptyStats, heroStats } from "./stats";
 import type { Look } from "./types";
@@ -415,7 +416,7 @@ describe("saves", () => {
   it("loads a current save", () => {
     const hero = createHero(new Rng(1), "Ostap", LOOK, "lytsar");
     const save: SaveData = {
-      version: 2,
+      version: 3,
       id: "a",
       createdAt: 0,
       updatedAt: 0,
@@ -425,7 +426,7 @@ describe("saves", () => {
       inventory: [],
       stash: [],
       quests: {},
-      world: { zoneId: "kyiv", x: 1, z: 1, cleared: [] },
+      world: { zoneId: "kyiv", x: 1, z: 1, cleared: {} },
       settings: {
         lootFilter: "normal",
         autoBattle: false,
@@ -438,15 +439,55 @@ describe("saves", () => {
       stats: { kills: 0, deaths: 0, battles: 0 },
     };
     expect(deserialize(serialize(save))).toEqual(save);
-    // A version 1 save gains empty tactics on load.
+    // A version 1 save gains empty tactics, and its cleared list becomes
+    // timestamps.
     const { tactics: _, ...v1 } = save;
     const old = deserialize(
       serialize({
         ...v1,
         version: 1,
+        world: { ...save.world, cleared: ["p_wolves"] },
         settings: { lootFilter: "normal", autoBattle: false },
       } as unknown as SaveData),
     );
-    expect(old).toEqual(save);
+    expect(old).toEqual({
+      ...save,
+      world: { ...save.world, cleared: { p_wolves: expect.any(Number) } },
+    });
+  });
+});
+
+describe("respawn", () => {
+  const packs = getZone("vyshhorod").packs;
+  const pack = (id: string) => packs.find((p) => p.id === id)!;
+
+  it("brings common packs back sooner than elite ones and the boss", () => {
+    expect(packRank(pack("p_grunts_a"))).toBe("common");
+    expect(packRank(pack("p_wolves"))).toBe("elite");
+    expect(packRank(pack("p_likho"))).toBe("boss");
+    expect(respawnSeconds(pack("p_grunts_a"))).toBeLessThan(
+      respawnSeconds(pack("p_wolves")),
+    );
+    expect(respawnSeconds(pack("p_wolves"))).toBeLessThan(
+      respawnSeconds(pack("p_likho")),
+    );
+  });
+
+  it("respawns on time, never quest packs, and not on top of the hero", () => {
+    const t0 = 1_000_000;
+    const cleared = { p_grunts_a: t0, p_wolves: t0, p_kurgan_mavka: t0 };
+    const far = { x: 45, z: 2 };
+    const common = respawnSeconds(pack("p_grunts_a")) * 1000;
+    expect(respawning(packs, cleared, t0 + common - 1, far)).toEqual([]);
+    expect(respawning(packs, cleared, t0 + common, far)).toEqual([
+      "p_grunts_a",
+    ]);
+    // Standing on the grunts' spot holds them back.
+    const near = { x: pack("p_grunts_a").x, z: pack("p_grunts_a").z };
+    expect(respawning(packs, cleared, t0 + common, near)).toEqual([]);
+    // Much later everything is back except the quest pack.
+    const later = respawning(packs, cleared, t0 + 1e9, far);
+    expect(later).toContain("p_wolves");
+    expect(later).not.toContain("p_kurgan_mavka");
   });
 });
