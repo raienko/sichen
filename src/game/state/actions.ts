@@ -5,6 +5,7 @@ import {
   apFor,
   createBattle,
   emptyPlan,
+  fitPlan,
   living,
   planCost,
   resolveRound,
@@ -140,7 +141,14 @@ export function createGame(
     stash: [],
     quests: {},
     world: { zoneId: "kyiv", ...kyiv.spawn, cleared: [] },
-    settings: { lootFilter: "normal", autoBattle: false },
+    settings: {
+      lootFilter: "normal",
+      autoBattle: false,
+      tactic: 0,
+      tutorial: true,
+      hints: [],
+    },
+    tactics: Array.from({ length: RULES.tactics }, () => null),
     seed: r.seed,
     stats: { kills: 0, deaths: 0, battles: 0 },
   };
@@ -275,6 +283,37 @@ export function examine(interactableId: string) {
         ? { name: "interact", interactableId }
         : null,
   });
+}
+
+// ---------------------------------------------------------------- tutorial
+
+export function dismissHint(id: string) {
+  commit((s) => ({
+    ...s,
+    settings: { ...s.settings, hints: [...s.settings.hints, id] },
+  }));
+  restartClock();
+}
+
+/** A hint read during planning shouldn't have cost the player their time. */
+function restartClock() {
+  const battle = get().battle;
+  if (battle?.phase === "planning")
+    set({
+      battle: { ...battle, deadline: Date.now() + RULES.roundSeconds * 1000 },
+    });
+}
+
+export function setTutorial(tutorial: boolean) {
+  commit((s) => ({
+    ...s,
+    settings: {
+      ...s.settings,
+      tutorial,
+      hints: tutorial ? [] : s.settings.hints,
+    },
+  }));
+  restartClock();
 }
 
 // ---------------------------------------------------------------- quests
@@ -500,6 +539,10 @@ export function startBattle(
     [heroCombatant(data.hero)],
     packSpecs(packId),
   );
+  // The first round starts from the selected tactic, if there is one.
+  const tactic = data.tactics[data.settings.tactic];
+  const hero = state.actors.find((a) => a.id === "hero")!;
+  const plan = tactic ? fitPlan(state, hero, tactic) : emptyPlan();
   runtime.moveTarget = null;
   set({
     scene: { name: "battle" },
@@ -509,7 +552,7 @@ export function startBattle(
       before: state,
       packId,
       questChoice,
-      plan: emptyPlan(),
+      plan,
       deadline: Date.now() + RULES.roundSeconds * 1000,
       phase: "planning",
       events: [],
@@ -549,15 +592,47 @@ export function removeAttack(index: number) {
   }));
 }
 
-export function changeDefense(kind: Delivery, delta: number) {
-  if (delta > 0 && planBudget() < delta) return;
+/** A delivery is defended (1 AP) or not. */
+export function toggleDefense(kind: Delivery) {
+  const battle = get().battle;
+  if (!battle) return;
+  const on = battle.plan.defense[kind] > 0;
+  if (!on && planBudget() < 1) return;
   updatePlan((plan) => ({
     ...plan,
-    defense: {
-      ...plan.defense,
-      [kind]: Math.max(0, plan.defense[kind] + delta),
-    },
+    defense: { ...plan.defense, [kind]: on ? 0 : 1 },
   }));
+}
+
+export function clearPlan() {
+  updatePlan(() => emptyPlan());
+}
+
+/** Switches to a saved tactic and fills the plan from it. */
+export function pickTactic(index: number) {
+  const battle = get().battle;
+  const tactic = save().tactics[index];
+  commit((s) => ({ ...s, settings: { ...s.settings, tactic: index } }));
+  if (!battle || !tactic) return;
+  const hero = battle.state.actors.find((a) => a.id === "hero");
+  if (!hero) return;
+  updatePlan(() => fitPlan(battle.state, hero, tactic));
+}
+
+/** Stores the current plan (without targets) as a tactic. */
+export function saveTactic(index: number) {
+  const battle = get().battle;
+  if (!battle) return;
+  const tactic = {
+    attacks: battle.plan.attacks.map((a) => ({ skillId: a.skillId })),
+    defense: { ...battle.plan.defense },
+  };
+  commit((s) => ({
+    ...s,
+    tactics: s.tactics.map((t, i) => (i === index ? tactic : t)),
+    settings: { ...s.settings, tactic: index },
+  }));
+  toast("floppy-disk", "battle.tacticSaved", { n: index + 1 }, "good");
 }
 
 export function toggleAuto() {
@@ -573,11 +648,6 @@ export function autoPlan() {
   if (!battle || !hero || battle.phase !== "planning") return;
   const plan = planFor(battle.state, hero, rng(), battleActions(save().hero));
   set({ battle: { ...battle, plan } });
-}
-
-export function flee() {
-  updatePlan(() => ({ ...emptyPlan(), flee: true }));
-  ready();
 }
 
 /** Locks in the hero's plan, plans the enemies and resolves the round. */
@@ -611,11 +681,13 @@ export function finishPlayback() {
   if (!battle || battle.phase !== "playing") return;
   const { state } = battle;
   if (!state.result) {
+    // Next round's slots start as this round's plan, fitted to what's left.
+    const hero = state.actors.find((a) => a.id === "hero");
     set({
       battle: {
         ...battle,
         phase: "planning",
-        plan: emptyPlan(),
+        plan: hero ? fitPlan(state, hero, battle.plan) : emptyPlan(),
         deadline: Date.now() + RULES.roundSeconds * 1000,
         events: [],
       },

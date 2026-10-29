@@ -8,6 +8,8 @@ import { decodeSave, encodeSave } from "../state/codec";
 import { planFor } from "./ai";
 import {
   createBattle,
+  fitPlan,
+  fleeChance,
   hitChance,
   living,
   resolveRound,
@@ -166,20 +168,25 @@ describe("battle", () => {
     }
   });
 
-  it("makes the boss a real fight for a level 9 hero", () => {
-    let wins = 0;
-    let phases = 0;
-    for (let seed = 1; seed <= 20; seed++) {
-      const { state, events } = fight(seed, "lytsar", 9, [
-        { enemyId: "likho", level: 10 },
-      ]);
-      if (state.result === "won") wins += 1;
-      if (events.some((e) => e.t === "phase")) phases += 1;
-    }
-    expect(phases).toBeGreaterThan(5);
-    expect(wins).toBeGreaterThan(2);
-    expect(wins).toBeLessThan(20);
-  });
+  it.each(["lytsar", "plastun", "kharakternyk"])(
+    "makes the boss a real fight for a level 9 %s",
+    (classId) => {
+      // On auto-battle a geared level 9 hero wins about a third of the
+      // time (2026-10 tuning: 25-42% over 100 seeds); a player does better.
+      let wins = 0;
+      let phases = 0;
+      for (let seed = 1; seed <= 40; seed++) {
+        const { state, events } = fight(seed, classId, 9, [
+          { enemyId: "likho", level: 10 },
+        ]);
+        if (state.result === "won") wins += 1;
+        if (events.some((e) => e.t === "phase")) phases += 1;
+      }
+      expect(phases).toBeGreaterThan(10);
+      expect(wins).toBeGreaterThanOrEqual(6);
+      expect(wins).toBeLessThanOrEqual(28);
+    },
+  );
 
   it("caps a plan at the AP the actor has", () => {
     const rng = new Rng(1);
@@ -191,6 +198,74 @@ describe("battle", () => {
     });
     expect(plan.attacks).toHaveLength(5);
     expect(plan.defense).toEqual({ melee: 0, ranged: 0, mental: 0 });
+    // Defence is on or off per delivery: at most one AP each.
+    const guarded = sanitizePlan(hero, {
+      attacks: [{ skillId: "strike" }],
+      defense: { melee: 3, ranged: 2, mental: 1 },
+      readyAt: 0,
+    });
+    expect(guarded.defense).toEqual({ melee: 1, ranged: 1, mental: 1 });
+  });
+
+  it("fits last round's plan to what is left", () => {
+    const rng = new Rng(4);
+    const hero = heroCombatant(createHero(rng, "Ostap", LOOK, "lytsar"));
+    const state = createBattle(
+      1,
+      [hero],
+      [
+        { enemyId: "orc_grunt", level: 1 },
+        { enemyId: "orc_grunt", level: 1 },
+      ],
+    );
+    const [a, b] = state.actors.filter((x) => x.side === 1);
+    a!.hp = 0;
+    const me = state.actors.find((x) => x.id === "hero")!;
+    me.potions.hp = 0;
+    const plan = fitPlan(state, me, {
+      attacks: [
+        { skillId: "strike", targetId: a!.id },
+        { skillId: "potion_hp" },
+        { skillId: "strike", targetId: b!.id },
+      ],
+      defense: { melee: 1, ranged: 1, mental: 1 },
+    });
+    expect(plan.attacks).toEqual([
+      { skillId: "strike", targetId: b!.id },
+      { skillId: "strike", targetId: b!.id },
+    ]);
+    expect(plan.defense).toEqual({ melee: 1, ranged: 1, mental: 1 });
+  });
+
+  it("can try to flee several times in one round", () => {
+    const hero = heroCombatant(
+      createHero(new Rng(2), "Ostap", LOOK, "plastun"),
+    );
+    let fled = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const state = createBattle(
+        seed,
+        [hero],
+        [{ enemyId: "orc_grunt", level: 1 }],
+      );
+      const me = state.actors.find((x) => x.id === "hero")!;
+      expect(fleeChance(state, me)).toBeGreaterThanOrEqual(10);
+      const { state: next, events } = resolveRound(state, {
+        hero: {
+          attacks: Array.from({ length: 5 }, () => ({ skillId: "flee" })),
+          defense: { melee: 0, ranged: 0, mental: 0 },
+          readyAt: 0,
+        },
+      });
+      const tries = events.filter((e) => e.t === "flee");
+      expect(tries.length).toBeGreaterThanOrEqual(1);
+      if (next.result === "fled") {
+        fled += 1;
+        expect(tries.at(-1)).toMatchObject({ ok: true });
+        expect(tries.filter((e) => e.t === "flee" && e.ok)).toHaveLength(1);
+      }
+    }
+    expect(fled).toBeGreaterThan(20);
   });
 
   it("rewards an undefended delivery and punishes a defended one", () => {
@@ -340,7 +415,7 @@ describe("saves", () => {
   it("loads a current save", () => {
     const hero = createHero(new Rng(1), "Ostap", LOOK, "lytsar");
     const save: SaveData = {
-      version: 1,
+      version: 2,
       id: "a",
       createdAt: 0,
       updatedAt: 0,
@@ -351,10 +426,27 @@ describe("saves", () => {
       stash: [],
       quests: {},
       world: { zoneId: "kyiv", x: 1, z: 1, cleared: [] },
-      settings: { lootFilter: "normal", autoBattle: false },
+      settings: {
+        lootFilter: "normal",
+        autoBattle: false,
+        tactic: 0,
+        tutorial: false,
+        hints: [],
+      },
+      tactics: [null, null, null],
       seed: 1,
       stats: { kills: 0, deaths: 0, battles: 0 },
     };
     expect(deserialize(serialize(save))).toEqual(save);
+    // A version 1 save gains empty tactics on load.
+    const { tactics: _, ...v1 } = save;
+    const old = deserialize(
+      serialize({
+        ...v1,
+        version: 1,
+        settings: { lootFilter: "normal", autoBattle: false },
+      } as unknown as SaveData),
+    );
+    expect(old).toEqual(save);
   });
 });

@@ -15,14 +15,16 @@
 ## Battle rules (as implemented)
 
 - Two rows × three slots per side. Solo hero for now; the engine takes any number of actors per side.
-- **Planning, then resolution.** Each round has a 15 s timer. A player spends **5 AP** across up to **5 attack slots** (each action costs 1-3 AP) and **3 defence pools** (melee / ranged / mental, 1 AP per point). Pressing **Ready** early adds initiative. When everyone is ready or the timer ends, the round resolves into a list of events, and the UI plays them.
+- **Planning, then resolution.** Each round has a 15 s timer. A player spends **5 AP** across up to **5 attack slots** (each action costs 1-3 AP) and **3 defence toggles** (melee / ranged / mental: each is on or off, 1 AP when on, so at most 3 AP on defence). Pressing **Ready** early adds initiative. When everyone is ready or the timer ends, the round resolves into a list of events, and the UI plays them.
+- **Plans carry over.** The next round's slots start as the last round's plan, fitted to the AP, resources and foes left (`fitPlan` in `sim/battle.ts`; an attack whose target died moves to the weakest foe it can reach).
+- **Tactics.** Three saved plans (attacks + defence, no targets) on the planner: tap 1-3 to switch, long-press or the save button to store the current plan. The selected tactic also fills a new battle's first round.
 - **Order:** slot 1 of every actor by initiative (speed + early-ready bonus + small roll), then slot 2, and so on, so the round feels simultaneous.
-- **Hit chance** is deliberately swingy: base 70% + accuracy vs evasion, minus 18% per defence point the target has left in that action's delivery (each block spends a point). A target with **0 points** against that delivery takes +15% to be hit. Clamped to 5-95%.
+- **Hit chance** is deliberately swingy: base 70% + accuracy vs evasion; −25% if the target defends that action's delivery this round (for every attack of that delivery, not just the first), +15% if it doesn't. Clamped to 5-95%. A miss that the defence caused shows as a block.
 - **Two separate tags per action:** _delivery_ (melee / ranged / mental), which defence pools block, and _damage type_ (physical / magical / chaos), which resistances reduce. Taern does the same, and it keeps defence planning readable.
 - **Resources:** HP, mana, stamina. An action can cost any mix. Mana and stamina regenerate each round from stats and gear.
-- **Bar:** Strike, Throw stone, Retreat (+evasion vs melee this round), six skill slots, HP and mana potions. Flee is a separate button with a chance to escape.
+- **Bar:** Strike, Throw stone, Retreat (+evasion vs melee this round), **Flee**, six skill slots, HP and mana potions. Flee is an action like the others (1 AP, one slot) showing its escape chance (speed vs the foes', worse against bosses, 10-75%); queue several tries in one round, and the first that succeeds ends the battle.
 - **Status effects:** burn (damage each round), freeze (−2 AP next round), stun (loses next round).
-- **Auto-battle** toggle plans the hero's rounds with the same AI the enemies use. No speed controls.
+- **Auto-battle** toggle (above Ready) plans the hero's rounds with the same AI the enemies use; it never flees. No speed controls.
 - **Bosses:** a phase list (HP threshold → new skills, summons). Up to 4 summons.
 
 ## Progression and loot

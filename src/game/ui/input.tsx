@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { PanResponder, StyleSheet, View } from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  PanResponder,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+} from "react-native";
 
 import { runtime } from "../state/runtime";
 
@@ -59,60 +64,148 @@ export function useKeyboardMovement(onKey?: (code: string) => void) {
 
 const SIZE = 120;
 const KNOB = 48;
+/** How far the knob travels from the centre, in points. */
+const REACH = SIZE / 2 - KNOB / 4;
+/** A touch that moves less than this and lifts quickly is a tap. */
+const TAP_SLOP = 8;
+const TAP_MS = 300;
+/** A finger held still this long shows the stick without a drag. */
+const SHOW_MS = 150;
 
-/** The on-screen stick: drag anywhere inside it, release to stop. */
-export function Joystick() {
-  const [knob, setKnob] = useState({ x: 0, y: 0 });
-  // Made once; the handlers only touch their own closure and setKnob.
-  const [responder] = useState(() => {
-    let start = { x: SIZE / 2, y: SIZE / 2 };
-    const move = (px: number, py: number) => {
-      let dx = px - SIZE / 2;
-      let dy = py - SIZE / 2;
-      const max = SIZE / 2 - KNOB / 4;
-      const len = Math.hypot(dx, dy);
-      if (len > max) {
-        dx = (dx / len) * max;
-        dy = (dy / len) * max;
-      }
-      setKnob({ x: dx, y: dy });
-      runtime.input = { x: dx / max, z: dy / max };
-    };
-    const reset = () => {
-      setKnob({ x: 0, y: 0 });
-      runtime.input = { x: 0, z: 0 };
-    };
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => {
-        start = { x: e.nativeEvent.locationX, y: e.nativeEvent.locationY };
-        move(start.x, start.y);
-      },
-      onPanResponderMove: (_, g) => move(start.x + g.dx, start.y + g.dy),
-      onPanResponderRelease: reset,
-      onPanResponderTerminate: reset,
-    });
+type Point = { x: number; y: number };
+type Frame = Point & { width: number; height: number };
+type Stick = { at: Point; knob: Point; shown: boolean };
+
+type StickProps = {
+  claims: (at: Point, frame: Frame) => boolean;
+  onTap: (at: Point, frame: Frame) => void;
+};
+
+/** The stick's touch handling, kept outside React's render. */
+function stickGesture(
+  setStick: (update: (s: Stick | null) => Stick | null) => void,
+) {
+  let props: StickProps = { claims: () => false, onTap: () => {} };
+  let frame: Frame = { x: 0, y: 0, width: 0, height: 0 };
+  let start: Point = { x: 0, y: 0 };
+  let startedAt = 0;
+  let moved = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const local = (e: GestureResponderEvent): Point => ({
+    x: e.nativeEvent.pageX - frame.x,
+    y: e.nativeEvent.pageY - frame.y,
   });
+  const reset = () => {
+    clearTimeout(timer);
+    setStick(() => null);
+    runtime.input = { x: 0, z: 0 };
+  };
+  const responder = PanResponder.create({
+    onStartShouldSetPanResponderCapture: (e) => props.claims(local(e), frame),
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: (e) => {
+      start = local(e);
+      startedAt = e.nativeEvent.timestamp;
+      moved = false;
+      setStick(() => ({ at: start, knob: { x: 0, y: 0 }, shown: false }));
+      timer = setTimeout(
+        () => setStick((s) => (s ? { ...s, shown: true } : s)),
+        SHOW_MS,
+      );
+    },
+    onPanResponderMove: (_, g) => {
+      let dx = g.dx;
+      let dy = g.dy;
+      const len = Math.hypot(dx, dy);
+      if (len > TAP_SLOP) moved = true;
+      if (len > REACH) {
+        dx = (dx / len) * REACH;
+        dy = (dy / len) * REACH;
+      }
+      runtime.input = { x: dx / REACH, z: dy / REACH };
+      setStick(() => ({ at: start, knob: { x: dx, y: dy }, shown: true }));
+    },
+    onPanResponderRelease: (e) => {
+      // Event times, not handler times: a busy JS thread can run the two
+      // handlers far apart.
+      const tap = !moved && e.nativeEvent.timestamp - startedAt < TAP_MS;
+      reset();
+      if (tap) props.onTap(start, frame);
+    },
+    onPanResponderTerminate: reset,
+  });
+  return {
+    handlers: responder.panHandlers,
+    setProps: (next: StickProps) => {
+      props = next;
+    },
+    setFrame: (next: Frame) => {
+      frame = next;
+    },
+  };
+}
+
+/**
+ * A stick that appears wherever a finger lands on `children` (the world) and
+ * follows the drag, so any finger and grip works; release to stop. A short
+ * tap goes to `onTap` instead. `claims` sees each touch first: false leaves
+ * it to what is under the finger (an NPC or a foe in the 3D scene). Menus
+ * drawn above `children` keep their own touches.
+ */
+export function FloatingStick({
+  children,
+  claims,
+  onTap,
+}: StickProps & { children: ReactNode }) {
+  const [stick, setStick] = useState<Stick | null>(null);
+  const view = useRef<View>(null);
+  const [gesture] = useState(() => stickGesture(setStick));
+  useEffect(
+    () => gesture.setProps({ claims, onTap }),
+    [gesture, claims, onTap],
+  );
+  const onLayout = () =>
+    view.current?.measureInWindow((x, y, width, height) =>
+      gesture.setFrame({ x, y, width, height }),
+    );
 
   return (
     <View
-      style={styles.pad}
-      {...responder.panHandlers}
-      accessibilityLabel="Joystick"
+      ref={view}
+      style={styles.fill}
+      onLayout={onLayout}
+      {...gesture.handlers}
     >
-      <View
-        pointerEvents="none"
-        style={[
-          styles.knob,
-          { transform: [{ translateX: knob.x }, { translateY: knob.y }] },
-        ]}
-      />
+      {children}
+      {stick?.shown ? (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.pad,
+            styles.floating,
+            { left: stick.at.x - SIZE / 2, top: stick.at.y - SIZE / 2 },
+          ]}
+        >
+          <View
+            style={[
+              styles.knob,
+              {
+                transform: [
+                  { translateX: stick.knob.x },
+                  { translateY: stick.knob.y },
+                ],
+              },
+            ]}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  floating: { position: "absolute" },
   pad: {
     width: SIZE,
     height: SIZE,

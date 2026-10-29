@@ -43,6 +43,27 @@ const en = {
   "menu.quit": "Save and quit",
   "menu.language": "Language",
   "menu.lootFilter": "Hide loot below",
+  "menu.tutorial": "Tutorial hints",
+  "hint.gotIt": "Got it",
+  "hint.skip": "Skip tutorial",
+  "hint.move":
+    "Drag anywhere to walk, or tap the ground, or use WASD or a gamepad. A cossack on foot is still a cossack.",
+  "hint.sirko":
+    "Come to me, by the square — the one with the gold mark overhead. There's work.",
+  "hint.gate":
+    "The east gate leads to Vyshhorod. Ride out; the horde won't slay itself.",
+  "hint.mobs":
+    "Tap a foe to attack or look it over. Some charge on sight, and so does anything far above you.",
+  "hint.battle":
+    "Five AP a round. Attacks fill the slots; a shield guards one kind of blow for 1 AP. Then Ready, or let Auto think for you.",
+  "hint.tactics":
+    "Your plan carries over to the next round. Long-press 1, 2 or 3 to save it as a tactic, tap to switch.",
+  "hint.loot":
+    "Spoils go in your pack. Open it (the box) and put on what fits — rags never stopped a sabre.",
+  "hint.tree":
+    "A new level means a point for the passive tree. Spend it; a respec costs little at the healer.",
+  "hint.master":
+    "Your grand master here in Kyiv has a new skill for you, if you have the coin.",
   "menu.close": "Close",
   "mob.attack": "Attack",
   "mob.view": "View",
@@ -68,6 +89,11 @@ const en = {
   "battle.ready": "Ready",
   "battle.auto": "Auto",
   "battle.flee": "Flee",
+  "battle.tactic": "Tactic {{n}}",
+  "battle.saveTactic": "Save the plan as the selected tactic",
+  "battle.tacticSaved": "Tactic {{n}} saved",
+  "battle.clear": "Clear the plan",
+  "battle.fleeChance": "{{chance}}% to escape",
   "battle.defense": "Defence",
   "battle.pickTarget": "Pick a target",
   "battle.stunned": "Stunned!",
@@ -196,6 +222,27 @@ const uk: Record<StringKey, string> = {
   "menu.quit": "Зберегти й вийти",
   "menu.language": "Мова",
   "menu.lootFilter": "Ховати здобич нижче",
+  "menu.tutorial": "Підказки",
+  "hint.gotIt": "Зрозумів",
+  "hint.skip": "Пропустити навчання",
+  "hint.move":
+    "Тягни пальцем будь-де, щоб іти, або торкнися землі, або WASD чи геймпад. Пішим козак — теж козак.",
+  "hint.sirko":
+    "Ходи до мене, на майдан — там, де золота мітка над головою. Є робота.",
+  "hint.gate":
+    "Східна брама веде до Вишгорода. Рушай — орда сама себе не порубає.",
+  "hint.mobs":
+    "Торкнися ворога, щоб напасти чи роздивитися. Деякі кидаються одразу, як і все, що значно сильніше за тебе.",
+  "hint.battle":
+    "П'ять ОД на раунд. Атаки займають слоти; щит за 1 ОД береже від одного роду ударів. Тоді «Готово» — або хай думає «Авто».",
+  "hint.tactics":
+    "План переходить у наступний раунд. Затисни 1, 2 чи 3, щоб зберегти тактику, торкнись — щоб перемкнути.",
+  "hint.loot":
+    "Здобич — у торбі. Відкрий її (скриня) й вдягни, що пасує: лахміття ще нікого від шаблі не вберегло.",
+  "hint.tree":
+    "Новий рівень — нове очко для дерева навичок. Витрать його; скинути можна недорого в знахарки.",
+  "hint.master":
+    "Твій великий майстер тут, у Києві, має для тебе нове вміння — якщо маєш гроші.",
   "menu.close": "Закрити",
   "mob.attack": "Атакувати",
   "mob.view": "Оглянути",
@@ -221,6 +268,11 @@ const uk: Record<StringKey, string> = {
   "battle.ready": "Готово",
   "battle.auto": "Авто",
   "battle.flee": "Тікати",
+  "battle.tactic": "Тактика {{n}}",
+  "battle.saveTactic": "Зберегти план як обрану тактику",
+  "battle.tacticSaved": "Тактику {{n}} збережено",
+  "battle.clear": "Очистити план",
+  "battle.fleeChance": "{{chance}}% утекти",
   "battle.defense": "Захист",
   "battle.pickTarget": "Обери ціль",
   "battle.stunned": "Оглушено!",

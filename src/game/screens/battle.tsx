@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -10,12 +17,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptics } from "@/features/haptics";
 
-import { getSkill, RULES } from "../data";
+import { getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
 import * as actions from "../state/actions";
 import { useGame, useSave, type BattleSession } from "../state/store";
 import {
   apFor,
+  fleeChance,
   hasStatus,
   living,
   planCost,
@@ -25,6 +33,9 @@ import {
 } from "../sim/battle";
 import { battleActions } from "../sim/hero";
 import { DELIVERIES } from "../sim/types";
+import { BattleBackdrop } from "../ui/backdrop";
+import { nextHint } from "../state/tutorial";
+import { HintCard } from "../ui/hint";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
@@ -218,6 +229,7 @@ function Unit({
   dimmed,
   onPress,
   marked,
+  compact,
 }: {
   actor: Combatant;
   floaters: Floater[];
@@ -227,6 +239,8 @@ function Unit({
   dimmed: boolean;
   onPress?: () => void;
   marked: number;
+  /** Smaller portraits for short (landscape phone) screens. */
+  compact: boolean;
 }) {
   const { tr } = useT();
   const blink = useSharedValue(0);
@@ -265,20 +279,27 @@ function Unit({
       onPress={onPress}
       disabled={!onPress}
       accessibilityLabel={tr(actor.name)}
-      style={[styles.unit, dead && styles.dead, dimmed && styles.dimmed]}
+      style={[
+        styles.unit,
+        compact && styles.unitCompact,
+        dead && styles.dead,
+        dimmed && styles.dimmed,
+      ]}
     >
       <Animated.View style={[styles.unitInner, moveStyle]}>
         <View
           style={[
             styles.portrait,
             boss && styles.bossPortrait,
+            compact &&
+              (boss ? styles.bossPortraitCompact : styles.portraitCompact),
             { borderColor: targetable ? palette.white : ring },
             acting && styles.actingPortrait,
           ]}
         >
           <GIcon
             name={dead ? "skull" : actor.icon}
-            size={boss ? 40 : 28}
+            size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
             color={dead ? palette.faint : ring}
           />
           <Animated.View
@@ -295,20 +316,29 @@ function Unit({
             </View>
           ) : null}
         </View>
-        <Label value={tr(actor.name)} type="caption2" numberOfLines={1} />
         <Label
-          value={`Lv ${actor.level}`}
+          value={
+            compact ? `${tr(actor.name)} · ${actor.level}` : tr(actor.name)
+          }
           type="caption2"
-          color={palette.muted}
+          numberOfLines={1}
         />
+        {compact ? null : (
+          <Label
+            value={`Lv ${actor.level}`}
+            type="caption2"
+            color={palette.muted}
+          />
+        )}
         <Bar
           value={actor.hp}
           max={actor.base.maxHp}
           color={palette.hp}
-          height={8}
+          height={compact ? 6 : 8}
           style={styles.unitBar}
         />
-        {actor.base.maxMana > 0 ? (
+        {/* Foes with a token mana pool (growth only) don't need the bar. */}
+        {actor.side === 0 || actor.base.maxMana >= 20 ? (
           <Bar
             value={actor.mana}
             max={actor.base.maxMana}
@@ -357,6 +387,7 @@ function SideGrid({
   pick: { reachable: Set<string>; onPick: (id: string) => void } | null;
   marks: Record<string, number>;
 }) {
+  const compact = useWindowDimensions().height < 520;
   // Front rows face each other in the middle of the field.
   const rows: (0 | 1)[] = side === 0 ? [1, 0] : [0, 1];
   return (
@@ -369,7 +400,13 @@ function SideGrid({
                 (a) => a.side === side && a.row === row && a.slot === slot,
               )
               .sort((a, b) => b.hp - a.hp)[0];
-            if (!actor) return <View key={slot} style={styles.unit} />;
+            if (!actor)
+              return (
+                <View
+                  key={slot}
+                  style={[styles.unit, compact && styles.unitCompact]}
+                />
+              );
             const can = !!pick && pick.reachable.has(actor.id);
             return (
               <Unit
@@ -382,6 +419,7 @@ function SideGrid({
                 dimmed={!!pick && side === 1 && !can && actor.hp > 0}
                 onPress={can ? () => pick.onPick(actor.id) : undefined}
                 marked={marks[actor.id] ?? 0}
+                compact={compact}
               />
             );
           })}
@@ -413,14 +451,21 @@ function usePlanResources(battle: BattleSession) {
   };
 }
 
+function planDefense(battle: BattleSession): number {
+  return DELIVERIES.reduce((n, k) => n + battle.plan.defense[k], 0);
+}
+
 function Planner({
   battle,
   pending,
   setPending,
+  side,
 }: {
   battle: BattleSession;
   pending: string | null;
   setPending: (id: string | null) => void;
+  /** Drawn at the planner's end, beside the plan (Auto and Ready in portrait). */
+  side?: ReactNode;
 }) {
   const { t, tr } = useT();
   const save = useSave();
@@ -441,147 +486,208 @@ function Planner({
   };
 
   return (
-    <View style={styles.planner}>
-      <Row gap={10} wrap>
-        <Row gap={4}>
-          {Array.from({ length: RULES.ap }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.pip,
-                i < ap ? styles.pipOn : null,
-                frozen && i >= RULES.ap - 2 ? styles.pipFrozen : null,
-              ]}
-            />
-          ))}
+    <View style={[styles.planner, side ? styles.plannerRow : null]}>
+      <View style={styles.plannerMain}>
+        <Row gap={10} wrap>
+          <Row gap={4}>
+            {Array.from({ length: RULES.ap }, (_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.pip,
+                  i < ap ? styles.pipOn : null,
+                  frozen && i >= RULES.ap - 2 ? styles.pipFrozen : null,
+                ]}
+              />
+            ))}
+          </Row>
+          <View style={styles.slots}>
+            {Array.from({ length: RULES.attackSlots }, (_, i) => {
+              const action = battle.plan.attacks[i];
+              const skill = action ? getSkill(action.skillId) : null;
+              return (
+                <Pressable
+                  key={i}
+                  accessibilityLabel={skill ? tr(skill.name) : `${i + 1}`}
+                  disabled={!action || !planning}
+                  onPress={() => actions.removeAttack(i)}
+                  style={[styles.slot, skill && styles.slotFull]}
+                >
+                  {skill ? (
+                    <GIcon name={skill.icon} size={15} color={palette.gold} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Row gap={6}>
+            {DELIVERIES.map((kind) => {
+              const on = battle.plan.defense[kind] > 0;
+              return (
+                <Pressable
+                  key={kind}
+                  accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
+                  accessibilityState={{ selected: on }}
+                  disabled={!planning || (!on && ap <= 0)}
+                  onPress={() => actions.toggleDefense(kind)}
+                  style={[
+                    styles.defense,
+                    on && {
+                      borderColor: palette.delivery[kind],
+                      backgroundColor: palette.panelHi,
+                    },
+                    !on && planning && ap <= 0 && styles.actionOff,
+                  ]}
+                >
+                  <GIcon
+                    name="shield-halved"
+                    size={12}
+                    color={on ? palette.delivery[kind] : palette.faint}
+                  />
+                  <GIcon
+                    name={
+                      kind === "melee"
+                        ? "hand-fist"
+                        : kind === "ranged"
+                          ? "crosshairs"
+                          : "brain"
+                    }
+                    size={14}
+                    color={on ? palette.delivery[kind] : palette.muted}
+                  />
+                </Pressable>
+              );
+            })}
+          </Row>
         </Row>
-        <View style={styles.slots}>
-          {Array.from({ length: RULES.attackSlots }, (_, i) => {
-            const action = battle.plan.attacks[i];
-            const skill = action ? getSkill(action.skillId) : null;
+        <Row gap={6} wrap>
+          {save.tactics.map((tactic, i) => {
+            const active = save.settings.tactic === i;
             return (
               <Pressable
                 key={i}
-                accessibilityLabel={skill ? tr(skill.name) : `${i + 1}`}
-                disabled={!action || !planning}
-                onPress={() => actions.removeAttack(i)}
-                style={[styles.slot, skill && styles.slotFull]}
+                accessibilityLabel={t("battle.tactic", { n: i + 1 })}
+                accessibilityState={{ selected: active }}
+                disabled={!planning}
+                onPress={() => actions.pickTactic(i)}
+                onLongPress={() => actions.saveTactic(i)}
+                style={[
+                  styles.tactic,
+                  tactic ? styles.tacticFilled : null,
+                  active ? styles.tacticActive : null,
+                ]}
               >
-                {skill ? (
-                  <GIcon name={skill.icon} size={15} color={palette.gold} />
-                ) : null}
+                <Label
+                  value={String(i + 1)}
+                  type="headline"
+                  color={
+                    active
+                      ? palette.gold
+                      : tactic
+                        ? palette.text
+                        : palette.faint
+                  }
+                />
+              </Pressable>
+            );
+          })}
+          <Pressable
+            accessibilityLabel={t("battle.saveTactic")}
+            disabled={!planning}
+            onPress={() => actions.saveTactic(save.settings.tactic)}
+            style={styles.tacticTool}
+          >
+            <GIcon name="floppy-disk" size={14} color={palette.muted} />
+          </Pressable>
+          <Pressable
+            accessibilityLabel={t("battle.clear")}
+            disabled={
+              !planning ||
+              battle.plan.attacks.length + planDefense(battle) === 0
+            }
+            onPress={actions.clearPlan}
+            style={styles.tacticTool}
+          >
+            <GIcon name="eraser" size={14} color={palette.muted} />
+          </Pressable>
+        </Row>
+        {stunned ? (
+          <Label
+            value={t("battle.stunned")}
+            type="subheadline"
+            color={palette.status.stun}
+          />
+        ) : null}
+        {frozen ? (
+          <Label
+            value={t("battle.frozen")}
+            type="caption1"
+            color={palette.status.freeze}
+          />
+        ) : null}
+        {pending ? (
+          <Label
+            value={t("battle.pickTarget")}
+            type="caption1"
+            color={palette.white}
+          />
+        ) : null}
+        <View style={styles.bar}>
+          {battleActions(save.hero).map((id) => {
+            const skill = getSkill(id);
+            const ok =
+              planning &&
+              !stunned &&
+              skill.ap <= ap &&
+              battle.plan.attacks.length < RULES.attackSlots &&
+              (skill.potion
+                ? potions[skill.potion] > 0
+                : (skill.cost.mana ?? 0) <= mana &&
+                  (skill.cost.stamina ?? 0) <= stamina);
+            return (
+              <Pressable
+                key={id}
+                accessibilityLabel={
+                  skill.flee
+                    ? `${tr(skill.name)}, ${t("battle.fleeChance", { chance: fleeChance(battle.state, hero) })}`
+                    : tr(skill.name)
+                }
+                disabled={!ok}
+                onPress={() => choose(id)}
+                style={[
+                  styles.action,
+                  pending === id && styles.actionPending,
+                  !ok && styles.actionOff,
+                ]}
+              >
+                <GIcon
+                  name={skill.icon}
+                  size={18}
+                  color={
+                    skill.potion === "hp"
+                      ? palette.hp
+                      : skill.potion === "mana"
+                        ? palette.mana
+                        : palette.text
+                  }
+                />
+                <Label
+                  value={
+                    skill.potion
+                      ? String(potions[skill.potion])
+                      : skill.flee
+                        ? `${fleeChance(battle.state, hero)}%`
+                        : String(skill.ap)
+                  }
+                  type="caption2"
+                  color={palette.muted}
+                />
               </Pressable>
             );
           })}
         </View>
-        <Row gap={6}>
-          {DELIVERIES.map((kind) => (
-            <View key={kind} style={styles.defense}>
-              <Pressable
-                accessibilityLabel={`${t(`delivery.${kind}`)} -`}
-                disabled={!planning || battle.plan.defense[kind] === 0}
-                onPress={() => actions.changeDefense(kind, -1)}
-                style={styles.defButton}
-              >
-                <GIcon name="minus" size={10} color={palette.muted} />
-              </Pressable>
-              <GIcon
-                name={
-                  kind === "melee"
-                    ? "hand-fist"
-                    : kind === "ranged"
-                      ? "crosshairs"
-                      : "brain"
-                }
-                size={14}
-                color={palette.delivery[kind]}
-              />
-              <Label
-                value={String(battle.plan.defense[kind])}
-                type="headline"
-                color={palette.delivery[kind]}
-              />
-              <Pressable
-                accessibilityLabel={`${t(`delivery.${kind}`)} +`}
-                disabled={!planning || ap <= 0}
-                onPress={() => actions.changeDefense(kind, 1)}
-                style={styles.defButton}
-              >
-                <GIcon name="plus" size={10} color={palette.text} />
-              </Pressable>
-            </View>
-          ))}
-        </Row>
-      </Row>
-      {stunned ? (
-        <Label
-          value={t("battle.stunned")}
-          type="subheadline"
-          color={palette.status.stun}
-        />
-      ) : null}
-      {frozen ? (
-        <Label
-          value={t("battle.frozen")}
-          type="caption1"
-          color={palette.status.freeze}
-        />
-      ) : null}
-      {pending ? (
-        <Label
-          value={t("battle.pickTarget")}
-          type="caption1"
-          color={palette.white}
-        />
-      ) : null}
-      <View style={styles.bar}>
-        {battleActions(save.hero).map((id) => {
-          const skill = getSkill(id);
-          const ok =
-            planning &&
-            !stunned &&
-            skill.ap <= ap &&
-            battle.plan.attacks.length < RULES.attackSlots &&
-            (skill.potion
-              ? potions[skill.potion] > 0
-              : (skill.cost.mana ?? 0) <= mana &&
-                (skill.cost.stamina ?? 0) <= stamina);
-          return (
-            <Pressable
-              key={id}
-              accessibilityLabel={tr(skill.name)}
-              disabled={!ok}
-              onPress={() => choose(id)}
-              style={[
-                styles.action,
-                pending === id && styles.actionPending,
-                !ok && styles.actionOff,
-              ]}
-            >
-              <GIcon
-                name={skill.icon}
-                size={18}
-                color={
-                  skill.potion === "hp"
-                    ? palette.hp
-                    : skill.potion === "mana"
-                      ? palette.mana
-                      : palette.text
-                }
-              />
-              <Label
-                value={
-                  skill.potion
-                    ? String(potions[skill.potion])
-                    : String(skill.ap)
-                }
-                type="caption2"
-                color={palette.muted}
-              />
-            </Pressable>
-          );
-        })}
       </View>
+      {side ? <View style={styles.plannerSide}>{side}</View> : null}
     </View>
   );
 }
@@ -666,11 +772,89 @@ function Results({ battle }: { battle: BattleSession }) {
   );
 }
 
+/** The clock turns red for the last seconds of planning. */
+const URGENT_SECONDS = 5;
+const URGENT_BG = "#3a1410";
+
+/**
+ * Ready, the round number and the planning clock in one button: its fill
+ * drains as time runs out and turns red near the end, and pressing it ends
+ * planning early.
+ */
+function ReadyButton({
+  round,
+  planning,
+  msLeft,
+  secondsLeft,
+  onPress,
+  style,
+}: {
+  round: number;
+  planning: boolean;
+  msLeft: number;
+  secondsLeft: number;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { t } = useT();
+  const urgent = planning && secondsLeft <= URGENT_SECONDS;
+  const share = planning
+    ? Math.max(0, Math.min(1, msLeft / (RULES.roundSeconds * 1000)))
+    : 0;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${t("battle.ready")}, ${t("battle.round", { round })}`}
+      disabled={!planning}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.readyButton,
+        {
+          borderColor: urgent ? palette.bad : palette.gold,
+          backgroundColor: urgent ? URGENT_BG : palette.panelHi,
+          opacity: !planning ? 0.6 : pressed ? 0.75 : 1,
+        },
+        style,
+      ]}
+    >
+      <View
+        style={[
+          styles.readyFill,
+          {
+            width: `${share * 100}%`,
+            backgroundColor: urgent ? palette.bad : palette.line,
+          },
+        ]}
+      />
+      <Label
+        value={t("battle.round", { round })}
+        type="caption2"
+        color={palette.muted}
+      />
+      <Row gap={6}>
+        <GIcon name="check" size={15} color={palette.text} />
+        <Label value={t("battle.ready")} type="callout" />
+      </Row>
+      <Label
+        value={planning ? `${secondsLeft}s` : "…"}
+        type="headline"
+        color={urgent ? palette.white : palette.gold}
+      />
+    </Pressable>
+  );
+}
+
 export default function BattleScreen() {
   const { t } = useT();
   const battle = useGame((s) => s.battle);
   const auto = useGame((s) => s.save?.settings.autoBattle ?? false);
+  const zoneId = useGame((s) => s.save?.world.zoneId ?? "kyiv");
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const portrait = height > width;
   const [pending, setPending] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
@@ -689,10 +873,16 @@ export default function BattleScreen() {
     : false;
 
   // The planning timer, auto-battle and stunned rounds.
+  // A tutorial hint pauses the clock; dismissing it restarts the round's.
+  const hinting = useGame((s) =>
+    s.save && s.battle
+      ? nextHint(s.save, "battle", s.battle.state.round) !== null
+      : false,
+  );
   useEffect(() => {
-    if (phase !== "planning") return;
+    if (phase !== "planning" || hinting) return;
     if (now >= deadline) actions.ready();
-  }, [now, deadline, phase]);
+  }, [now, deadline, phase, hinting]);
   useEffect(() => {
     if (phase !== "planning" || !(auto || heroStunned)) return;
     const id = setTimeout(() => {
@@ -712,7 +902,11 @@ export default function BattleScreen() {
 
   if (!battle) return null;
   const shown = battle.phase === "playing" ? playback.shown : battle.state;
-  const secondsLeft = Math.max(0, Math.ceil((battle.deadline - now) / 1000));
+  // `now` ticks every 200 ms, so right after a new deadline it can lag.
+  const secondsLeft = Math.min(
+    RULES.roundSeconds,
+    Math.max(0, Math.ceil((battle.deadline - now) / 1000)),
+  );
   const pendingSkill = pending ? getSkill(pending) : null;
   const melee = pendingSkill?.effects.some(
     (e) => e.type === "damage" && e.delivery === "melee",
@@ -721,6 +915,30 @@ export default function BattleScreen() {
   const front = foes.filter((f) => f.row === 0);
   const reachable = new Set(
     (melee && front.length > 0 ? front : foes).map((f) => f.id),
+  );
+
+  const controls = (
+    <View style={portrait ? styles.readyColumnPortrait : styles.readyColumn}>
+      <GButton
+        label={t("battle.auto")}
+        icon="robot"
+        compact
+        tone={auto ? "primary" : "default"}
+        onPress={actions.toggleAuto}
+        style={styles.auto}
+      />
+      <ReadyButton
+        round={battle.state.round}
+        planning={battle.phase === "planning"}
+        msLeft={battle.deadline - now}
+        secondsLeft={secondsLeft}
+        onPress={() => {
+          setPending(null);
+          actions.ready();
+        }}
+        style={portrait ? styles.readyPortrait : styles.ready}
+      />
+    </View>
   );
 
   return (
@@ -735,41 +953,8 @@ export default function BattleScreen() {
         },
       ]}
     >
-      <Row gap={10} style={styles.topBar}>
-        <Label
-          value={t("battle.round", { round: battle.state.round })}
-          type="headline"
-          color={palette.gold}
-        />
-        <View style={styles.timer}>
-          <Bar
-            value={battle.phase === "planning" ? battle.deadline - now : 0}
-            max={RULES.roundSeconds * 1000}
-            color={secondsLeft <= 5 ? palette.bad : palette.gold}
-            height={8}
-          />
-        </View>
-        <Label
-          value={battle.phase === "planning" ? `${secondsLeft}s` : "…"}
-          type="headline"
-        />
-        <GButton
-          label={t("battle.auto")}
-          icon="robot"
-          compact
-          tone={auto ? "primary" : "default"}
-          onPress={actions.toggleAuto}
-        />
-        <GButton
-          label={t("battle.flee")}
-          icon="person-running"
-          compact
-          tone="ghost"
-          disabled={battle.phase !== "planning"}
-          onPress={actions.flee}
-        />
-      </Row>
       <View style={styles.field}>
+        <BattleBackdrop zone={getZone(zoneId)} />
         <SideGrid
           state={shown}
           side={0}
@@ -803,22 +988,20 @@ export default function BattleScreen() {
           </View>
         ) : null}
       </View>
-      <Row gap={10} style={styles.bottom}>
-        <View style={styles.flex}>
-          <Planner battle={battle} pending={pending} setPending={setPending} />
+      <View style={portrait ? styles.bottomPortrait : styles.bottom}>
+        <View style={portrait ? null : styles.flex}>
+          <Planner
+            battle={battle}
+            pending={pending}
+            setPending={setPending}
+            side={portrait ? controls : undefined}
+          />
         </View>
-        <GButton
-          label={t("battle.ready")}
-          icon="check"
-          tone="primary"
-          disabled={battle.phase !== "planning"}
-          onPress={() => {
-            setPending(null);
-            actions.ready();
-          }}
-          style={styles.ready}
-        />
-      </Row>
+        {portrait ? null : controls}
+      </View>
+      {battle.phase === "planning" ? (
+        <HintCard where="battle" round={battle.state.round} />
+      ) : null}
       {battle.phase === "over" ? <Results battle={battle} /> : null}
       <Toasts />
     </View>
@@ -828,8 +1011,6 @@ export default function BattleScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#120e0b" },
   flex: { flex: 1 },
-  topBar: { minHeight: 40 },
-  timer: { flex: 1 },
   field: {
     flex: 1,
     flexDirection: "row",
@@ -846,6 +1027,7 @@ const styles = StyleSheet.create({
   column: { justifyContent: "space-evenly", gap: 4 },
   versus: { width: 30, alignItems: "center" },
   unit: { width: 92, minHeight: 64, alignItems: "center" },
+  unitCompact: { width: 84, minHeight: 44 },
   unitInner: { alignItems: "center", gap: 1, width: "100%" },
   dead: { opacity: 0.35 },
   dimmed: { opacity: 0.4 },
@@ -860,6 +1042,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   bossPortrait: { width: 74, height: 74, borderRadius: 37 },
+  portraitCompact: { width: 34, height: 34, borderRadius: 17 },
+  bossPortraitCompact: { width: 46, height: 46, borderRadius: 23 },
   actingPortrait: { borderWidth: 3, borderColor: palette.white },
   blink: { ...StyleSheet.absoluteFill, backgroundColor: palette.white },
   mark: {
@@ -884,9 +1068,10 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: palette.overlay,
   },
-  bottom: { alignItems: "flex-end" },
+  bottom: { flexDirection: "row", gap: 10, alignItems: "flex-end" },
+  bottomPortrait: { gap: 8 },
   planner: {
-    gap: 6,
+    gap: 8,
     padding: 8,
     borderRadius: 10,
     backgroundColor: palette.panel,
@@ -923,16 +1108,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 4,
+    height: 30,
+    paddingHorizontal: 8,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.lineSoft,
     backgroundColor: palette.night,
   },
-  defButton: {
-    width: 22,
-    height: 26,
+  tactic: {
+    width: 34,
+    height: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: palette.lineSoft,
     alignItems: "center",
     justifyContent: "center",
   },
+  tacticFilled: { borderStyle: "solid", backgroundColor: palette.panelHi },
+  tacticActive: { borderColor: palette.gold, borderWidth: 2 },
+  tacticTool: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  readyColumn: { gap: 6 },
+  readyColumnPortrait: { width: 112, gap: 6 },
+  plannerRow: { flexDirection: "row", alignItems: "flex-start" },
+  plannerMain: { flex: 1, gap: 6 },
+  plannerSide: { flexShrink: 0 },
   bar: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
   action: {
     width: 46,
@@ -946,7 +1151,22 @@ const styles = StyleSheet.create({
   },
   actionPending: { borderColor: palette.white, borderWidth: 2 },
   actionOff: { opacity: 0.35 },
-  ready: { minHeight: 64, minWidth: 110 },
+  readyButton: {
+    height: 92,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    overflow: "hidden",
+    backgroundColor: palette.panelHi,
+  },
+  readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
+  auto: { minHeight: 46 },
+  ready: { minWidth: 110 },
+  readyPortrait: { paddingHorizontal: 6 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,

@@ -1,0 +1,20 @@
+diff --git a/node_modules/expo-image/src/observe.ts b/node_modules/expo-image/src/observe.ts
+index adb0058..8f116a6 100644
+--- a/node_modules/expo-image/src/observe.ts
++++ b/node_modules/expo-image/src/observe.ts
+@@ -205,7 +205,14 @@ export function activate(
+ export function initObserveIntegrationIfNeededImpl(
+   activate: (state: IntegrationState, integrations: Integrations) => void
+ ): void {
+-  const observe = requireOptionalNativeModule<ObserveModule>('ExpoObserve');
++  // Android's ExpoObserve throws while initializing when the build has no EAS
++  // project ID; treat that like the module being absent instead of crashing.
++  let observe: ObserveModule | null = null;
++  try {
++    observe = requireOptionalNativeModule<ObserveModule>('ExpoObserve');
++  } catch {
++    return;
++  }
+   if (!observe) {
+     return;
+   }

@@ -56,6 +56,7 @@ const skill = z.object({
   cost: z.record(z.string(), z.number().min(0)),
   target: z.enum(["enemy", "enemyRow", "allEnemies", "self", "ally"]),
   effects: z.array(effect),
+  flee: z.boolean().optional(),
 });
 
 const zone = z.object({

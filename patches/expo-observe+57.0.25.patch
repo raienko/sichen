@@ -1,0 +1,50 @@
+diff --git a/node_modules/expo-observe/android/src/main/java/expo/modules/observe/ObserveModule.kt b/node_modules/expo-observe/android/src/main/java/expo/modules/observe/ObserveModule.kt
+index 786bdd1..d8433b5 100644
+--- a/node_modules/expo-observe/android/src/main/java/expo/modules/observe/ObserveModule.kt
++++ b/node_modules/expo-observe/android/src/main/java/expo/modules/observe/ObserveModule.kt
+@@ -31,7 +31,8 @@ class ObserveModule : Module() {
+   private val context: Context
+     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
+ 
+-  private lateinit var observabilityManager: ObservabilityManager
++  // Null when the build has no EAS project ID: metrics are not sent, the rest still works.
++  private var observabilityManager: ObservabilityManager? = null
+   private lateinit var appMetricsModule: AppMetricsModule
+ 
+   private var lastIntegrations: Map<String, Any?> = emptyMap()
+@@ -47,20 +48,27 @@ class ObserveModule : Module() {
+           "AppMetricsModule is required by ObserveModule. Make sure expo-app-metrics is installed."
+         }
+         val sessionManager = appMetricsModule.sessionManager
+-        observabilityManager = ObservabilityManager(
+-          context,
+-          appContext.service<ConstantsInterface>(),
+-          sessionManager = sessionManager
+-        )
++        // Throwing here breaks every Expo module on Android, since the legacy module proxy
++        // creates all modules at startup, so a missing project ID only disables dispatching.
++        observabilityManager = try {
++          ObservabilityManager(
++            context,
++            appContext.service<ConstantsInterface>(),
++            sessionManager = sessionManager
++          )
++        } catch (e: IllegalStateException) {
++          Log.w(OBSERVE_TAG, "Observability disabled: ${e.message}")
++          null
++        }
+       }
+ 
+       OnActivityEntersBackground {
+-        observabilityManager.scheduleBackgroundDispatch()
++        observabilityManager?.scheduleBackgroundDispatch()
+       }
+ 
+       AsyncFunction("dispatchEvents") Coroutine { ->
+-        observabilityManager.dispatchUnsentMetrics()
+-        observabilityManager.dispatchUnsentLogs()
++        observabilityManager?.dispatchUnsentMetrics()
++        observabilityManager?.dispatchUnsentLogs()
+       }
+ 
+       Function("configure") { config: Config ->

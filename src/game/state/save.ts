@@ -1,11 +1,12 @@
 import { getZone, RULES } from "../data";
+import type { Tactic } from "../sim/battle";
 import type { QuestLog } from "../sim/quests";
 import type { Hero, Item, Rarity, Relic } from "../sim/types";
 
 import { decodeSave, encodeSave } from "./codec";
 
 /** Bump with a migration below whenever the shape changes. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type SaveData = {
   version: number;
@@ -19,7 +20,18 @@ export type SaveData = {
   stash: Item[];
   quests: QuestLog;
   world: { zoneId: string; x: number; z: number; cleared: string[] };
-  settings: { lootFilter: Rarity; autoBattle: boolean };
+  settings: {
+    lootFilter: Rarity;
+    autoBattle: boolean;
+    /** The selected battle tactic. */
+    tactic: number;
+    /** Tutorial hints on; off after "Skip tutorial". */
+    tutorial: boolean;
+    /** Hints already shown. */
+    hints: string[];
+  };
+  /** Battle presets, RULES.tactics of them; null is an empty one. */
+  tactics: (Tactic | null)[];
   seed: number;
   stats: { kills: number; deaths: number; battles: number };
 };
@@ -30,7 +42,20 @@ type Migration = (old: Record<string, unknown>) => Record<string, unknown>;
  * version → the step that brings a save from it to version + 1. Saves are
  * never thrown away for being old; they walk up this list on load.
  */
-const MIGRATIONS: Record<number, Migration> = {};
+const MIGRATIONS: Record<number, Migration> = {
+  // 2: battle tactics, defence became on/off per delivery, and the
+  // tutorial (off for heroes who already played).
+  1: (old) => ({
+    ...old,
+    settings: {
+      ...(old.settings as object),
+      tactic: 0,
+      tutorial: false,
+      hints: [],
+    },
+    tactics: Array.from({ length: RULES.tactics }, () => null),
+  }),
+};
 
 export function migrate(raw: unknown): SaveData | null {
   if (!raw || typeof raw !== "object") return null;

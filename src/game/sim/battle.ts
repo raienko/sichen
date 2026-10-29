@@ -68,8 +68,10 @@ export type Plan = {
   defense: Record<Delivery, number>;
   /** Seconds left on the timer when Ready was pressed. */
   readyAt: number;
-  flee?: boolean;
 };
+
+/** A saved plan the player can switch to in one tap; targets aren't kept. */
+export type Tactic = Pick<Plan, "attacks" | "defense">;
 
 export type BattleResult = "won" | "lost" | "fled";
 
@@ -261,13 +263,70 @@ export function sanitizePlan(actor: Combatant, plan: Plan): Plan {
       budget -= skill.ap;
     }
   }
+  // A delivery is either defended (1 AP) or not.
   const defense = { ...EMPTY_DEFENSE };
   for (const kind of ["melee", "ranged", "mental"] as const) {
-    const points = Math.max(0, Math.min(plan.defense[kind], budget));
-    defense[kind] = points;
-    budget -= points;
+    if (plan.defense[kind] > 0 && budget > 0) {
+      defense[kind] = 1;
+      budget -= 1;
+    }
   }
-  return { attacks, defense, readyAt: plan.readyAt, flee: plan.flee };
+  return { attacks, defense, readyAt: plan.readyAt };
+}
+
+/**
+ * Fits a plan (last round's, or a saved tactic) to the actor's AP,
+ * resources and living foes: actions it can't pay for are dropped, and
+ * attacks whose target is gone pick the weakest foe they can reach.
+ */
+export function fitPlan(
+  state: BattleState,
+  actor: Combatant,
+  plan: Pick<Plan, "attacks" | "defense">,
+): Plan {
+  if (hasStatus(actor, "stun")) return emptyPlan();
+  let ap = apFor(actor);
+  let mana = actor.mana;
+  let stamina = actor.stamina;
+  const potions = { ...actor.potions };
+  const foes = living(state, actor.side === 0 ? 1 : 0);
+  const attacks: PlannedAction[] = [];
+  for (const action of plan.attacks.slice(0, RULES.attackSlots)) {
+    const skill = getSkill(action.skillId);
+    const fits =
+      skill.ap <= ap &&
+      (skill.potion
+        ? potions[skill.potion] > 0
+        : (skill.cost.mana ?? 0) <= mana &&
+          (skill.cost.stamina ?? 0) <= stamina &&
+          (skill.cost.hp ?? 0) < actor.hp);
+    if (!fits) continue;
+    ap -= skill.ap;
+    mana -= skill.cost.mana ?? 0;
+    stamina -= skill.cost.stamina ?? 0;
+    if (skill.potion) potions[skill.potion] -= 1;
+    let targetId: string | undefined;
+    if (skill.target === "enemy" || skill.target === "enemyRow") {
+      const melee = deliveryOf(skill) === "melee";
+      const front = foes.filter((f) => f.row === 0);
+      const pool = melee && front.length > 0 ? front : foes;
+      targetId = pool.some((f) => f.id === action.targetId)
+        ? action.targetId
+        : pool.reduce<Combatant | undefined>(
+            (low, f) => (!low || f.hp < low.hp ? f : low),
+            undefined,
+          )?.id;
+    }
+    attacks.push({ skillId: skill.id, targetId });
+  }
+  const defense = { ...EMPTY_DEFENSE };
+  for (const kind of ["melee", "ranged", "mental"] as const) {
+    if (plan.defense[kind] > 0 && ap > 0) {
+      defense[kind] = 1;
+      ap -= 1;
+    }
+  }
+  return { attacks, defense, readyAt: 0 };
 }
 
 // ---------------------------------------------------------------- resolution
@@ -350,7 +409,7 @@ export function hitChance(
   defensePoints: number,
 ): number {
   const base = 70 + (attacker.accuracy - defender.evasion) * 0.5;
-  const adjusted = defensePoints > 0 ? base - defensePoints * 18 : base + 15;
+  const adjusted = defensePoints > 0 ? base - 25 : base + 15;
   return Math.max(5, Math.min(95, adjusted));
 }
 
@@ -493,6 +552,12 @@ function noteDeath(ctx: Ctx, target: Combatant) {
 function perform(ctx: Ctx, actor: Combatant, action: PlannedAction) {
   if (actor.hp <= 0) return;
   const skill = getSkill(action.skillId);
+  if (skill.flee) {
+    const ok = ctx.rng.chance(fleeChance(ctx.state, actor));
+    ctx.events.push({ t: "flee", actor: actor.id, ok });
+    if (ok) ctx.state.result = "fled";
+    return;
+  }
   if (!canAfford(actor, skill)) {
     ctx.events.push({
       t: "skip",
@@ -592,19 +657,19 @@ function initiative(ctx: Ctx, actor: Combatant, plan: Plan): number {
   return effectiveStats(actor).speed + ready + ctx.rng.next() * 4;
 }
 
-function tryFlee(ctx: Ctx, actor: Combatant): boolean {
-  const foes = opponentsOf(ctx, actor);
+/** Percent for one Flee attempt: speed against the foes', worse vs bosses. */
+export function fleeChance(state: BattleState, actor: Combatant): number {
+  const foes = living(state, actor.side === 0 ? 1 : 0);
   const foeSpeed =
     foes.reduce((sum, f) => sum + effectiveStats(f).speed, 0) /
     Math.max(1, foes.length);
   const boss = foes.some((f) => f.boss) ? 20 : 0;
-  const chance = Math.max(
-    15,
-    Math.min(85, 45 + (effectiveStats(actor).speed - foeSpeed) * 3 - boss),
+  return Math.round(
+    Math.max(
+      10,
+      Math.min(75, 35 + (effectiveStats(actor).speed - foeSpeed) * 3 - boss),
+    ),
   );
-  const ok = ctx.rng.chance(chance);
-  ctx.events.push({ t: "flee", actor: actor.id, ok });
-  return ok;
 }
 
 function endOfRound(ctx: Ctx) {
@@ -673,15 +738,6 @@ export function resolveRound(
     ctx.defense.set(actor.id, { ...plan.defense });
     if (hasStatus(actor, "stun")) {
       ctx.events.push({ t: "skip", actor: actor.id, reason: "stun" });
-      continue;
-    }
-    if (plan.flee) {
-      if (tryFlee(ctx, actor)) {
-        state.result = "fled";
-        ctx.events.push({ t: "end", result: "fled" });
-        state.rng = ctx.rng.seed;
-        return { state, events: ctx.events };
-      }
       continue;
     }
     order.push({ actor, plan, init: initiative(ctx, actor, plan) });

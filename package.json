@@ -190,5 +190,17 @@
     "**/*": [
       "secretlint"
     ]
+  },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-observe",
+          "expo-app-metrics",
+          "expo-eas-client",
+          "expo-updates-interface"
+        ]
+      }
+    }
   }
 }

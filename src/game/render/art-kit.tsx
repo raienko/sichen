@@ -60,7 +60,26 @@ const G = {
   dodeca: new THREE.DodecahedronGeometry(0.5, 0),
   torus: new THREE.TorusGeometry(0.4, 0.05, 5, 12, Math.PI),
   plane: new THREE.PlaneGeometry(1, 1),
+  gable: gableGeometry(),
 };
+
+/** A unit gable roof: ridge along x at height 1, eaves at y 0, z ±0.5. */
+function gableGeometry(): THREE.BufferGeometry {
+  const a = [-0.5, 0, -0.5];
+  const b = [-0.5, 0, 0.5];
+  const c = [-0.5, 1, 0];
+  const d = [0.5, 0, -0.5];
+  const e = [0.5, 0, 0.5];
+  const f = [0.5, 1, 0];
+  const tris = [a, c, b, d, e, f, a, d, f, a, f, c, b, c, f, b, f, e];
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute(
+    "position",
+    new THREE.Float32BufferAttribute(tris.flat(), 3),
+  );
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 // ---------------------------------------------------------------- walk cycle
 
@@ -822,32 +841,8 @@ const TILE_ART: Record<string, InstanceSpec[]> = {
       jitter: true,
     },
   ],
-  h: [
-    {
-      geometry: G.box,
-      color: 0xd8d0bc,
-      offset: [0, 0.8, 0],
-      scale: [1.9, 1.6, 1.9],
-    },
-    {
-      geometry: G.cone4,
-      color: 0x7a6a3a,
-      offset: [0, 2.05, 0],
-      scale: [2.2, 0.9, 2.2],
-    },
-  ],
   W: [
     { geometry: G.box, color: 0x5a4028, offset: [0, 1, 0], scale: [2, 2, 0.6] },
-  ],
-  c: [
-    { geometry: G.box, color: 0xe8e2d4, offset: [0, 1.5, 0], scale: [2, 3, 2] },
-    {
-      geometry: G.sphere,
-      color: 0xc9a24a,
-      offset: [0, 3.4, 0],
-      scale: [1.1, 1.1, 1.1],
-      emissive: 0x2a1a00,
-    },
   ],
   t: [
     {
@@ -947,6 +942,177 @@ function TileInstances({
   );
 }
 
+/** Building tiles drawn as one building per connected block. */
+const BUILDINGS = new Set(["h", "c"]);
+
+/** Connected blocks of one building tile, as tile bounding boxes. */
+function buildingBlocks(map: readonly string[]) {
+  const seen = new Set<string>();
+  const blocks: {
+    ch: string;
+    x0: number;
+    z0: number;
+    x1: number;
+    z1: number;
+  }[] = [];
+  map.forEach((row, z) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x]!;
+      if (!BUILDINGS.has(ch) || seen.has(`${x},${z}`)) continue;
+      const block = { ch, x0: x, z0: z, x1: x, z1: z };
+      const stack: [number, number][] = [[x, z]];
+      seen.add(`${x},${z}`);
+      while (stack.length > 0) {
+        const [cx, cz] = stack.pop()!;
+        block.x0 = Math.min(block.x0, cx);
+        block.x1 = Math.max(block.x1, cx);
+        block.z0 = Math.min(block.z0, cz);
+        block.z1 = Math.max(block.z1, cz);
+        for (const [nx, nz] of [
+          [cx + 1, cz],
+          [cx - 1, cz],
+          [cx, cz + 1],
+          [cx, cz - 1],
+        ] as const) {
+          if (map[nz]?.[nx] !== ch || seen.has(`${nx},${nz}`)) continue;
+          seen.add(`${nx},${nz}`);
+          stack.push([nx, nz]);
+        }
+      }
+      blocks.push(block);
+    }
+  });
+  return blocks;
+}
+
+function Mat({ color, emissive }: { color: number; emissive?: number }) {
+  return (
+    <meshLambertMaterial
+      color={color}
+      flatShading
+      side={THREE.DoubleSide}
+      emissive={emissive ?? 0x000000}
+      emissiveIntensity={emissive ? 1 : 0}
+    />
+  );
+}
+
+/** A whitewashed khata with a thatched gable roof and a door. */
+function House({ w, d }: { w: number; d: number }) {
+  const alongX = w >= d;
+  return (
+    <group>
+      <mesh
+        geometry={G.box}
+        position={[0, 0.8, 0]}
+        scale={[w - 0.3, 1.6, d - 0.3]}
+      >
+        <Mat color={0xd8d0bc} />
+      </mesh>
+      <mesh
+        geometry={G.gable}
+        position={[0, 1.6, 0]}
+        rotation={[0, alongX ? 0 : Math.PI / 2, 0]}
+        scale={alongX ? [w + 0.2, 1.3, d + 0.4] : [d + 0.2, 1.3, w + 0.4]}
+      >
+        <Mat color={0x8a7440} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[0, 0.5, d / 2 - 0.12]}
+        scale={[0.6, 1, 0.08]}
+      >
+        <Mat color={0x4a3220} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[w / 4, 1, d / 2 - 0.12]}
+        scale={[0.45, 0.4, 0.08]}
+      >
+        <Mat color={0x2a3a4a} emissive={0x1a1200} />
+      </mesh>
+    </group>
+  );
+}
+
+/** St. Sophia's: a white body, a golden central dome and four cupolas. */
+function Church({ w, d }: { w: number; d: number }) {
+  const dome = (x: number, z: number, big: boolean) => (
+    <group key={`${x},${z}`} position={[x, 3, z]}>
+      <mesh
+        geometry={G.cyl}
+        position={[0, 0.5, 0]}
+        scale={big ? [1.8, 1, 1.8] : [0.9, 0.8, 0.9]}
+      >
+        <Mat color={0xe8e2d4} />
+      </mesh>
+      <mesh
+        geometry={G.sphere}
+        position={[0, big ? 1.4 : 1.1, 0]}
+        scale={big ? [2.1, 2.3, 2.1] : [1.1, 1.2, 1.1]}
+      >
+        <Mat color={0xc9a24a} emissive={0x2a1a00} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[0, big ? 2.9 : 1.95, 0]}
+        scale={[0.08, big ? 0.7 : 0.45, 0.08]}
+      >
+        <Mat color={0xd9b860} />
+      </mesh>
+    </group>
+  );
+  const cx = w / 2 - 1.1;
+  const cz = d / 2 - 1.1;
+  return (
+    <group>
+      <mesh
+        geometry={G.box}
+        position={[0, 1.5, 0]}
+        scale={[w - 0.4, 3, d - 0.4]}
+      >
+        <Mat color={0xe8e2d4} />
+      </mesh>
+      {dome(0, 0, true)}
+      {dome(-cx, -cz, false)}
+      {dome(cx, -cz, false)}
+      {dome(-cx, cz, false)}
+      {dome(cx, cz, false)}
+      <mesh
+        geometry={G.box}
+        position={[0, 0.9, d / 2 - 0.15]}
+        scale={[1, 1.8, 0.1]}
+      >
+        <Mat color={0x4a3220} />
+      </mesh>
+    </group>
+  );
+}
+
+function Buildings({ map }: { map: readonly string[] }) {
+  const blocks = useMemo(() => buildingBlocks(map), [map]);
+  return (
+    <>
+      {blocks.map((b) => {
+        const w = (b.x1 - b.x0 + 1) * TILE;
+        const d = (b.z1 - b.z0 + 1) * TILE;
+        return (
+          <group
+            key={`${b.ch}${b.x0},${b.z0}`}
+            position={[
+              ((b.x0 + b.x1) / 2) * TILE,
+              0,
+              ((b.z0 + b.z1) / 2) * TILE,
+            ]}
+          >
+            {b.ch === "c" ? <Church w={w} d={d} /> : <House w={w} d={d} />}
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
 export function Tiles({ map }: { map: readonly string[] }) {
   const byKind = useMemo(() => {
     const out = new Map<string, [number, number][]>();
@@ -966,6 +1132,7 @@ export function Tiles({ map }: { map: readonly string[] }) {
           <TileInstances key={`${ch}${i}`} spec={spec} cells={cells} />
         )),
       )}
+      <Buildings map={map} />
     </>
   );
 }
