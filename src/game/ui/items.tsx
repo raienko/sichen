@@ -61,12 +61,15 @@ export function ItemTile({
   size?: number;
   dim?: boolean;
 }) {
+  const { tr } = useT();
   const color = item ? rarityColor[item.rarity] : palette.lineSoft;
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole="button"
+      accessibilityLabel={item ? tr(itemName(item)) : undefined}
+      accessibilityState={{ selected: !!selected }}
       style={[
         styles.tile,
         {

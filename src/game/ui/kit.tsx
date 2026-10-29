@@ -169,6 +169,7 @@ export function Sheet({
   children,
   wide,
   scroll = true,
+  footer,
 }: {
   title: string;
   icon?: string;
@@ -176,6 +177,8 @@ export function Sheet({
   children: ReactNode;
   wide?: boolean;
   scroll?: boolean;
+  /** Stays in view under the scrolling body, e.g. the selected item. */
+  footer?: ReactNode;
 }) {
   return (
     <View style={styles.sheetBackdrop}>
@@ -209,6 +212,14 @@ export function Sheet({
         ) : (
           <View style={[styles.sheetBody, styles.flex]}>{children}</View>
         )}
+        {footer ? (
+          <ScrollView
+            style={styles.sheetFooter}
+            contentContainerStyle={styles.sheetFooterBody}
+          >
+            {footer}
+          </ScrollView>
+        ) : null}
       </View>
     </View>
   );
@@ -277,6 +288,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   sheetWide: { maxWidth: 900, flex: 1 },
+  sheetFooter: {
+    flexGrow: 0,
+    maxHeight: "45%",
+    borderTopWidth: 1,
+    borderColor: palette.line,
+    backgroundColor: palette.panelHi,
+  },
+  sheetFooterBody: { padding: 12, gap: 8 },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
