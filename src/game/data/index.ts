@@ -39,6 +39,8 @@ export const RULES = {
   potionCap: 10,
   respecPrice: 20,
   saveSlots: 3,
+  /** Saved attack/defence presets on the battle planner. */
+  tactics: 3,
 } as const;
 
 function index<T extends { id: string }>(

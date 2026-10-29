@@ -12,7 +12,7 @@ import {
   type PlannedAction,
 } from "./battle";
 import type { Rng } from "./rng";
-import type { Delivery, Skill } from "./types";
+import { DELIVERIES, type Delivery, type Skill } from "./types";
 
 /**
  * Plans a round for any combatant: enemies always, the hero when auto-battle
@@ -67,11 +67,12 @@ export function planFor(
     if (affordable(potion)) take(potion);
   }
 
-  // Keep one or two points for defence most rounds.
+  // Keep one or two deliveries defended most rounds.
   const reserve = rng.weighted<number>([
     [0, 3],
     [1, 4],
-    [2, 2],
+    [2, 3],
+    [3, 1],
   ]);
   const weakest = foes.reduce((low, f) => (f.hp < low.hp ? f : low));
   const hurtAlly = allies.find((a) => a.hp / a.base.maxHp < 0.6);
@@ -80,7 +81,7 @@ export function planFor(
     const options: [Skill, number][] = [];
     for (const id of available) {
       const skill = getSkill(id);
-      if (skill.potion || !affordable(skill)) continue;
+      if (skill.potion || skill.flee || !affordable(skill)) continue;
       const isAttack = skill.effects.some((e) => e.type === "damage");
       const isSummon = skill.effects.some((e) => e.type === "summon");
       if (skill.target === "self" && used.has(skill.id)) continue;
@@ -106,7 +107,8 @@ export function planFor(
     );
   }
 
-  // The rest goes into defence, weighted by what the foes can throw.
+  // The rest defends deliveries (one AP each, on or off), weighted by what
+  // the foes can throw; any AP still left goes to basic strikes.
   const threat: Record<Delivery, number> = { melee: 1, ranged: 1, mental: 1 };
   for (const foe of foes) {
     for (const id of foe.skills) {
@@ -117,13 +119,17 @@ export function planFor(
   }
   const defense = { ...EMPTY_DEFENSE };
   while (ap > 0) {
-    const kind = rng.weighted<Delivery>([
-      ["melee", threat.melee],
-      ["ranged", threat.ranged],
-      ["mental", threat.mental],
-    ]);
-    defense[kind] += 1;
+    const open = DELIVERIES.filter((k) => defense[k] === 0);
+    if (open.length === 0) break;
+    const kind = rng.weighted<Delivery>(open.map((k) => [k, threat[k]]));
+    defense[kind] = 1;
     ap -= 1;
+  }
+  for (const id of ["strike", "throw_stone"]) {
+    if (!available.includes(id)) continue;
+    const skill = getSkill(id);
+    while (affordable(skill) && attacks.length < RULES.attackSlots)
+      take(skill, rng.chance(60) ? weakest.id : rng.pick(foes).id);
   }
   return { ...plan, attacks, defense };
 }

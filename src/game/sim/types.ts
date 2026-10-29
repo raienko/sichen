@@ -89,6 +89,8 @@ export type Skill = {
   perLevel?: number;
   /** Consumes a potion of this kind instead of a resource. */
   potion?: "hp" | "mana";
+  /** An escape attempt; its chance comes from speed (see fleeChance). */
+  flee?: boolean;
   /** How a hero gets it: from the grand master at a level, or hidden. */
   learn?: { level: number; gold: number; hiddenBy?: string };
 };

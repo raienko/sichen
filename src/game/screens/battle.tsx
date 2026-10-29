@@ -16,6 +16,7 @@ import * as actions from "../state/actions";
 import { useGame, useSave, type BattleSession } from "../state/store";
 import {
   apFor,
+  fleeChance,
   hasStatus,
   living,
   planCost,
@@ -440,6 +441,10 @@ function usePlanResources(battle: BattleSession) {
   };
 }
 
+function planDefense(battle: BattleSession): number {
+  return DELIVERIES.reduce((n, k) => n + battle.plan.defense[k], 0);
+}
+
 function Planner({
   battle,
   pending,
@@ -502,43 +507,90 @@ function Planner({
           })}
         </View>
         <Row gap={6}>
-          {DELIVERIES.map((kind) => (
-            <View key={kind} style={styles.defense}>
+          {DELIVERIES.map((kind) => {
+            const on = battle.plan.defense[kind] > 0;
+            return (
               <Pressable
-                accessibilityLabel={`${t(`delivery.${kind}`)} -`}
-                disabled={!planning || battle.plan.defense[kind] === 0}
-                onPress={() => actions.changeDefense(kind, -1)}
-                style={styles.defButton}
+                key={kind}
+                accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
+                accessibilityState={{ selected: on }}
+                disabled={!planning || (!on && ap <= 0)}
+                onPress={() => actions.toggleDefense(kind)}
+                style={[
+                  styles.defense,
+                  on && {
+                    borderColor: palette.delivery[kind],
+                    backgroundColor: palette.panelHi,
+                  },
+                  !on && planning && ap <= 0 && styles.actionOff,
+                ]}
               >
-                <GIcon name="minus" size={10} color={palette.muted} />
+                <GIcon
+                  name="shield-halved"
+                  size={12}
+                  color={on ? palette.delivery[kind] : palette.faint}
+                />
+                <GIcon
+                  name={
+                    kind === "melee"
+                      ? "hand-fist"
+                      : kind === "ranged"
+                        ? "crosshairs"
+                        : "brain"
+                  }
+                  size={14}
+                  color={on ? palette.delivery[kind] : palette.muted}
+                />
               </Pressable>
-              <GIcon
-                name={
-                  kind === "melee"
-                    ? "hand-fist"
-                    : kind === "ranged"
-                      ? "crosshairs"
-                      : "brain"
-                }
-                size={14}
-                color={palette.delivery[kind]}
-              />
-              <Label
-                value={String(battle.plan.defense[kind])}
-                type="headline"
-                color={palette.delivery[kind]}
-              />
-              <Pressable
-                accessibilityLabel={`${t(`delivery.${kind}`)} +`}
-                disabled={!planning || ap <= 0}
-                onPress={() => actions.changeDefense(kind, 1)}
-                style={styles.defButton}
-              >
-                <GIcon name="plus" size={10} color={palette.text} />
-              </Pressable>
-            </View>
-          ))}
+            );
+          })}
         </Row>
+      </Row>
+      <Row gap={6} wrap>
+        {save.tactics.map((tactic, i) => {
+          const active = save.settings.tactic === i;
+          return (
+            <Pressable
+              key={i}
+              accessibilityLabel={t("battle.tactic", { n: i + 1 })}
+              accessibilityState={{ selected: active }}
+              disabled={!planning}
+              onPress={() => actions.pickTactic(i)}
+              onLongPress={() => actions.saveTactic(i)}
+              style={[
+                styles.tactic,
+                tactic ? styles.tacticFilled : null,
+                active ? styles.tacticActive : null,
+              ]}
+            >
+              <Label
+                value={String(i + 1)}
+                type="headline"
+                color={
+                  active ? palette.gold : tactic ? palette.text : palette.faint
+                }
+              />
+            </Pressable>
+          );
+        })}
+        <Pressable
+          accessibilityLabel={t("battle.saveTactic")}
+          disabled={!planning}
+          onPress={() => actions.saveTactic(save.settings.tactic)}
+          style={styles.tacticTool}
+        >
+          <GIcon name="floppy-disk" size={14} color={palette.muted} />
+        </Pressable>
+        <Pressable
+          accessibilityLabel={t("battle.clear")}
+          disabled={
+            !planning || battle.plan.attacks.length + planDefense(battle) === 0
+          }
+          onPress={actions.clearPlan}
+          style={styles.tacticTool}
+        >
+          <GIcon name="eraser" size={14} color={palette.muted} />
+        </Pressable>
       </Row>
       {stunned ? (
         <Label
@@ -576,7 +628,11 @@ function Planner({
           return (
             <Pressable
               key={id}
-              accessibilityLabel={tr(skill.name)}
+              accessibilityLabel={
+                skill.flee
+                  ? `${tr(skill.name)}, ${t("battle.fleeChance", { chance: fleeChance(battle.state, hero) })}`
+                  : tr(skill.name)
+              }
               disabled={!ok}
               onPress={() => choose(id)}
               style={[
@@ -600,7 +656,9 @@ function Planner({
                 value={
                   skill.potion
                     ? String(potions[skill.potion])
-                    : String(skill.ap)
+                    : skill.flee
+                      ? `${fleeChance(battle.state, hero)}%`
+                      : String(skill.ap)
                 }
                 type="caption2"
                 color={palette.muted}
@@ -782,21 +840,6 @@ export default function BattleScreen() {
           value={battle.phase === "planning" ? `${secondsLeft}s` : "…"}
           type="headline"
         />
-        <GButton
-          label={t("battle.auto")}
-          icon="robot"
-          compact
-          tone={auto ? "primary" : "default"}
-          onPress={actions.toggleAuto}
-        />
-        <GButton
-          label={t("battle.flee")}
-          icon="person-running"
-          compact
-          tone="ghost"
-          disabled={battle.phase !== "planning"}
-          onPress={actions.flee}
-        />
       </Row>
       <View style={styles.field}>
         <SideGrid
@@ -836,17 +879,26 @@ export default function BattleScreen() {
         <View style={portrait ? null : styles.flex}>
           <Planner battle={battle} pending={pending} setPending={setPending} />
         </View>
-        <GButton
-          label={t("battle.ready")}
-          icon="check"
-          tone="primary"
-          disabled={battle.phase !== "planning"}
-          onPress={() => {
-            setPending(null);
-            actions.ready();
-          }}
-          style={portrait ? styles.readyPortrait : styles.ready}
-        />
+        <View style={styles.readyColumn}>
+          <GButton
+            label={t("battle.auto")}
+            icon="robot"
+            compact
+            tone={auto ? "primary" : "default"}
+            onPress={actions.toggleAuto}
+          />
+          <GButton
+            label={t("battle.ready")}
+            icon="check"
+            tone="primary"
+            disabled={battle.phase !== "planning"}
+            onPress={() => {
+              setPending(null);
+              actions.ready();
+            }}
+            style={portrait ? styles.readyPortrait : styles.ready}
+          />
+        </View>
       </View>
       {battle.phase === "over" ? <Results battle={battle} /> : null}
       <Toasts />
@@ -956,16 +1008,32 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 4,
+    height: 30,
+    paddingHorizontal: 8,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.lineSoft,
     backgroundColor: palette.night,
   },
-  defButton: {
-    width: 22,
-    height: 26,
+  tactic: {
+    width: 34,
+    height: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: palette.lineSoft,
     alignItems: "center",
     justifyContent: "center",
   },
+  tacticFilled: { borderStyle: "solid", backgroundColor: palette.panelHi },
+  tacticActive: { borderColor: palette.gold, borderWidth: 2 },
+  tacticTool: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  readyColumn: { gap: 6 },
   bar: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
   action: {
     width: 46,

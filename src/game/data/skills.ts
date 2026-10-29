@@ -1,7 +1,12 @@
 import type { Skill } from "../sim/types";
 
 /** Actions every hero has on the battle bar, before the six skill slots. */
-export const BASIC_ACTIONS = ["strike", "throw_stone", "retreat"] as const;
+export const BASIC_ACTIONS = [
+  "strike",
+  "throw_stone",
+  "retreat",
+  "flee",
+] as const;
 export const POTION_ACTIONS = ["potion_hp", "potion_mana"] as const;
 
 const basic: Skill[] = [
@@ -47,6 +52,16 @@ const basic: Skill[] = [
     cost: {},
     target: "self",
     effects: [{ type: "buff", mods: { evasion: 30 }, turns: 1 }],
+  },
+  {
+    id: "flee",
+    name: { en: "Flee", uk: "Тікати" },
+    icon: "person-running",
+    ap: 1,
+    cost: {},
+    target: "self",
+    flee: true,
+    effects: [],
   },
   {
     id: "potion_hp",
