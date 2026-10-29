@@ -148,7 +148,9 @@ function resourcesLeft(battle: BattleSession, except?: number) {
     stamina -= s.cost.stamina ?? 0;
     if (s.potion) potions[s.potion] -= 1;
   }
-  const ap = apFor(hero) - planCost({ ...battle.plan, attacks });
+  // Never below zero: during playback the plan shown is the round being
+  // played, while a fresh freeze may already have cut this round's AP.
+  const ap = Math.max(0, apFor(hero) - planCost({ ...battle.plan, attacks }));
   return { hero, mana, stamina, potions, ap };
 }
 
@@ -163,11 +165,13 @@ export function ActionSlots({
   battle,
   size,
   onOpen,
+  align = "center",
 }: {
   battle: BattleSession;
   /** Diameter of a slot. */
   size: number;
   onOpen: (index: number) => void;
+  align?: "center" | "start";
 }) {
   const { t, tr } = useT();
   const planning = battle.phase === "planning";
@@ -176,7 +180,12 @@ export function ActionSlots({
   const frozen = hasStatus(hero, "freeze");
   const total = apFor(hero);
   return (
-    <View style={styles.slotsWrap}>
+    <View
+      style={[
+        styles.slotsWrap,
+        align === "start" && { alignItems: "flex-start" },
+      ]}
+    >
       <Row gap={6} style={styles.slotsTop}>
         <Label
           value={t("battle.ap", { left: ap, total })}

@@ -10,15 +10,13 @@ import {
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptics } from "@/features/haptics";
-import { useTypography } from "@/features/responsive";
 
-import { getSkill, getZone, RULES } from "../data";
+import { getBase, getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
 import * as actions from "../state/actions";
 import { useGame, type BattleSession } from "../state/store";
@@ -36,6 +34,8 @@ import { LevelBadge } from "../ui/level-badge";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
+
+import BattleStage, { type UnitSpot } from "../render/battle-scene";
 
 import {
   ActionPicker,
@@ -223,243 +223,114 @@ function FloatText({ text, color }: { text: string; color: string }) {
   );
 }
 
-/** Lines a unit's name may wrap to; its box is always this tall. */
-const NAME_LINES = 2;
-
-function Unit({
+/**
+ * What floats over a fighter in the 3D scene: level, statuses, marks and
+ * bars above the head, a ring at the feet, and the tap area between. It
+ * sits at the screen point the scene projected for the unit.
+ */
+function UnitTag({
   actor,
+  spot,
   floaters,
-  acting,
-  hitAt,
-  targetable,
-  dimmed,
-  onPress,
   marked,
-  compact,
-  narrow,
+  ring,
   heroLevel,
+  onPress,
 }: {
   actor: Combatant;
+  spot: UnitSpot;
   floaters: Floater[];
-  acting: boolean;
-  hitAt?: number;
-  targetable: boolean;
-  dimmed: boolean;
-  onPress?: () => void;
   marked: number;
-  /** Smaller portraits for short (landscape phone) screens. */
-  compact: boolean;
-  /** Slimmer units for narrow (portrait phone) screens. */
-  narrow: boolean;
-  /** Foes' level badges are coloured by danger against this. */
+  /** A ring at the feet: the hero, or the selected foe. */
+  ring?: string;
   heroLevel: number;
+  onPress?: () => void;
 }) {
   const { tr } = useT();
-  const typography = useTypography();
-  const blink = useSharedValue(0);
-  const shake = useSharedValue(0);
-  const lunge = useSharedValue(0);
-  useEffect(() => {
-    if (!hitAt) return;
-    blink.value = withSequence(
-      withTiming(0.9, { duration: 40 }),
-      withTiming(0, { duration: 260 }),
-    );
-    shake.value = withSequence(
-      withTiming(-6, { duration: 50 }),
-      withTiming(6, { duration: 70 }),
-      withTiming(0, { duration: 60 }),
-    );
-  }, [hitAt, blink, shake]);
-  useEffect(() => {
-    if (!acting) return;
-    const dir = actor.side === 0 ? 1 : -1;
-    lunge.value = withSequence(
-      withTiming(18 * dir, { duration: 140 }),
-      withTiming(0, { duration: 180 }),
-    );
-  }, [acting, actor.side, lunge]);
-  const moveStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shake.value + lunge.value }],
-  }));
-  const blinkStyle = useAnimatedStyle(() => ({ opacity: blink.value }));
   const dead = actor.hp <= 0;
-  const boss = actor.boss;
-  const ring = actor.side === 0 ? palette.gold : boss ? "#b04ae8" : palette.bad;
-
+  const tall = Math.max(40, spot.feet - spot.head);
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={!onPress}
-      accessibilityLabel={tr(actor.name)}
-      style={[
-        styles.unit,
-        compact && styles.unitCompact,
-        narrow && styles.unitNarrow,
-        dead && styles.dead,
-        dimmed && styles.dimmed,
-      ]}
-    >
-      <Animated.View style={[styles.unitInner, moveStyle]}>
-        <View>
-          <View
-            style={[
-              styles.portrait,
-              boss && styles.bossPortrait,
-              compact &&
-                (boss ? styles.bossPortraitCompact : styles.portraitCompact),
-              { borderColor: targetable ? palette.white : ring },
-              acting && styles.actingPortrait,
-            ]}
-          >
-            <GIcon
-              name={dead ? "skull" : actor.icon}
-              size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
-              color={dead ? palette.faint : ring}
-            />
-            <Animated.View
-              pointerEvents="none"
-              style={[styles.blink, blinkStyle]}
-            />
-            {marked > 0 ? (
-              <View style={styles.mark}>
-                <Label
-                  value={String(marked)}
-                  type="caption2"
-                  color={palette.night}
-                />
-              </View>
-            ) : null}
-          </View>
-          <LevelBadge
-            level={actor.level}
-            heroLevel={actor.side === 0 ? undefined : heroLevel}
-            style={styles.level}
-          />
-        </View>
-        {/* Two lines tall whatever the name, so units line up in a row. */}
+    <>
+      {ring && !dead ? (
         <View
+          pointerEvents="none"
           style={[
-            styles.name,
-            { height: typography.caption2.lineHeight * NAME_LINES },
+            styles.ring,
+            { left: spot.x - 34, top: spot.feet - 10, borderColor: ring },
           ]}
-        >
-          <Label
-            value={tr(actor.name)}
-            type="caption2"
-            numberOfLines={NAME_LINES}
-            style={styles.nameText}
-          />
-        </View>
-        <Bar
-          value={actor.hp}
-          max={actor.base.maxHp}
-          color={palette.hp}
-          height={compact ? 6 : 8}
-          style={styles.unitBar}
         />
-        {/* Foes with a token mana pool (growth only) don't need the bar. */}
-        {actor.side === 0 || actor.base.maxMana >= 20 ? (
-          <Bar
-            value={actor.mana}
-            max={actor.base.maxMana}
-            color={palette.mana}
-            height={4}
-            style={styles.unitBar}
-          />
-        ) : null}
-        <Row gap={3}>
-          {actor.statuses.map((s) => (
-            <GIcon
-              key={s.kind}
-              name={
-                s.kind === "burn"
-                  ? "fire"
-                  : s.kind === "freeze"
-                    ? "snowflake"
-                    : "star"
-              }
-              size={11}
-              color={palette.status[s.kind]}
-            />
-          ))}
-          {actor.buffs.length > 0 ? (
-            <GIcon name="arrow-up" size={11} color={palette.good} />
-          ) : null}
-        </Row>
-      </Animated.View>
-      {floaters.map((f) => (
-        <FloatText key={f.id} text={f.text} color={f.color} />
-      ))}
-    </Pressable>
-  );
-}
-
-function SideGrid({
-  state,
-  side,
-  playback,
-  selected,
-  onSelect,
-  marks,
-}: {
-  state: BattleState;
-  side: 0 | 1;
-  playback: ReturnType<typeof usePlayback>;
-  /** The unit shown in the HUD's panel for this side. */
-  selected?: string;
-  onSelect?: (id: string) => void;
-  marks: Record<string, number>;
-}) {
-  const window = useWindowDimensions();
-  const compact = window.height < 520;
-  // Four unit columns plus the gap must fit a phone held upright.
-  const narrow = window.width < 440;
-  const heroLevel = state.actors.find((a) => a.id === "hero")?.level ?? 1;
-  // Front rows face each other in the middle of the field.
-  const rows: (0 | 1)[] = side === 0 ? [1, 0] : [0, 1];
-  return (
-    <View style={styles.side}>
-      {rows.map((row) => (
-        <View key={row} style={styles.column}>
-          {[0, 1, 2].map((slot) => {
-            const actor = state.actors
-              .filter(
-                (a) => a.side === side && a.row === row && a.slot === slot,
-              )
-              .sort((a, b) => b.hp - a.hp)[0];
-            if (!actor)
-              return (
-                <View
-                  key={slot}
-                  style={[
-                    styles.unit,
-                    compact && styles.unitCompact,
-                    narrow && styles.unitNarrow,
-                  ]}
-                />
-              );
-            const can = !!onSelect && actor.hp > 0;
-            return (
-              <Unit
-                key={actor.id}
-                actor={actor}
-                floaters={playback.floaters.filter((f) => f.actor === actor.id)}
-                acting={playback.acting === actor.id}
-                hitAt={playback.hitAt[actor.id]}
-                targetable={selected === actor.id}
-                dimmed={false}
-                onPress={can ? () => onSelect(actor.id) : undefined}
-                marked={marks[actor.id] ?? 0}
-                compact={compact}
-                narrow={narrow}
-                heroLevel={heroLevel}
+      ) : null}
+      <Pressable
+        accessibilityLabel={tr(actor.name)}
+        disabled={!onPress}
+        onPress={onPress}
+        style={[
+          styles.hitArea,
+          { left: spot.x - 32, top: spot.head, height: tall },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[styles.tag, { left: spot.x - 40, top: spot.head - 30 }]}
+      >
+        {dead ? null : (
+          <>
+            <Row gap={3}>
+              <LevelBadge
+                level={actor.level}
+                heroLevel={actor.side === 0 ? undefined : heroLevel}
               />
-            );
-          })}
-        </View>
-      ))}
-    </View>
+              {actor.statuses.map((st) => (
+                <GIcon
+                  key={st.kind}
+                  name={
+                    st.kind === "burn"
+                      ? "fire"
+                      : st.kind === "freeze"
+                        ? "snowflake"
+                        : "star"
+                  }
+                  size={11}
+                  color={palette.status[st.kind]}
+                />
+              ))}
+              {actor.buffs.length > 0 ? (
+                <GIcon name="arrow-up" size={11} color={palette.good} />
+              ) : null}
+              {marked > 0 ? (
+                <View style={styles.mark}>
+                  <Label
+                    value={String(marked)}
+                    type="caption2"
+                    color={palette.night}
+                  />
+                </View>
+              ) : null}
+            </Row>
+            <Bar
+              value={actor.hp}
+              max={actor.base.maxHp}
+              color={palette.hp}
+              height={6}
+              style={styles.tagBar}
+            />
+            {/* Foes with a token mana pool (growth only) don't need the bar. */}
+            {actor.side === 0 || actor.base.maxMana >= 20 ? (
+              <Bar
+                value={actor.mana}
+                max={actor.base.maxMana}
+                color={palette.mana}
+                height={3}
+                style={styles.tagBar}
+              />
+            ) : null}
+          </>
+        )}
+        {floaters.map((f) => (
+          <FloatText key={f.id} text={f.text} color={f.color} />
+        ))}
+      </View>
+    </>
   );
 }
 
@@ -627,6 +498,24 @@ export default function BattleScreen() {
   // The slot whose action picker is open, and the foe actions aim at.
   const [picking, setPicking] = useState<number | null>(null);
   const [chosenFoe, setChosenFoe] = useState<string | null>(null);
+  // Where the 3D scene drew each fighter, for the overlay.
+  const [spots, setSpots] = useState<Record<string, UnitSpot>>({});
+  const heroSave = useGame((s) => s.save?.hero);
+  const heroLook = useMemo(() => {
+    const weapon = heroSave?.equipment.weapon;
+    return {
+      look: heroSave?.look ?? {
+        body: "kozak" as const,
+        face: 0,
+        hair: 0,
+        hairColor: 0,
+        mustache: true,
+      },
+      classId: heroSave?.classId ?? "lytsar",
+      weapon: weapon ? getBase(weapon.baseId).kind : undefined,
+      helmet: !!heroSave?.equipment.helmet,
+    };
+  }, [heroSave]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 200);
@@ -685,8 +574,12 @@ export default function BattleScreen() {
     foes.find((f) => f.row === 0) ??
     foes[0];
   const planning = battle.phase === "planning";
+  // Portrait: five slots and the Ready button share one row.
   const slotSize = portrait
-    ? Math.min(58, Math.floor((width - 24 - insets.left - insets.right) / 6))
+    ? Math.min(
+        58,
+        Math.floor((width - 16 - insets.left - insets.right - 92) / 5.6),
+      )
     : height < 420
       ? 50
       : 58;
@@ -696,13 +589,44 @@ export default function BattleScreen() {
     <ActorPanel actor={foe} heroLevel={hero?.level ?? 1} align="end" />
   );
   const slots = (
-    <ActionSlots battle={battle} size={slotSize} onOpen={setPicking} />
+    <ActionSlots
+      battle={battle}
+      size={slotSize}
+      onOpen={setPicking}
+      align="start"
+    />
+  );
+  const autoButton = (
+    <GButton
+      label={t("battle.auto")}
+      icon="robot"
+      compact
+      tone={auto ? "primary" : "default"}
+      onPress={actions.toggleAuto}
+      style={styles.auto}
+    />
+  );
+  const ready = (
+    <ReadyButton
+      round={battle.state.round}
+      planning={planning}
+      msLeft={battle.deadline - now}
+      secondsLeft={secondsLeft}
+      onPress={() => {
+        setPicking(null);
+        actions.ready();
+      }}
+      style={[styles.ready, { minHeight: slotSize + 8 }]}
+    />
   );
 
   return (
     <View style={styles.page}>
       <BattleBackdrop zone={getZone(zoneId)} />
+      {/* The HUD: what you read at the top, what you press at the bottom
+          corners (thumbs; the middle stays clear for foldables). */}
       <View
+        pointerEvents="box-none"
         style={[
           styles.frame,
           {
@@ -713,50 +637,49 @@ export default function BattleScreen() {
           },
         ]}
       >
-        <View style={styles.topBar}>
-          <TacticsBar battle={battle} />
-          <Row gap={6}>
-            <GButton
-              label={t("battle.auto")}
-              icon="robot"
-              compact
-              tone={auto ? "primary" : "default"}
-              onPress={actions.toggleAuto}
-              style={styles.auto}
-            />
-            <ReadyButton
-              round={battle.state.round}
-              planning={planning}
-              msLeft={battle.deadline - now}
-              secondsLeft={secondsLeft}
-              onPress={() => {
-                setPicking(null);
-                actions.ready();
-              }}
-              style={styles.ready}
-            />
-          </Row>
+        <View pointerEvents="box-none" style={styles.topBar}>
+          <View style={styles.panelSide}>{ally}</View>
+          <View style={styles.panelSide}>{enemy}</View>
         </View>
-        {/* The fighters stand in the middle, between the HUD's edges. */}
-        <View style={styles.stage}>
-          <SideGrid
-            state={shown}
-            side={0}
-            playback={playback}
-            selected={hero?.id}
-            marks={{}}
-          />
-          <View style={styles.versus}>
-            <GIcon name="horse-head" size={22} color={palette.lineSoft} />
+        {/* The fighters get the band between the panels and the controls,
+            so the scene never sits under the HUD. */}
+        <View pointerEvents="box-none" style={styles.middle}>
+          <View style={StyleSheet.absoluteFill}>
+            <BattleStage
+              actors={shown.actors}
+              hero={heroLook}
+              motion={playback}
+              onProject={setSpots}
+            />
           </View>
-          <SideGrid
-            state={shown}
-            side={1}
-            playback={playback}
-            selected={planning ? foe?.id : undefined}
-            onSelect={setChosenFoe}
-            marks={planning ? marks : {}}
-          />
+          {/* Tags, rings and tap areas over the 3D fighters. */}
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            {shown.actors.map((a) => {
+              const spot = spots[a.id];
+              if (!spot) return null;
+              const isFoe = a.side === 1;
+              return (
+                <UnitTag
+                  key={a.id}
+                  actor={a}
+                  spot={spot}
+                  floaters={playback.floaters.filter((f) => f.actor === a.id)}
+                  marked={planning ? (marks[a.id] ?? 0) : 0}
+                  ring={
+                    a.id === "hero"
+                      ? palette.gold
+                      : planning && isFoe && a.id === foe?.id
+                        ? palette.white
+                        : undefined
+                  }
+                  heroLevel={hero?.level ?? 1}
+                  onPress={
+                    isFoe && a.hp > 0 ? () => setChosenFoe(a.id) : undefined
+                  }
+                />
+              );
+            })}
+          </View>
           {playback.banner ? (
             <View style={styles.banner} pointerEvents="none">
               <Label value={playback.banner} type="title2" color="#d9a0ff" />
@@ -764,18 +687,26 @@ export default function BattleScreen() {
           ) : null}
         </View>
         {portrait ? (
-          <View style={styles.hudPortrait}>
-            <Row gap={8} style={styles.panels}>
-              <View style={styles.flex}>{ally}</View>
-              <View style={styles.flex}>{enemy}</View>
-            </Row>
-            {slots}
+          <View pointerEvents="box-none" style={styles.hudPortrait}>
+            <View pointerEvents="box-none" style={styles.hudRow}>
+              <TacticsBar battle={battle} />
+              {autoButton}
+            </View>
+            <View pointerEvents="box-none" style={styles.hudRowEnd}>
+              {slots}
+              {ready}
+            </View>
           </View>
         ) : (
-          <View style={styles.hud}>
-            <View style={styles.panelSide}>{ally}</View>
+          <View pointerEvents="box-none" style={styles.hudRowEnd}>
             {slots}
-            <View style={styles.panelSide}>{enemy}</View>
+            <View style={styles.commit}>
+              <TacticsBar battle={battle} />
+              <Row gap={6} style={styles.commitButtons}>
+                {autoButton}
+                {ready}
+              </Row>
+            </View>
           </View>
         )}
       </View>
@@ -806,53 +737,35 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-  stage: {
-    flex: 1,
+  panelSide: { flex: 1, maxWidth: 260 },
+  middle: { flex: 1, justifyContent: "center" },
+  hudPortrait: { gap: 6 },
+  hudRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    maxWidth: 760,
-    width: "100%",
-    alignSelf: "center",
-  },
-  hud: {
-    flexDirection: "row",
-    alignItems: "flex-end",
     justifyContent: "space-between",
-    gap: 10,
-  },
-  hudPortrait: { gap: 8, alignItems: "center" },
-  panels: { alignSelf: "stretch" },
-  panelSide: { flex: 1, maxWidth: 240 },
-  flex: { flex: 1 },
-  side: { flex: 1, flexDirection: "row", justifyContent: "space-evenly" },
-  column: { justifyContent: "space-evenly", gap: 4 },
-  versus: { width: 30, alignItems: "center" },
-  unit: { width: 92, minHeight: 64, alignItems: "center" },
-  unitCompact: { width: 84, minHeight: 44 },
-  unitNarrow: { width: 80 },
-  unitInner: { alignItems: "center", gap: 1, width: "100%" },
-  name: { width: "100%", justifyContent: "center" },
-  nameText: { textAlign: "center" },
-  /** Overhangs the portrait's bottom corner, like a badge on an avatar. */
-  level: { position: "absolute", bottom: -4, end: -12 },
-  dead: { opacity: 0.35 },
-  dimmed: { opacity: 0.4 },
-  portrait: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: palette.night,
-    overflow: "hidden",
   },
-  bossPortrait: { width: 74, height: 74, borderRadius: 37 },
-  portraitCompact: { width: 34, height: 34, borderRadius: 17 },
-  bossPortraitCompact: { width: 46, height: 46, borderRadius: 23 },
-  actingPortrait: { borderWidth: 3, borderColor: palette.white },
-  blink: { ...StyleSheet.absoluteFill, backgroundColor: palette.white },
+  hudRowEnd: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 8,
+  },
+  commit: { alignItems: "flex-end", gap: 6 },
+  commitButtons: { alignItems: "stretch" },
+  ready: { minWidth: 84 },
+  ring: {
+    position: "absolute",
+    width: 68,
+    height: 20,
+    borderRadius: 34,
+    borderWidth: 2,
+  },
+  hitArea: { position: "absolute", width: 64 },
+  tag: { position: "absolute", width: 80, alignItems: "center", gap: 2 },
+  tagBar: { width: 56 },
+  flex: { flex: 1 },
+  /** Overhangs the portrait's bottom corner, like a badge on an avatar. */
   mark: {
     position: "absolute",
     top: 2,
@@ -864,7 +777,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  unitBar: { width: 70 },
   float: { position: "absolute", top: 6, alignSelf: "center" },
   banner: {
     position: "absolute",
@@ -889,7 +801,6 @@ const styles = StyleSheet.create({
   },
   readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
   auto: { minHeight: 62 },
-  ready: { minWidth: 110 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,
