@@ -6,6 +6,7 @@ import { getBase, getClass } from "../data";
 import type { Look } from "../sim/types";
 
 import { HeroFigure } from "./art-kit";
+import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
 function Turntable({ look, classId }: { look: Look; classId: string }) {
   const ref = useRef<THREE.Group>(null);
@@ -33,16 +34,21 @@ export default function HeroPreview({
   classId: string;
 }) {
   return (
-    <Canvas
-      camera={{ fov: 30, position: [0, 1.3, 4.3] }}
-      onCreated={({ camera }) => camera.lookAt(0, 0.85, 0)}
-      dpr={[1, 1.75]}
-      gl={{ antialias: true }}
-    >
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[2, 4, 3]} intensity={2.2} />
-      <pointLight position={[-2, 2, -1]} intensity={6} color={0xffc890} />
-      <Turntable look={look} classId={classId} />
-    </Canvas>
+    <GLFrame>
+      <Canvas
+        camera={{ fov: 30, position: [0, 1.3, 4.3] }}
+        onCreated={(state) => {
+          paceFrames(state);
+          state.camera.lookAt(0, 0.85, 0);
+        }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: ANTIALIAS }}
+      >
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[2, 4, 3]} intensity={2.2} />
+        <pointLight position={[-2, 2, -1]} intensity={6} color={0xffc890} />
+        <Turntable look={look} classId={classId} />
+      </Canvas>
+    </GLFrame>
   );
 }

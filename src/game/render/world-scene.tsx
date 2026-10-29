@@ -26,6 +26,7 @@ import {
   TILE,
 } from "./art-kit";
 import { distance, step, walkable } from "./movement";
+import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
 const HERO_SPEED = 4.2;
 const CHASE_SPEED = 3.3;
@@ -432,21 +433,26 @@ export default function WorldScene({ save, version }: Props) {
   );
   return (
     <View style={styles.fill} onLayout={glDebug.layout}>
-      <Canvas
-        key={key}
-        camera={{
-          fov: 42,
-          near: 0.5,
-          far: 120,
-          position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
-        }}
-        dpr={[1, 1.75]}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
-        onCreated={glDebug.created}
-      >
-        <Scene save={save} />
-        {__DEV__ ? <FirstFrame /> : null}
-      </Canvas>
+      <GLFrame>
+        <Canvas
+          key={key}
+          camera={{
+            fov: 42,
+            near: 0.5,
+            far: 120,
+            position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
+          }}
+          dpr={[1, 1.75]}
+          gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
+          onCreated={(state) => {
+            paceFrames(state);
+            glDebug.created(state);
+          }}
+        >
+          <Scene save={save} />
+          {__DEV__ ? <FirstFrame /> : null}
+        </Canvas>
+      </GLFrame>
     </View>
   );
 }

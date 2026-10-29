@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { content, NAMES } from "../data";
 import { useT } from "../i18n";
@@ -60,6 +61,7 @@ function Choice({
 
 export default function CreateScreen({ slot }: { slot: number }) {
   const { t, tr } = useT();
+  const insets = useSafeAreaInsets();
   const [look, setLook] = useState<Look>({
     body: "kozak",
     face: 0,
@@ -73,7 +75,13 @@ export default function CreateScreen({ slot }: { slot: number }) {
   const update = (patch: Partial<Look>) => setLook((l) => ({ ...l, ...patch }));
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.page}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: 20 + insets.top, paddingBottom: 20 + insets.bottom },
+      ]}
+    >
       <Row>
         <GButton
           icon="chevron-left"
