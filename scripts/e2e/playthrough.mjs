@@ -339,13 +339,19 @@ try {
     check(s3.quests.q_likho.status === "ready", "q_likho ready after the boss");
     check(
       s3.inventory.some((i) => i.uniqueId === "likho_eye") ||
-        s3.hero.equipment && Object.values(s3.hero.equipment).some((i) => i?.uniqueId === "likho_eye"),
+        (s3.hero.equipment &&
+          Object.values(s3.hero.equipment).some(
+            (i) => i?.uniqueId === "likho_eye",
+          )),
       "Likho's Eye dropped",
     );
     await enter("kyiv", { x: 26, z: 11 });
     await talk("sirko");
     await click("Complete");
-    check((await save()).quests.q_likho.status === "done", "slice main quest done");
+    check(
+      (await save()).quests.q_likho.status === "done",
+      "slice main quest done",
+    );
   }
 
   check(errors.length === 0, `no page errors (${errors.length})`);
