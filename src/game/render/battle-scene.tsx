@@ -26,12 +26,22 @@ export type HeroLookProps = {
   helmet?: boolean;
 };
 
+/**
+ * Depth between slots. At the camera's ~50° a unit 2.1 tall covers
+ * 2.1·cos50°/sin50° ≈ 1.8 of depth on screen; 2.9 leaves room for its tag.
+ */
+const SLOT_DEPTH = 2.9;
+
 /** Where a unit stands: side 0 on the left, front rows facing each other. */
 export function spotOf(actor: Combatant): THREE.Vector3 {
   const dir = actor.side === 0 ? -1 : 1;
-  const x = dir * (actor.row === 0 ? 2 : 4.1);
-  // Slot 1 in the middle, 0 behind it (up the screen), 2 in front.
-  const z = (actor.slot - 1) * 2.1 + (actor.row === 0 ? 0 : 0.4);
+  // A staggered formation, so no fighter stands behind another on screen:
+  // slots are far enough apart in depth that one column doesn't overlap at
+  // this camera angle, and the back row sits half a slot up the screen and
+  // further out, between the front row's units.
+  const x = dir * (actor.row === 0 ? 1.9 : 4);
+  const z =
+    (actor.slot - 1) * SLOT_DEPTH - (actor.row === 0 ? 0 : SLOT_DEPTH / 2);
   return new THREE.Vector3(x, 0, z);
 }
 
@@ -146,11 +156,13 @@ function Rig({
     // Far enough that both sides (x ±5.4) fit across the band and both
     // rows plus a head's height (±3.3) fit top to bottom.
     const half = Math.tan(((cam.fov / 2) * Math.PI) / 180);
-    const distance = Math.max(10, 5.4 / (half * aspect), 3.3 / half);
-    // About 40° down, like Taern's view, so rows and slots separate.
-    const dir = new THREE.Vector3(0, 0.85, 1).normalize();
-    cam.position.copy(dir.multiplyScalar(distance));
-    cam.lookAt(0, 0.7, 0.3);
+    const distance = Math.max(10, 5.2 / (half * aspect), 4.4 / half);
+    // About 50° down: steep enough that units one slot apart in depth
+    // don't hide each other (see SLOT_DEPTH).
+    const dir = new THREE.Vector3(0, 1.2, 1).normalize();
+    const center = new THREE.Vector3(0, 0.7, -SLOT_DEPTH / 4);
+    cam.position.copy(dir.multiplyScalar(distance).add(center));
+    cam.lookAt(center);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
     const spots: Record<string, UnitSpot> = {};

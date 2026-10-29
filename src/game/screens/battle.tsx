@@ -261,12 +261,15 @@ function UnitTag({
         />
       ) : null}
       <Pressable
+        accessibilityRole="button"
         accessibilityLabel={tr(actor.name)}
         disabled={!onPress}
         onPress={onPress}
         style={[
           styles.hitArea,
-          { left: spot.x - 32, top: spot.head, height: tall },
+          // The figure's whole box and a margin: easy to hit, and the
+          // staggered formation keeps neighbours' boxes apart.
+          { left: spot.x - 38, top: spot.head - 10, height: tall + 22 },
         ]}
       />
       <View
@@ -584,9 +587,16 @@ export default function BattleScreen() {
       ? 50
       : 58;
 
-  const ally = <ActorPanel actor={hero} />;
+  // Short (landscape phone) screens get slimmer panels, more room to fight.
+  const short = height < 500;
+  const ally = <ActorPanel actor={hero} compact={short} />;
   const enemy = (
-    <ActorPanel actor={foe} heroLevel={hero?.level ?? 1} align="end" />
+    <ActorPanel
+      actor={foe}
+      heroLevel={hero?.level ?? 1}
+      align="end"
+      compact={short}
+    />
   );
   const slots = (
     <ActionSlots
@@ -761,7 +771,7 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     borderWidth: 2,
   },
-  hitArea: { position: "absolute", width: 64 },
+  hitArea: { position: "absolute", width: 76 },
   tag: { position: "absolute", width: 80, alignItems: "center", gap: 2 },
   tagBar: { width: 56 },
   flex: { flex: 1 },

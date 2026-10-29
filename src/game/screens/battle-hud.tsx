@@ -39,11 +39,14 @@ export function ActorPanel({
   actor,
   heroLevel,
   align = "start",
+  compact,
 }: {
   actor: Combatant | undefined;
   /** For a foe: colours its level badge by danger. */
   heroLevel?: number;
   align?: "start" | "end";
+  /** Short screens: no name line and a smaller portrait. */
+  compact?: boolean;
 }) {
   const { t, tr } = useT();
   // Bars that print their numbers are as tall as that text, at any scale.
@@ -64,10 +67,16 @@ export function ActorPanel({
   const ring = foe ? (actor.boss ? "#b04ae8" : palette.bad) : palette.gold;
   const portrait = (
     <View>
-      <View style={[styles.panelPortrait, { borderColor: ring }]}>
+      <View
+        style={[
+          styles.panelPortrait,
+          compact && styles.panelPortraitCompact,
+          { borderColor: ring },
+        ]}
+      >
         <GIcon
           name={actor.hp > 0 ? actor.icon : "skull"}
-          size={22}
+          size={compact ? 16 : 22}
           color={ring}
         />
       </View>
@@ -80,17 +89,23 @@ export function ActorPanel({
   );
   return (
     <View
-      style={[styles.panel, align === "end" && styles.panelEnd]}
+      style={[
+        styles.panel,
+        compact && styles.panelCompact,
+        align === "end" && styles.panelEnd,
+      ]}
       accessibilityLabel={tr(actor.name)}
     >
       {portrait}
       <View style={styles.panelBody}>
-        <Label
-          value={tr(actor.name)}
-          type="caption1"
-          color={palette.text}
-          numberOfLines={1}
-        />
+        {compact ? null : (
+          <Label
+            value={tr(actor.name)}
+            type="caption1"
+            color={palette.text}
+            numberOfLines={1}
+          />
+        )}
         <Bar
           value={actor.hp}
           max={actor.base.maxHp}
@@ -570,6 +585,8 @@ const styles = StyleSheet.create({
     backgroundColor: GLASS,
   },
   panelEnd: { flexDirection: "row-reverse" },
+  panelCompact: { paddingVertical: 5, gap: 8 },
+  panelPortraitCompact: { width: 34, height: 34, borderRadius: 17 },
   panelEmpty: { justifyContent: "center", minHeight: 64 },
   panelPortrait: {
     width: 44,
