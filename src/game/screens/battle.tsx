@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -459,10 +459,13 @@ function Planner({
   battle,
   pending,
   setPending,
+  side,
 }: {
   battle: BattleSession;
   pending: string | null;
   setPending: (id: string | null) => void;
+  /** Drawn at the planner's end, beside the plan (Auto and Ready in portrait). */
+  side?: ReactNode;
 }) {
   const { t, tr } = useT();
   const save = useSave();
@@ -483,200 +486,208 @@ function Planner({
   };
 
   return (
-    <View style={styles.planner}>
-      <Row gap={10} wrap>
-        <Row gap={4}>
-          {Array.from({ length: RULES.ap }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.pip,
-                i < ap ? styles.pipOn : null,
-                frozen && i >= RULES.ap - 2 ? styles.pipFrozen : null,
-              ]}
-            />
-          ))}
+    <View style={[styles.planner, side ? styles.plannerRow : null]}>
+      <View style={styles.plannerMain}>
+        <Row gap={10} wrap>
+          <Row gap={4}>
+            {Array.from({ length: RULES.ap }, (_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.pip,
+                  i < ap ? styles.pipOn : null,
+                  frozen && i >= RULES.ap - 2 ? styles.pipFrozen : null,
+                ]}
+              />
+            ))}
+          </Row>
+          <View style={styles.slots}>
+            {Array.from({ length: RULES.attackSlots }, (_, i) => {
+              const action = battle.plan.attacks[i];
+              const skill = action ? getSkill(action.skillId) : null;
+              return (
+                <Pressable
+                  key={i}
+                  accessibilityLabel={skill ? tr(skill.name) : `${i + 1}`}
+                  disabled={!action || !planning}
+                  onPress={() => actions.removeAttack(i)}
+                  style={[styles.slot, skill && styles.slotFull]}
+                >
+                  {skill ? (
+                    <GIcon name={skill.icon} size={15} color={palette.gold} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          <Row gap={6}>
+            {DELIVERIES.map((kind) => {
+              const on = battle.plan.defense[kind] > 0;
+              return (
+                <Pressable
+                  key={kind}
+                  accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
+                  accessibilityState={{ selected: on }}
+                  disabled={!planning || (!on && ap <= 0)}
+                  onPress={() => actions.toggleDefense(kind)}
+                  style={[
+                    styles.defense,
+                    on && {
+                      borderColor: palette.delivery[kind],
+                      backgroundColor: palette.panelHi,
+                    },
+                    !on && planning && ap <= 0 && styles.actionOff,
+                  ]}
+                >
+                  <GIcon
+                    name="shield-halved"
+                    size={12}
+                    color={on ? palette.delivery[kind] : palette.faint}
+                  />
+                  <GIcon
+                    name={
+                      kind === "melee"
+                        ? "hand-fist"
+                        : kind === "ranged"
+                          ? "crosshairs"
+                          : "brain"
+                    }
+                    size={14}
+                    color={on ? palette.delivery[kind] : palette.muted}
+                  />
+                </Pressable>
+              );
+            })}
+          </Row>
         </Row>
-        <View style={styles.slots}>
-          {Array.from({ length: RULES.attackSlots }, (_, i) => {
-            const action = battle.plan.attacks[i];
-            const skill = action ? getSkill(action.skillId) : null;
+        <Row gap={6} wrap>
+          {save.tactics.map((tactic, i) => {
+            const active = save.settings.tactic === i;
             return (
               <Pressable
                 key={i}
-                accessibilityLabel={skill ? tr(skill.name) : `${i + 1}`}
-                disabled={!action || !planning}
-                onPress={() => actions.removeAttack(i)}
-                style={[styles.slot, skill && styles.slotFull]}
+                accessibilityLabel={t("battle.tactic", { n: i + 1 })}
+                accessibilityState={{ selected: active }}
+                disabled={!planning}
+                onPress={() => actions.pickTactic(i)}
+                onLongPress={() => actions.saveTactic(i)}
+                style={[
+                  styles.tactic,
+                  tactic ? styles.tacticFilled : null,
+                  active ? styles.tacticActive : null,
+                ]}
               >
-                {skill ? (
-                  <GIcon name={skill.icon} size={15} color={palette.gold} />
-                ) : null}
+                <Label
+                  value={String(i + 1)}
+                  type="headline"
+                  color={
+                    active
+                      ? palette.gold
+                      : tactic
+                        ? palette.text
+                        : palette.faint
+                  }
+                />
+              </Pressable>
+            );
+          })}
+          <Pressable
+            accessibilityLabel={t("battle.saveTactic")}
+            disabled={!planning}
+            onPress={() => actions.saveTactic(save.settings.tactic)}
+            style={styles.tacticTool}
+          >
+            <GIcon name="floppy-disk" size={14} color={palette.muted} />
+          </Pressable>
+          <Pressable
+            accessibilityLabel={t("battle.clear")}
+            disabled={
+              !planning ||
+              battle.plan.attacks.length + planDefense(battle) === 0
+            }
+            onPress={actions.clearPlan}
+            style={styles.tacticTool}
+          >
+            <GIcon name="eraser" size={14} color={palette.muted} />
+          </Pressable>
+        </Row>
+        {stunned ? (
+          <Label
+            value={t("battle.stunned")}
+            type="subheadline"
+            color={palette.status.stun}
+          />
+        ) : null}
+        {frozen ? (
+          <Label
+            value={t("battle.frozen")}
+            type="caption1"
+            color={palette.status.freeze}
+          />
+        ) : null}
+        {pending ? (
+          <Label
+            value={t("battle.pickTarget")}
+            type="caption1"
+            color={palette.white}
+          />
+        ) : null}
+        <View style={styles.bar}>
+          {battleActions(save.hero).map((id) => {
+            const skill = getSkill(id);
+            const ok =
+              planning &&
+              !stunned &&
+              skill.ap <= ap &&
+              battle.plan.attacks.length < RULES.attackSlots &&
+              (skill.potion
+                ? potions[skill.potion] > 0
+                : (skill.cost.mana ?? 0) <= mana &&
+                  (skill.cost.stamina ?? 0) <= stamina);
+            return (
+              <Pressable
+                key={id}
+                accessibilityLabel={
+                  skill.flee
+                    ? `${tr(skill.name)}, ${t("battle.fleeChance", { chance: fleeChance(battle.state, hero) })}`
+                    : tr(skill.name)
+                }
+                disabled={!ok}
+                onPress={() => choose(id)}
+                style={[
+                  styles.action,
+                  pending === id && styles.actionPending,
+                  !ok && styles.actionOff,
+                ]}
+              >
+                <GIcon
+                  name={skill.icon}
+                  size={18}
+                  color={
+                    skill.potion === "hp"
+                      ? palette.hp
+                      : skill.potion === "mana"
+                        ? palette.mana
+                        : palette.text
+                  }
+                />
+                <Label
+                  value={
+                    skill.potion
+                      ? String(potions[skill.potion])
+                      : skill.flee
+                        ? `${fleeChance(battle.state, hero)}%`
+                        : String(skill.ap)
+                  }
+                  type="caption2"
+                  color={palette.muted}
+                />
               </Pressable>
             );
           })}
         </View>
-        <Row gap={6}>
-          {DELIVERIES.map((kind) => {
-            const on = battle.plan.defense[kind] > 0;
-            return (
-              <Pressable
-                key={kind}
-                accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
-                accessibilityState={{ selected: on }}
-                disabled={!planning || (!on && ap <= 0)}
-                onPress={() => actions.toggleDefense(kind)}
-                style={[
-                  styles.defense,
-                  on && {
-                    borderColor: palette.delivery[kind],
-                    backgroundColor: palette.panelHi,
-                  },
-                  !on && planning && ap <= 0 && styles.actionOff,
-                ]}
-              >
-                <GIcon
-                  name="shield-halved"
-                  size={12}
-                  color={on ? palette.delivery[kind] : palette.faint}
-                />
-                <GIcon
-                  name={
-                    kind === "melee"
-                      ? "hand-fist"
-                      : kind === "ranged"
-                        ? "crosshairs"
-                        : "brain"
-                  }
-                  size={14}
-                  color={on ? palette.delivery[kind] : palette.muted}
-                />
-              </Pressable>
-            );
-          })}
-        </Row>
-      </Row>
-      <Row gap={6} wrap>
-        {save.tactics.map((tactic, i) => {
-          const active = save.settings.tactic === i;
-          return (
-            <Pressable
-              key={i}
-              accessibilityLabel={t("battle.tactic", { n: i + 1 })}
-              accessibilityState={{ selected: active }}
-              disabled={!planning}
-              onPress={() => actions.pickTactic(i)}
-              onLongPress={() => actions.saveTactic(i)}
-              style={[
-                styles.tactic,
-                tactic ? styles.tacticFilled : null,
-                active ? styles.tacticActive : null,
-              ]}
-            >
-              <Label
-                value={String(i + 1)}
-                type="headline"
-                color={
-                  active ? palette.gold : tactic ? palette.text : palette.faint
-                }
-              />
-            </Pressable>
-          );
-        })}
-        <Pressable
-          accessibilityLabel={t("battle.saveTactic")}
-          disabled={!planning}
-          onPress={() => actions.saveTactic(save.settings.tactic)}
-          style={styles.tacticTool}
-        >
-          <GIcon name="floppy-disk" size={14} color={palette.muted} />
-        </Pressable>
-        <Pressable
-          accessibilityLabel={t("battle.clear")}
-          disabled={
-            !planning || battle.plan.attacks.length + planDefense(battle) === 0
-          }
-          onPress={actions.clearPlan}
-          style={styles.tacticTool}
-        >
-          <GIcon name="eraser" size={14} color={palette.muted} />
-        </Pressable>
-      </Row>
-      {stunned ? (
-        <Label
-          value={t("battle.stunned")}
-          type="subheadline"
-          color={palette.status.stun}
-        />
-      ) : null}
-      {frozen ? (
-        <Label
-          value={t("battle.frozen")}
-          type="caption1"
-          color={palette.status.freeze}
-        />
-      ) : null}
-      {pending ? (
-        <Label
-          value={t("battle.pickTarget")}
-          type="caption1"
-          color={palette.white}
-        />
-      ) : null}
-      <View style={styles.bar}>
-        {battleActions(save.hero).map((id) => {
-          const skill = getSkill(id);
-          const ok =
-            planning &&
-            !stunned &&
-            skill.ap <= ap &&
-            battle.plan.attacks.length < RULES.attackSlots &&
-            (skill.potion
-              ? potions[skill.potion] > 0
-              : (skill.cost.mana ?? 0) <= mana &&
-                (skill.cost.stamina ?? 0) <= stamina);
-          return (
-            <Pressable
-              key={id}
-              accessibilityLabel={
-                skill.flee
-                  ? `${tr(skill.name)}, ${t("battle.fleeChance", { chance: fleeChance(battle.state, hero) })}`
-                  : tr(skill.name)
-              }
-              disabled={!ok}
-              onPress={() => choose(id)}
-              style={[
-                styles.action,
-                pending === id && styles.actionPending,
-                !ok && styles.actionOff,
-              ]}
-            >
-              <GIcon
-                name={skill.icon}
-                size={18}
-                color={
-                  skill.potion === "hp"
-                    ? palette.hp
-                    : skill.potion === "mana"
-                      ? palette.mana
-                      : palette.text
-                }
-              />
-              <Label
-                value={
-                  skill.potion
-                    ? String(potions[skill.potion])
-                    : skill.flee
-                      ? `${fleeChance(battle.state, hero)}%`
-                      : String(skill.ap)
-                }
-                type="caption2"
-                color={palette.muted}
-              />
-            </Pressable>
-          );
-        })}
       </View>
+      {side ? <View style={styles.plannerSide}>{side}</View> : null}
     </View>
   );
 }
@@ -776,6 +787,7 @@ function ReadyButton({
   msLeft,
   secondsLeft,
   onPress,
+  compact,
   style,
 }: {
   round: number;
@@ -783,6 +795,8 @@ function ReadyButton({
   msLeft: number;
   secondsLeft: number;
   onPress: () => void;
+  /** Narrow: no check icon, smaller countdown. */
+  compact?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const { t } = useT();
@@ -824,11 +838,11 @@ function ReadyButton({
         color={palette.muted}
       />
       <Row gap={6}>
-        <GIcon name="check" size={15} color={palette.text} />
+        {compact ? null : <GIcon name="check" size={15} color={palette.text} />}
         <Label value={t("battle.ready")} type="callout" />
         <Label
           value={planning ? `${secondsLeft}s` : "…"}
-          type="headline"
+          type={compact ? "callout" : "headline"}
           color={urgent ? palette.white : palette.gold}
         />
       </Row>
@@ -906,6 +920,30 @@ export default function BattleScreen() {
     (melee && front.length > 0 ? front : foes).map((f) => f.id),
   );
 
+  const controls = (
+    <View style={portrait ? styles.readyColumnPortrait : styles.readyColumn}>
+      <GButton
+        label={t("battle.auto")}
+        icon="robot"
+        compact
+        tone={auto ? "primary" : "default"}
+        onPress={actions.toggleAuto}
+      />
+      <ReadyButton
+        round={battle.state.round}
+        planning={battle.phase === "planning"}
+        msLeft={battle.deadline - now}
+        secondsLeft={secondsLeft}
+        onPress={() => {
+          setPending(null);
+          actions.ready();
+        }}
+        compact={portrait}
+        style={portrait ? styles.readyPortrait : styles.ready}
+      />
+    </View>
+  );
+
   return (
     <View
       style={[
@@ -955,28 +993,14 @@ export default function BattleScreen() {
       </View>
       <View style={portrait ? styles.bottomPortrait : styles.bottom}>
         <View style={portrait ? null : styles.flex}>
-          <Planner battle={battle} pending={pending} setPending={setPending} />
-        </View>
-        <View style={styles.readyColumn}>
-          <GButton
-            label={t("battle.auto")}
-            icon="robot"
-            compact
-            tone={auto ? "primary" : "default"}
-            onPress={actions.toggleAuto}
-          />
-          <ReadyButton
-            round={battle.state.round}
-            planning={battle.phase === "planning"}
-            msLeft={battle.deadline - now}
-            secondsLeft={secondsLeft}
-            onPress={() => {
-              setPending(null);
-              actions.ready();
-            }}
-            style={portrait ? styles.readyPortrait : styles.ready}
+          <Planner
+            battle={battle}
+            pending={pending}
+            setPending={setPending}
+            side={portrait ? controls : undefined}
           />
         </View>
+        {portrait ? null : controls}
       </View>
       {battle.phase === "planning" ? (
         <HintCard where="battle" round={battle.state.round} />
@@ -1050,7 +1074,7 @@ const styles = StyleSheet.create({
   bottom: { flexDirection: "row", gap: 10, alignItems: "flex-end" },
   bottomPortrait: { gap: 8 },
   planner: {
-    gap: 6,
+    gap: 8,
     padding: 8,
     borderRadius: 10,
     backgroundColor: palette.panel,
@@ -1113,6 +1137,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   readyColumn: { gap: 6 },
+  readyColumnPortrait: { width: 112, gap: 6 },
+  plannerRow: { flexDirection: "row", alignItems: "flex-start" },
+  plannerMain: { flex: 1, gap: 6 },
+  plannerSide: { flexShrink: 0 },
   bar: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
   action: {
     width: 46,
@@ -1139,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
   ready: { minHeight: 64, minWidth: 110 },
-  readyPortrait: { minHeight: 52 },
+  readyPortrait: { minHeight: 64, paddingHorizontal: 6 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,
