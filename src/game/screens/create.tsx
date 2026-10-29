@@ -4,8 +4,9 @@ import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { content, NAMES } from "../data";
 import { useT } from "../i18n";
 import * as actions from "../state/actions";
+import HeroPreview from "../render/hero-preview";
 import type { Look } from "../sim/types";
-import { GButton, GIcon, Label, Row } from "../ui/kit";
+import { GButton, Label, Row } from "../ui/kit";
 import { HAIR_COLORS, palette, SKIN_TONES } from "../ui/palette";
 
 const NAME_RULE = /^[\p{L}][\p{L} '-]{2,15}$/u;
@@ -176,11 +177,7 @@ export default function CreateScreen({ slot }: { slot: number }) {
             />
           ))}
           <View style={styles.preview}>
-            <GIcon
-              name={content.classes.find((c) => c.id === classId)!.icon}
-              size={48}
-              color={palette.gold}
-            />
+            <HeroPreview look={look} classId={classId} />
           </View>
           <GButton
             label={t("create.start")}
@@ -219,9 +216,8 @@ const styles = StyleSheet.create({
   },
   classButton: { justifyContent: "flex-start" },
   preview: {
-    height: 110,
-    alignItems: "center",
-    justifyContent: "center",
+    height: 190,
+    overflow: "hidden",
     backgroundColor: palette.panel,
     borderRadius: 10,
     borderWidth: 1,
