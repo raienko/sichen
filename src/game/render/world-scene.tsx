@@ -5,7 +5,7 @@ import {
   type RootState,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import * as THREE from "three";
 
@@ -13,6 +13,7 @@ import { getBase, getEnemy, getNpc, getZone } from "../data";
 import * as actions from "../state/actions";
 import { runtime } from "../state/runtime";
 import type { SaveData } from "../state/save";
+import { FloatingStick } from "../ui/input";
 import { offeredBy, readyFor } from "../sim/quests";
 
 import {
@@ -211,6 +212,7 @@ function Pack({
     <group
       ref={ref}
       position={[homeX * TILE, 0, homeZ * TILE]}
+      userData={INTERACTIVE}
       onPointerDown={onPress}
     >
       {enemies.slice(0, 3).map((e, i) => (
@@ -254,20 +256,72 @@ function Ground({
   height: number;
   color: number;
 }) {
-  const onPress = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation();
-    runtime.moveTarget = { x: event.point.x / TILE, z: event.point.z / TILE };
-  };
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[((width - 1) * TILE) / 2, 0, ((height - 1) * TILE) / 2]}
-      onPointerDown={onPress}
     >
       <planeGeometry args={[width * TILE + 40, height * TILE + 40]} />
       <meshLambertMaterial color={color} />
     </mesh>
   );
+}
+
+/** Marks a group that takes taps itself (NPCs, foes, quest objects). */
+const INTERACTIVE = { interactive: true };
+
+/** The live scene, for hit tests on touches the canvas doesn't see. */
+const view: { get: (() => RootState) | null } = { get: null };
+
+function SceneHandle() {
+  const get = useThree((s) => s.get);
+  useEffect(() => {
+    view.get = get;
+    return () => {
+      if (view.get === get) view.get = null;
+    };
+  }, [get]);
+  return null;
+}
+
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+function castFrom(at: { x: number; y: number }, width: number, height: number) {
+  const state = view.get?.();
+  if (!state || width <= 0 || height <= 0) return null;
+  raycaster.setFromCamera(
+    new THREE.Vector2((at.x / width) * 2 - 1, -(at.y / height) * 2 + 1),
+    state.camera,
+  );
+  return state;
+}
+
+/** Whether a touch at this point lands on something that takes taps. */
+function hitsInteractive(
+  at: { x: number; y: number },
+  width: number,
+  height: number,
+) {
+  const state = castFrom(at, width, height);
+  if (!state) return false;
+  for (const hit of raycaster.intersectObjects(state.scene.children, true)) {
+    for (let o: THREE.Object3D | null = hit.object; o; o = o.parent) {
+      if (o.userData.interactive) return true;
+    }
+  }
+  return false;
+}
+
+/** Walks to the ground under a tap. */
+function walkToTap(
+  at: { x: number; y: number },
+  width: number,
+  height: number,
+) {
+  if (!castFrom(at, width, height)) return;
+  const point = raycaster.ray.intersectPlane(groundPlane, new THREE.Vector3());
+  if (point) runtime.moveTarget = { x: point.x / TILE, z: point.z / TILE };
 }
 
 function Scene({ save }: { save: SaveData }) {
@@ -299,6 +353,7 @@ function Scene({ save }: { save: SaveData }) {
             key={n.npcId}
             position={[n.x * TILE, 0, n.z * TILE]}
             rotation={[0, Math.PI, 0]}
+            userData={INTERACTIVE}
             onPointerDown={(event) => {
               event.stopPropagation();
               walkThen(n.x, n.z + 0.9, () =>
@@ -315,6 +370,7 @@ function Scene({ save }: { save: SaveData }) {
         <group
           key={it.id}
           position={[it.x * TILE, 0, it.z * TILE]}
+          userData={INTERACTIVE}
           onPointerDown={(event) => {
             event.stopPropagation();
             walkThen(it.x, it.z + 1, () => actions.examine(it.id));
@@ -346,6 +402,7 @@ function Scene({ save }: { save: SaveData }) {
         />
       ))}
       <Hero save={save} />
+      <SceneHandle />
     </>
   );
 }
@@ -433,26 +490,31 @@ export default function WorldScene({ save, version }: Props) {
   );
   return (
     <View style={styles.fill} onLayout={glDebug.layout}>
-      <GLFrame>
-        <Canvas
-          key={key}
-          camera={{
-            fov: 42,
-            near: 0.5,
-            far: 120,
-            position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
-          }}
-          dpr={[1, 1.75]}
-          gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
-          onCreated={(state) => {
-            paceFrames(state);
-            glDebug.created(state);
-          }}
-        >
-          <Scene save={save} />
-          {__DEV__ ? <FirstFrame /> : null}
-        </Canvas>
-      </GLFrame>
+      <FloatingStick
+        claims={(at, frame) => !hitsInteractive(at, frame.width, frame.height)}
+        onTap={(at, frame) => walkToTap(at, frame.width, frame.height)}
+      >
+        <GLFrame>
+          <Canvas
+            key={key}
+            camera={{
+              fov: 42,
+              near: 0.5,
+              far: 120,
+              position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
+            }}
+            dpr={[1, 1.75]}
+            gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
+            onCreated={(state) => {
+              paceFrames(state);
+              glDebug.created(state);
+            }}
+          >
+            <Scene save={save} />
+            {__DEV__ ? <FirstFrame /> : null}
+          </Canvas>
+        </GLFrame>
+      </FloatingStick>
     </View>
   );
 }

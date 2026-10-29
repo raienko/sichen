@@ -47,7 +47,7 @@ const en = {
   "hint.gotIt": "Got it",
   "hint.skip": "Skip tutorial",
   "hint.move":
-    "Walk with the joystick, WASD or a gamepad, or tap the ground. A cossack on foot is still a cossack.",
+    "Drag anywhere to walk, or tap the ground, or use WASD or a gamepad. A cossack on foot is still a cossack.",
   "hint.sirko":
     "Come to me, by the square — the one with the gold mark overhead. There's work.",
   "hint.gate":
@@ -226,7 +226,7 @@ const uk: Record<StringKey, string> = {
   "hint.gotIt": "Зрозумів",
   "hint.skip": "Пропустити навчання",
   "hint.move":
-    "Ходи джойстиком, WASD чи геймпадом, або торкнися землі. Пішим козак — теж козак.",
+    "Тягни пальцем будь-де, щоб іти, або торкнися землі, або WASD чи геймпад. Пішим козак — теж козак.",
   "hint.sirko":
     "Ходи до мене, на майдан — там, де золота мітка над головою. Є робота.",
   "hint.gate":

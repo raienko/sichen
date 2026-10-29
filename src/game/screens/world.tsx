@@ -10,7 +10,7 @@ import { store, useGame, useSave, type Panel } from "../state/store";
 import { xpToNext } from "../sim/hero";
 import { questTarget, trackedQuests } from "../sim/quests";
 import { heroStats } from "../sim/stats";
-import { useKeyboardMovement, Joystick } from "../ui/input";
+import { useKeyboardMovement } from "../ui/input";
 import { HintCard } from "../ui/hint";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { Minimap } from "../ui/minimap";
@@ -51,7 +51,7 @@ function Hud() {
   const save = useSave();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  // Portrait stacks the joystick, centred, above one row of menu buttons.
+  // Portrait puts the menu buttons in one row along the bottom.
   const portrait = height > width;
   const stats = heroStats(save.hero);
   const { hero } = save;
@@ -168,12 +168,6 @@ function Hud() {
         pointerEvents="box-none"
         style={portrait ? styles.bottomPortrait : styles.bottom}
       >
-        <View
-          pointerEvents="box-none"
-          style={portrait ? styles.joystickPortrait : null}
-        >
-          <Joystick />
-        </View>
         <View style={portrait ? styles.menuPortrait : styles.menu}>
           {MENU.map((m) => (
             <GButton
@@ -309,7 +303,7 @@ const styles = StyleSheet.create({
   bottom: {
     flex: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "flex-end",
   },
   menu: {
@@ -319,8 +313,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     maxWidth: 260,
   },
-  bottomPortrait: { flex: 1, justifyContent: "flex-end", gap: 28 },
-  joystickPortrait: { alignItems: "center" },
+  bottomPortrait: { flex: 1, justifyContent: "flex-end" },
   menuPortrait: {
     flexDirection: "row",
     gap: 6,
