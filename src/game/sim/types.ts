@@ -276,6 +276,11 @@ export type PackDef = {
   aggressive?: boolean;
   /** Present only while this quest is active or until it is done. */
   quest?: string;
+  /**
+   * How long it takes to come back once cleared (RULES.respawn). Packs
+   * with a boss are "boss" whatever this says; the default is "common".
+   */
+  rank?: "common" | "elite";
 };
 
 export type InteractableDef = {

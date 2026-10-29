@@ -1,12 +1,13 @@
 import { getZone, RULES } from "../data";
 import type { Tactic } from "../sim/battle";
 import type { QuestLog } from "../sim/quests";
+import type { ClearedPacks } from "../sim/respawn";
 import type { Hero, Item, Rarity, Relic } from "../sim/types";
 
 import { decodeSave, encodeSave } from "./codec";
 
 /** Bump with a migration below whenever the shape changes. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type SaveData = {
   version: number;
@@ -19,7 +20,13 @@ export type SaveData = {
   inventory: Item[];
   stash: Item[];
   quests: QuestLog;
-  world: { zoneId: string; x: number; z: number; cleared: string[] };
+  world: {
+    zoneId: string;
+    x: number;
+    z: number;
+    /** Packs beaten and not yet back (see sim/respawn). */
+    cleared: ClearedPacks;
+  };
   settings: {
     lootFilter: Rarity;
     autoBattle: boolean;
@@ -55,6 +62,20 @@ const MIGRATIONS: Record<number, Migration> = {
     },
     tactics: Array.from({ length: RULES.tactics }, () => null),
   }),
+  // 3: packs respawn on a timer, so cleared packs carry when they fell.
+  2: (old) => {
+    const world = old.world as { cleared?: string[] };
+    const now = Date.now();
+    return {
+      ...old,
+      world: {
+        ...world,
+        cleared: Object.fromEntries(
+          (world.cleared ?? []).map((id) => [id, now]),
+        ),
+      },
+    };
+  },
 };
 
 export function migrate(raw: unknown): SaveData | null {

@@ -35,6 +35,7 @@ import {
   applyRelicTo,
 } from "../sim/loot";
 import * as quests from "../sim/quests";
+import { respawning } from "../sim/respawn";
 import { newSeed, Rng } from "../sim/rng";
 import { heroStats } from "../sim/stats";
 import {
@@ -140,7 +141,7 @@ export function createGame(
     inventory: [],
     stash: [],
     quests: {},
-    world: { zoneId: "kyiv", ...kyiv.spawn, cleared: [] },
+    world: { zoneId: "kyiv", ...kyiv.spawn, cleared: {} },
     settings: {
       lootFilter: "normal",
       autoBattle: false,
@@ -209,7 +210,7 @@ export function enterZone(zoneId: string, spawn: { x: number; z: number }) {
     world: {
       zoneId,
       ...spawn,
-      cleared: from.town && !zone.town ? [] : s.world.cleared,
+      cleared: from.town && !zone.town ? {} : s.world.cleared,
     },
     hero: zone.town ? restore(s.hero) : s.hero,
   }));
@@ -254,6 +255,24 @@ export function regenerate(seconds: number) {
     }),
     false,
   );
+}
+
+/**
+ * Brings back packs whose respawn time is up, unless the hero stands at
+ * their home. Called by the world every second or so.
+ */
+export function respawnPacks() {
+  const data = get().save;
+  if (!data) return;
+  const zone = getZone(data.world.zoneId);
+  const back = respawning(zone.packs, data.world.cleared, Date.now(), runtime);
+  if (back.length === 0) return;
+  for (const id of back) runtime.mobs.delete(id);
+  commit((s) => {
+    const cleared = { ...s.world.cleared };
+    for (const id of back) delete cleared[id];
+    return { ...s, world: { ...s.world, cleared } };
+  });
 }
 
 export function examine(interactableId: string) {
@@ -788,7 +807,10 @@ function grantVictory(): Rewards {
       inventory: [...s.inventory, ...kept],
       quests: log,
       world: battle.packId
-        ? { ...s.world, cleared: [...s.world.cleared, battle.packId] }
+        ? {
+            ...s.world,
+            cleared: { ...s.world.cleared, [battle.packId]: Date.now() },
+          }
         : s.world,
       stats: { ...s.stats, kills: s.stats.kills + foes.length },
     };

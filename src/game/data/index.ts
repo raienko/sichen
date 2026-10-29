@@ -41,6 +41,10 @@ export const RULES = {
   saveSlots: 3,
   /** Saved attack/defence presets on the battle planner. */
   tactics: 3,
+  /** Seconds before a cleared pack comes back, by its rank. */
+  respawn: { common: 120, elite: 360, boss: 1200 },
+  /** A pack waits to respawn while the hero is this close (tiles). */
+  respawnClearance: 8,
 } as const;
 
 function index<T extends { id: string }>(

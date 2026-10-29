@@ -107,6 +107,7 @@ function Hero({ save }: { save: SaveData }) {
     regen.current += dt;
     if (regen.current > 1) {
       actions.regenerate(regen.current);
+      actions.respawnPacks();
       regen.current = 0;
     }
   });
@@ -329,7 +330,7 @@ function Scene({ save }: { save: SaveData }) {
   const width = zone.map[0]?.length ?? 0;
   const height = zone.map.length;
   const packs = zone.packs.filter(
-    (p) => !p.quest && !save.world.cleared.includes(p.id),
+    (p) => !p.quest && !(p.id in save.world.cleared),
   );
   return (
     <>

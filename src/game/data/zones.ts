@@ -246,6 +246,7 @@ export const ZONES: readonly ZoneDef[] = [
       },
       {
         id: "p_wolves",
+        rank: "elite",
         x: 29,
         z: 13,
         aggressive: true,
@@ -256,6 +257,7 @@ export const ZONES: readonly ZoneDef[] = [
       },
       {
         id: "p_camp",
+        rank: "elite",
         x: 37,
         z: 8,
         enemies: [
@@ -284,6 +286,7 @@ export const ZONES: readonly ZoneDef[] = [
       },
       {
         id: "p_chort",
+        rank: "elite",
         x: 29,
         z: 23,
         aggressive: true,
@@ -294,6 +297,7 @@ export const ZONES: readonly ZoneDef[] = [
       },
       {
         id: "p_brutes",
+        rank: "elite",
         x: 36,
         z: 20,
         aggressive: true,
