@@ -164,6 +164,14 @@ try {
   check((await save()).hero.classId === classId, `created a ${classId}`);
   await page.waitForTimeout(2000);
   await shot("03-kyiv");
+  // The tutorial: read the first hint, then skip the rest.
+  await click("Got it");
+  check(
+    (await save()).settings.hints.includes("move"),
+    "tutorial hint dismissed",
+  );
+  await click("Skip tutorial");
+  check((await save()).settings.tutorial === false, "tutorial skipped");
 
   // Sirko: first main quest. Karmaliuk: both side quests.
   await talk("sirko");

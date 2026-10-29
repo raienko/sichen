@@ -27,6 +27,8 @@ import {
 import { battleActions } from "../sim/hero";
 import { DELIVERIES } from "../sim/types";
 import { BattleBackdrop } from "../ui/backdrop";
+import { nextHint } from "../state/tutorial";
+import { HintCard } from "../ui/hint";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
@@ -778,10 +780,16 @@ export default function BattleScreen() {
     : false;
 
   // The planning timer, auto-battle and stunned rounds.
+  // A tutorial hint pauses the clock; dismissing it restarts the round's.
+  const hinting = useGame((s) =>
+    s.save && s.battle
+      ? nextHint(s.save, "battle", s.battle.state.round) !== null
+      : false,
+  );
   useEffect(() => {
-    if (phase !== "planning") return;
+    if (phase !== "planning" || hinting) return;
     if (now >= deadline) actions.ready();
-  }, [now, deadline, phase]);
+  }, [now, deadline, phase, hinting]);
   useEffect(() => {
     if (phase !== "planning" || !(auto || heroStunned)) return;
     const id = setTimeout(() => {
@@ -907,6 +915,9 @@ export default function BattleScreen() {
           />
         </View>
       </View>
+      {battle.phase === "planning" ? (
+        <HintCard where="battle" round={battle.state.round} />
+      ) : null}
       {battle.phase === "over" ? <Results battle={battle} /> : null}
       <Toasts />
     </View>

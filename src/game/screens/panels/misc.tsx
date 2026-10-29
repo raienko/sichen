@@ -215,6 +215,13 @@ export function MenuPanel({
           />
         ))}
       </Row>
+      <GButton
+        label={t("menu.tutorial")}
+        icon="comment"
+        compact
+        tone={save.settings.tutorial ? "primary" : "default"}
+        onPress={() => actions.setTutorial(!save.settings.tutorial)}
+      />
       <Divider />
       <GButton
         label={t("menu.save")}

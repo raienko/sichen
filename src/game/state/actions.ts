@@ -141,7 +141,13 @@ export function createGame(
     stash: [],
     quests: {},
     world: { zoneId: "kyiv", ...kyiv.spawn, cleared: [] },
-    settings: { lootFilter: "normal", autoBattle: false, tactic: 0 },
+    settings: {
+      lootFilter: "normal",
+      autoBattle: false,
+      tactic: 0,
+      tutorial: true,
+      hints: [],
+    },
     tactics: Array.from({ length: RULES.tactics }, () => null),
     seed: r.seed,
     stats: { kills: 0, deaths: 0, battles: 0 },
@@ -277,6 +283,37 @@ export function examine(interactableId: string) {
         ? { name: "interact", interactableId }
         : null,
   });
+}
+
+// ---------------------------------------------------------------- tutorial
+
+export function dismissHint(id: string) {
+  commit((s) => ({
+    ...s,
+    settings: { ...s.settings, hints: [...s.settings.hints, id] },
+  }));
+  restartClock();
+}
+
+/** A hint read during planning shouldn't have cost the player their time. */
+function restartClock() {
+  const battle = get().battle;
+  if (battle?.phase === "planning")
+    set({
+      battle: { ...battle, deadline: Date.now() + RULES.roundSeconds * 1000 },
+    });
+}
+
+export function setTutorial(tutorial: boolean) {
+  commit((s) => ({
+    ...s,
+    settings: {
+      ...s.settings,
+      tutorial,
+      hints: tutorial ? [] : s.settings.hints,
+    },
+  }));
+  restartClock();
 }
 
 // ---------------------------------------------------------------- quests

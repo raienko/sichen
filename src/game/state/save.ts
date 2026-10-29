@@ -20,7 +20,16 @@ export type SaveData = {
   stash: Item[];
   quests: QuestLog;
   world: { zoneId: string; x: number; z: number; cleared: string[] };
-  settings: { lootFilter: Rarity; autoBattle: boolean; tactic: number };
+  settings: {
+    lootFilter: Rarity;
+    autoBattle: boolean;
+    /** The selected battle tactic. */
+    tactic: number;
+    /** Tutorial hints on; off after "Skip tutorial". */
+    tutorial: boolean;
+    /** Hints already shown. */
+    hints: string[];
+  };
   /** Battle presets, RULES.tactics of them; null is an empty one. */
   tactics: (Tactic | null)[];
   seed: number;
@@ -34,10 +43,16 @@ type Migration = (old: Record<string, unknown>) => Record<string, unknown>;
  * never thrown away for being old; they walk up this list on load.
  */
 const MIGRATIONS: Record<number, Migration> = {
-  // 2: battle tactics, and defence became on/off per delivery.
+  // 2: battle tactics, defence became on/off per delivery, and the
+  // tutorial (off for heroes who already played).
   1: (old) => ({
     ...old,
-    settings: { ...(old.settings as object), tactic: 0 },
+    settings: {
+      ...(old.settings as object),
+      tactic: 0,
+      tutorial: false,
+      hints: [],
+    },
     tactics: Array.from({ length: RULES.tactics }, () => null),
   }),
 };

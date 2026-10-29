@@ -11,6 +11,7 @@ import { xpToNext } from "../sim/hero";
 import { questTarget, trackedQuests } from "../sim/quests";
 import { heroStats } from "../sim/stats";
 import { useKeyboardMovement, Joystick } from "../ui/input";
+import { HintCard } from "../ui/hint";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { Minimap } from "../ui/minimap";
 import { palette } from "../ui/palette";
@@ -268,6 +269,7 @@ export default function WorldScreen() {
     <View style={styles.page}>
       <WorldScene save={save} version={version} />
       <Hud />
+      <HintCard where="world" />
       <Panels />
       <Toasts />
     </View>
