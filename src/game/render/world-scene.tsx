@@ -377,16 +377,17 @@ const glDebug = {
         attributes: gl.getContextAttributes(),
       }),
     );
-    // Reads back the middle pixel of the third frame, after three draws and
-    // before expo-gl presents: the sky colour means drawing works and only
-    // presenting fails; black means nothing was drawn.
+    // Reads back the middle pixel of the third frame, right after three
+    // draws and before expo-gl presents: the sky colour means drawing works
+    // and only presenting fails; black means nothing was drawn.
     if (!gl.endFrameEXP) return;
-    const present = state.gl.render.bind(state.gl);
+    const scene = state.scene;
+    const previous = scene.onAfterRender;
     let frame = 0;
-    state.gl.render = (scene, camera) => {
+    scene.onAfterRender = (...args) => {
+      previous.apply(scene, args);
       frame += 1;
-      if (frame !== 3) return present(scene, camera);
-      THREE.WebGLRenderer.prototype.render.call(state.gl, scene, camera);
+      if (frame !== 3) return;
       const pixel = new Uint8Array(4);
       gl.readPixels(
         Math.floor(gl.drawingBufferWidth / 2),
@@ -408,7 +409,6 @@ const glDebug = {
           calls: state.gl.info.render.calls,
         }),
       );
-      gl.endFrameEXP?.();
     };
   },
 };
