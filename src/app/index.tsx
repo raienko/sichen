@@ -1,1 +1,1 @@
-export { default } from "@/screens/showcase";
+export { default } from "@/game";

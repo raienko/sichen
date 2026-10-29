@@ -101,7 +101,9 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => {
     ...(owner ? { owner } : {}),
     scheme: env.appScheme,
     version: packageVersion,
-    orientation: "portrait",
+    // Landscape-first on phones (V4) but left unlocked so portrait can be
+    // tried after playtests.
+    orientation: "default",
     icon: brandAsset("icon.png"),
     userInterfaceStyle: "automatic",
     ios: {
@@ -130,12 +132,13 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => {
       ...androidAppLinks(env.appLinkDomains),
     },
     web: {
-      output: "server",
+      // Static files, so the build can be hosted anywhere (GitHub Pages).
+      output: "static",
       favicon: brandAsset("favicon.png"),
     },
     extra: composeExtra(config.extra, env, vars),
     plugins: [
-      ["expo-router", { unstable_useServerMiddleware: true }],
+      "expo-router",
       "expo-localization",
       "expo-notifications",
       [
@@ -177,6 +180,10 @@ export default ({ config, projectRoot }: ConfigContext): ExpoConfig => {
       ],
     ],
     experiments: {
+      // A sub-path host such as GitHub Pages (/<repo>/) sets EXPO_BASE_URL.
+      ...(process.env.EXPO_BASE_URL
+        ? { baseUrl: process.env.EXPO_BASE_URL }
+        : {}),
       typedRoutes: true,
       reactCompiler: true,
     },

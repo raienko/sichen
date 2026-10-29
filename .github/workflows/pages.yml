@@ -1,0 +1,57 @@
+name: Pages
+
+# Builds the web app and publishes it to GitHub Pages at
+# https://<owner>.github.io/<repo>/. The base path comes from the repository
+# name, so a rename needs no change here.
+#
+# One-time setup: Settings → Pages → Build and deployment → Source:
+# "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPO_BASE_URL: /${{ github.event.repository.name }}
+      EXPO_PUBLIC_APP_NAME: ${{ vars.APP_NAME || 'Sichen' }}
+      EXPO_PUBLIC_APP_SLUG: ${{ github.event.repository.name }}
+      EXPO_PUBLIC_APP_SCHEME: ${{ github.event.repository.name }}
+      EXPO_PUBLIC_APP_BUNDLE_ID: com.example.${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - name: Export the web build
+        run: npx expo export -p web --output-dir dist
+      - name: Make it a Pages site
+        run: |
+          # Underscore folders (_expo) need Jekyll off; unknown paths get the app.
+          touch dist/.nojekyll
+          cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

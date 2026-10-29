@@ -9,6 +9,9 @@ import { colors } from "@/features/theme";
  * rather than public/index.html. Runs in Node at build/request time only,
  * so nothing here reaches the app bundle and no browser API is available.
  */
+/** "" on a domain root, "/<repo>" on GitHub Pages (app.config.ts). */
+const BASE = process.env.EXPO_BASE_URL ?? "";
+
 export default function Html({ children }: PropsWithChildren) {
   return (
     <html lang="en">
@@ -24,8 +27,8 @@ export default function Html({ children }: PropsWithChildren) {
         <title>{env.appName}</title>
         {/* Installable app: manifest.json and the icons are written by
             `yarn brand` from assets/brand. */}
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-web-192.png" />
+        <link rel="manifest" href={`${BASE}/manifest.json`} />
+        <link rel="apple-touch-icon" href={`${BASE}/icon-web-192.png`} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
