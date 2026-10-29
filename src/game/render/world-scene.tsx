@@ -403,8 +403,6 @@ const glDebug = {
         JSON.stringify({
           pixel: [...pixel],
           glError: gl.getError(),
-          framebuffer: String(gl.getParameter(gl.FRAMEBUFFER_BINDING)),
-          viewport: [...(gl.getParameter(gl.VIEWPORT) as Int32Array)],
           programs: state.gl.info.programs?.length ?? 0,
           calls: state.gl.info.render.calls,
         }),
