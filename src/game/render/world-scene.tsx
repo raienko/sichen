@@ -6,7 +6,7 @@ import {
   type ThreeEvent,
 } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import { StyleSheet, View } from "react-native";
 import * as THREE from "three";
 
 import { getBase, getEnemy, getNpc, getZone } from "../data";
@@ -411,77 +411,6 @@ export function startPackAttack(packId: string, x: number, z: number) {
   walkThen(x, z, () => actions.startBattle(packId));
 }
 
-/**
- * Development logs for bringing the 3D scene up on a new platform: how big
- * the canvas is, whether a renderer was made and on what, and whether a
- * frame was drawn. Silent in production builds.
- */
-const glDebug = {
-  layout: (e: LayoutChangeEvent) => {
-    if (__DEV__) console.log("[world] canvas layout", e.nativeEvent.layout);
-  },
-  created: (state: RootState) => {
-    if (!__DEV__) return;
-    const gl = state.gl.getContext() as WebGL2RenderingContext & {
-      endFrameEXP?: () => void;
-    };
-    console.log(
-      "[world] renderer created",
-      JSON.stringify({
-        webgl2: state.gl.capabilities.isWebGL2,
-        buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
-        size: [state.size.width, state.size.height],
-        dpr: state.viewport.dpr,
-        attributes: gl.getContextAttributes(),
-      }),
-    );
-    // Reads back the middle pixel of the third frame, right after three
-    // draws and before expo-gl presents: the sky colour means drawing works
-    // and only presenting fails; black means nothing was drawn.
-    if (!gl.endFrameEXP) return;
-    const scene = state.scene;
-    const previous = scene.onAfterRender;
-    let frame = 0;
-    scene.onAfterRender = (...args) => {
-      previous.apply(scene, args);
-      frame += 1;
-      if (frame !== 3) return;
-      const pixel = new Uint8Array(4);
-      gl.readPixels(
-        Math.floor(gl.drawingBufferWidth / 2),
-        Math.floor(gl.drawingBufferHeight / 2),
-        1,
-        1,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        pixel,
-      );
-      console.log(
-        "[world] third frame",
-        JSON.stringify({
-          pixel: [...pixel],
-          glError: gl.getError(),
-          programs: state.gl.info.programs?.length ?? 0,
-          calls: state.gl.info.render.calls,
-        }),
-      );
-    };
-  },
-};
-
-function FirstFrame() {
-  const done = useRef(false);
-  useFrame(({ gl, scene }) => {
-    if (done.current) return;
-    done.current = true;
-    console.log("[world] first frame", {
-      objects: scene.children.length,
-      programs: gl.info.programs?.length ?? 0,
-    });
-  });
-  return null;
-}
-
 export default function WorldScene({ save, version }: Props) {
   // A new zone or a finished battle remounts the scene with fresh state.
   const key = useMemo(
@@ -489,7 +418,7 @@ export default function WorldScene({ save, version }: Props) {
     [save.world.zoneId, version],
   );
   return (
-    <View style={styles.fill} onLayout={glDebug.layout}>
+    <View style={styles.fill}>
       <FloatingStick
         claims={(at, frame) => !hitsInteractive(at, frame.width, frame.height)}
         onTap={(at, frame) => walkToTap(at, frame.width, frame.height)}
@@ -505,13 +434,9 @@ export default function WorldScene({ save, version }: Props) {
             }}
             dpr={[1, 1.75]}
             gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
-            onCreated={(state) => {
-              paceFrames(state);
-              glDebug.created(state);
-            }}
+            onCreated={paceFrames}
           >
             <Scene save={save} />
-            {__DEV__ ? <FirstFrame /> : null}
           </Canvas>
         </GLFrame>
       </FloatingStick>
