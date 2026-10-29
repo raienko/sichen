@@ -306,13 +306,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "flex-end",
   },
-  menu: {
-    flexDirection: "row",
-    gap: 6,
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
-    maxWidth: 260,
-  },
+  // One row in the bottom corner; the stick floats under the finger now.
+  menu: { flexDirection: "row", gap: 6 },
   bottomPortrait: { flex: 1, justifyContent: "flex-end" },
   menuPortrait: {
     flexDirection: "row",

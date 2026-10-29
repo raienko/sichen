@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useT } from "../i18n";
 import * as actions from "../state/actions";
 import type { DeathCard } from "../sim/death";
+import { HintCard } from "../ui/hint";
 import { GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
 
@@ -80,6 +81,7 @@ export default function DeathScreen({
           onPress={actions.riseAgain}
         />
       ) : null}
+      {picked === null ? <HintCard where="death" /> : null}
     </View>
   );
 }
