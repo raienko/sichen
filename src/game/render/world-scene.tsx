@@ -2,9 +2,11 @@ import {
   Canvas,
   useFrame,
   useThree,
+  type RootState,
   type ThreeEvent,
 } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
+import { StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import * as THREE from "three";
 
 import { getBase, getEnemy, getNpc, getZone } from "../data";
@@ -351,6 +353,40 @@ export function startPackAttack(packId: string, x: number, z: number) {
   walkThen(x, z, () => actions.startBattle(packId));
 }
 
+/**
+ * Development logs for bringing the 3D scene up on a new platform: how big
+ * the canvas is, whether a renderer was made and on what, and whether a
+ * frame was drawn. Silent in production builds.
+ */
+const glDebug = {
+  layout: (e: LayoutChangeEvent) => {
+    if (__DEV__) console.log("[world] canvas layout", e.nativeEvent.layout);
+  },
+  created: (state: RootState) => {
+    if (!__DEV__) return;
+    const gl = state.gl.getContext();
+    console.log("[world] renderer created", {
+      webgl2: state.gl.capabilities.isWebGL2,
+      buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+      size: [state.size.width, state.size.height],
+      dpr: state.viewport.dpr,
+    });
+  },
+};
+
+function FirstFrame() {
+  const done = useRef(false);
+  useFrame(({ gl, scene }) => {
+    if (done.current) return;
+    done.current = true;
+    console.log("[world] first frame", {
+      objects: scene.children.length,
+      programs: gl.info.programs?.length ?? 0,
+    });
+  });
+  return null;
+}
+
 export default function WorldScene({ save, version }: Props) {
   // A new zone or a finished battle remounts the scene with fresh state.
   const key = useMemo(
@@ -358,20 +394,26 @@ export default function WorldScene({ save, version }: Props) {
     [save.world.zoneId, version],
   );
   return (
-    <Canvas
-      key={key}
-      camera={{
-        fov: 42,
-        near: 0.5,
-        far: 120,
-        position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
-      }}
-      dpr={[1, 1.75]}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
-    >
-      <Scene save={save} />
-    </Canvas>
+    <View style={styles.fill} onLayout={glDebug.layout}>
+      <Canvas
+        key={key}
+        camera={{
+          fov: 42,
+          near: 0.5,
+          far: 120,
+          position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
+        }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
+        onCreated={glDebug.created}
+      >
+        <Scene save={save} />
+        {__DEV__ ? <FirstFrame /> : null}
+      </Canvas>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });
 
 export { walkable };
