@@ -787,7 +787,6 @@ function ReadyButton({
   msLeft,
   secondsLeft,
   onPress,
-  compact,
   style,
 }: {
   round: number;
@@ -795,8 +794,6 @@ function ReadyButton({
   msLeft: number;
   secondsLeft: number;
   onPress: () => void;
-  /** Narrow: no check icon, smaller countdown. */
-  compact?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const { t } = useT();
@@ -838,14 +835,14 @@ function ReadyButton({
         color={palette.muted}
       />
       <Row gap={6}>
-        {compact ? null : <GIcon name="check" size={15} color={palette.text} />}
+        <GIcon name="check" size={15} color={palette.text} />
         <Label value={t("battle.ready")} type="callout" />
-        <Label
-          value={planning ? `${secondsLeft}s` : "…"}
-          type={compact ? "callout" : "headline"}
-          color={urgent ? palette.white : palette.gold}
-        />
       </Row>
+      <Label
+        value={planning ? `${secondsLeft}s` : "…"}
+        type="headline"
+        color={urgent ? palette.white : palette.gold}
+      />
     </Pressable>
   );
 }
@@ -928,6 +925,7 @@ export default function BattleScreen() {
         compact
         tone={auto ? "primary" : "default"}
         onPress={actions.toggleAuto}
+        style={styles.auto}
       />
       <ReadyButton
         round={battle.state.round}
@@ -938,7 +936,6 @@ export default function BattleScreen() {
           setPending(null);
           actions.ready();
         }}
-        compact={portrait}
         style={portrait ? styles.readyPortrait : styles.ready}
       />
     </View>
@@ -1155,6 +1152,7 @@ const styles = StyleSheet.create({
   actionPending: { borderColor: palette.white, borderWidth: 2 },
   actionOff: { opacity: 0.35 },
   readyButton: {
+    height: 92,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
@@ -1166,8 +1164,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.panelHi,
   },
   readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
-  ready: { minHeight: 64, minWidth: 110 },
-  readyPortrait: { minHeight: 64, paddingHorizontal: 6 },
+  auto: { minHeight: 46 },
+  ready: { minWidth: 110 },
+  readyPortrait: { paddingHorizontal: 6 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,
