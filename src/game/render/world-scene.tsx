@@ -364,13 +364,52 @@ const glDebug = {
   },
   created: (state: RootState) => {
     if (!__DEV__) return;
-    const gl = state.gl.getContext();
-    console.log("[world] renderer created", {
-      webgl2: state.gl.capabilities.isWebGL2,
-      buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
-      size: [state.size.width, state.size.height],
-      dpr: state.viewport.dpr,
-    });
+    const gl = state.gl.getContext() as WebGL2RenderingContext & {
+      endFrameEXP?: () => void;
+    };
+    console.log(
+      "[world] renderer created",
+      JSON.stringify({
+        webgl2: state.gl.capabilities.isWebGL2,
+        buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight],
+        size: [state.size.width, state.size.height],
+        dpr: state.viewport.dpr,
+        attributes: gl.getContextAttributes(),
+      }),
+    );
+    // Reads back the middle pixel of the third frame, after three draws and
+    // before expo-gl presents: the sky colour means drawing works and only
+    // presenting fails; black means nothing was drawn.
+    if (!gl.endFrameEXP) return;
+    const present = state.gl.render.bind(state.gl);
+    let frame = 0;
+    state.gl.render = (scene, camera) => {
+      frame += 1;
+      if (frame !== 3) return present(scene, camera);
+      THREE.WebGLRenderer.prototype.render.call(state.gl, scene, camera);
+      const pixel = new Uint8Array(4);
+      gl.readPixels(
+        Math.floor(gl.drawingBufferWidth / 2),
+        Math.floor(gl.drawingBufferHeight / 2),
+        1,
+        1,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixel,
+      );
+      console.log(
+        "[world] third frame",
+        JSON.stringify({
+          pixel: [...pixel],
+          glError: gl.getError(),
+          framebuffer: String(gl.getParameter(gl.FRAMEBUFFER_BINDING)),
+          viewport: [...(gl.getParameter(gl.VIEWPORT) as Int32Array)],
+          programs: state.gl.info.programs?.length ?? 0,
+          calls: state.gl.info.render.calls,
+        }),
+      );
+      gl.endFrameEXP?.();
+    };
   },
 };
 
