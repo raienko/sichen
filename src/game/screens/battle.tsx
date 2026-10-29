@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -21,19 +21,14 @@ import { useTypography } from "@/features/responsive";
 import { getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
 import * as actions from "../state/actions";
-import { useGame, useSave, type BattleSession } from "../state/store";
+import { useGame, type BattleSession } from "../state/store";
 import {
-  apFor,
-  fleeChance,
   hasStatus,
   living,
-  planCost,
   type BattleEvent,
   type BattleState,
   type Combatant,
 } from "../sim/battle";
-import { battleActions } from "../sim/hero";
-import { DELIVERIES } from "../sim/types";
 import { BattleBackdrop } from "../ui/backdrop";
 import { nextHint } from "../state/tutorial";
 import { HintCard } from "../ui/hint";
@@ -42,6 +37,12 @@ import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
 
+import {
+  ActionPicker,
+  ActionSlots,
+  ActorPanel,
+  TacticsBar,
+} from "./battle-hud";
 import { Toasts } from "./world";
 
 // ---------------------------------------------------------------- playback
@@ -398,13 +399,16 @@ function SideGrid({
   state,
   side,
   playback,
-  pick,
+  selected,
+  onSelect,
   marks,
 }: {
   state: BattleState;
   side: 0 | 1;
   playback: ReturnType<typeof usePlayback>;
-  pick: { reachable: Set<string>; onPick: (id: string) => void } | null;
+  /** The unit shown in the HUD's panel for this side. */
+  selected?: string;
+  onSelect?: (id: string) => void;
   marks: Record<string, number>;
 }) {
   const window = useWindowDimensions();
@@ -435,7 +439,7 @@ function SideGrid({
                   ]}
                 />
               );
-            const can = !!pick && pick.reachable.has(actor.id);
+            const can = !!onSelect && actor.hp > 0;
             return (
               <Unit
                 key={actor.id}
@@ -443,9 +447,9 @@ function SideGrid({
                 floaters={playback.floaters.filter((f) => f.actor === actor.id)}
                 acting={playback.acting === actor.id}
                 hitAt={playback.hitAt[actor.id]}
-                targetable={can}
-                dimmed={!!pick && side === 1 && !can && actor.hp > 0}
-                onPress={can ? () => pick.onPick(actor.id) : undefined}
+                targetable={selected === actor.id}
+                dimmed={false}
+                onPress={can ? () => onSelect(actor.id) : undefined}
                 marked={marks[actor.id] ?? 0}
                 compact={compact}
                 narrow={narrow}
@@ -455,269 +459,6 @@ function SideGrid({
           })}
         </View>
       ))}
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------- planning
-
-function usePlanResources(battle: BattleSession) {
-  const hero = battle.state.actors.find((a) => a.id === "hero")!;
-  let mana = hero.mana;
-  let stamina = hero.stamina;
-  const potions = { ...hero.potions };
-  for (const a of battle.plan.attacks) {
-    const s = getSkill(a.skillId);
-    mana -= s.cost.mana ?? 0;
-    stamina -= s.cost.stamina ?? 0;
-    if (s.potion) potions[s.potion] -= 1;
-  }
-  return {
-    hero,
-    mana,
-    stamina,
-    potions,
-    ap: apFor(hero) - planCost(battle.plan),
-  };
-}
-
-function planDefense(battle: BattleSession): number {
-  return DELIVERIES.reduce((n, k) => n + battle.plan.defense[k], 0);
-}
-
-function Planner({
-  battle,
-  pending,
-  setPending,
-  side,
-}: {
-  battle: BattleSession;
-  pending: string | null;
-  setPending: (id: string | null) => void;
-  /** Drawn at the planner's end, beside the plan (Auto and Ready in portrait). */
-  side?: ReactNode;
-}) {
-  const { t, tr } = useT();
-  const save = useSave();
-  const { hero, mana, stamina, potions, ap } = usePlanResources(battle);
-  const planning = battle.phase === "planning";
-  const foes = living(battle.state, 1);
-  const stunned = hasStatus(hero, "stun");
-  const frozen = hasStatus(hero, "freeze");
-
-  const choose = (skillId: string) => {
-    const skill = getSkill(skillId);
-    if (skill.target === "enemy" || skill.target === "enemyRow") {
-      if (foes.length === 1) actions.addAttack(skillId, foes[0]!.id);
-      else setPending(pending === skillId ? null : skillId);
-    } else {
-      actions.addAttack(skillId);
-    }
-  };
-
-  return (
-    <View style={[styles.planner, side ? styles.plannerRow : null]}>
-      <View style={styles.plannerMain}>
-        <Row gap={10} wrap>
-          <Row gap={4}>
-            {Array.from({ length: RULES.ap }, (_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.pip,
-                  i < ap ? styles.pipOn : null,
-                  frozen && i >= RULES.ap - 2 ? styles.pipFrozen : null,
-                ]}
-              />
-            ))}
-          </Row>
-          <View style={styles.slots}>
-            {Array.from({ length: RULES.attackSlots }, (_, i) => {
-              const action = battle.plan.attacks[i];
-              const skill = action ? getSkill(action.skillId) : null;
-              return (
-                <Pressable
-                  key={i}
-                  accessibilityLabel={skill ? tr(skill.name) : `${i + 1}`}
-                  disabled={!action || !planning}
-                  onPress={() => actions.removeAttack(i)}
-                  style={[styles.slot, skill && styles.slotFull]}
-                >
-                  {skill ? (
-                    <GIcon name={skill.icon} size={15} color={palette.gold} />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-          <Row gap={6}>
-            {DELIVERIES.map((kind) => {
-              const on = battle.plan.defense[kind] > 0;
-              return (
-                <Pressable
-                  key={kind}
-                  accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
-                  accessibilityState={{ selected: on }}
-                  disabled={!planning || (!on && ap <= 0)}
-                  onPress={() => actions.toggleDefense(kind)}
-                  style={[
-                    styles.defense,
-                    on && {
-                      borderColor: palette.delivery[kind],
-                      backgroundColor: palette.panelHi,
-                    },
-                    !on && planning && ap <= 0 && styles.actionOff,
-                  ]}
-                >
-                  <GIcon
-                    name="shield-halved"
-                    size={12}
-                    color={on ? palette.delivery[kind] : palette.faint}
-                  />
-                  <GIcon
-                    name={
-                      kind === "melee"
-                        ? "hand-fist"
-                        : kind === "ranged"
-                          ? "crosshairs"
-                          : "brain"
-                    }
-                    size={14}
-                    color={on ? palette.delivery[kind] : palette.muted}
-                  />
-                </Pressable>
-              );
-            })}
-          </Row>
-        </Row>
-        <Row gap={6} wrap>
-          {save.tactics.map((tactic, i) => {
-            const active = save.settings.tactic === i;
-            return (
-              <Pressable
-                key={i}
-                accessibilityLabel={t("battle.tactic", { n: i + 1 })}
-                accessibilityState={{ selected: active }}
-                disabled={!planning}
-                onPress={() => actions.pickTactic(i)}
-                onLongPress={() => actions.saveTactic(i)}
-                style={[
-                  styles.tactic,
-                  tactic ? styles.tacticFilled : null,
-                  active ? styles.tacticActive : null,
-                ]}
-              >
-                <Label
-                  value={String(i + 1)}
-                  type="headline"
-                  color={
-                    active
-                      ? palette.gold
-                      : tactic
-                        ? palette.text
-                        : palette.faint
-                  }
-                />
-              </Pressable>
-            );
-          })}
-          <Pressable
-            accessibilityLabel={t("battle.saveTactic")}
-            disabled={!planning}
-            onPress={() => actions.saveTactic(save.settings.tactic)}
-            style={styles.tacticTool}
-          >
-            <GIcon name="floppy-disk" size={14} color={palette.muted} />
-          </Pressable>
-          <Pressable
-            accessibilityLabel={t("battle.clear")}
-            disabled={
-              !planning ||
-              battle.plan.attacks.length + planDefense(battle) === 0
-            }
-            onPress={actions.clearPlan}
-            style={styles.tacticTool}
-          >
-            <GIcon name="eraser" size={14} color={palette.muted} />
-          </Pressable>
-        </Row>
-        {stunned ? (
-          <Label
-            value={t("battle.stunned")}
-            type="subheadline"
-            color={palette.status.stun}
-          />
-        ) : null}
-        {frozen ? (
-          <Label
-            value={t("battle.frozen")}
-            type="caption1"
-            color={palette.status.freeze}
-          />
-        ) : null}
-        {pending ? (
-          <Label
-            value={t("battle.pickTarget")}
-            type="caption1"
-            color={palette.white}
-          />
-        ) : null}
-        <View style={styles.bar}>
-          {battleActions(save.hero).map((id) => {
-            const skill = getSkill(id);
-            const ok =
-              planning &&
-              !stunned &&
-              skill.ap <= ap &&
-              battle.plan.attacks.length < RULES.attackSlots &&
-              (skill.potion
-                ? potions[skill.potion] > 0
-                : (skill.cost.mana ?? 0) <= mana &&
-                  (skill.cost.stamina ?? 0) <= stamina);
-            return (
-              <Pressable
-                key={id}
-                accessibilityLabel={
-                  skill.flee
-                    ? `${tr(skill.name)}, ${t("battle.fleeChance", { chance: fleeChance(battle.state, hero) })}`
-                    : tr(skill.name)
-                }
-                disabled={!ok}
-                onPress={() => choose(id)}
-                style={[
-                  styles.action,
-                  pending === id && styles.actionPending,
-                  !ok && styles.actionOff,
-                ]}
-              >
-                <GIcon
-                  name={skill.icon}
-                  size={18}
-                  color={
-                    skill.potion === "hp"
-                      ? palette.hp
-                      : skill.potion === "mana"
-                        ? palette.mana
-                        : palette.text
-                  }
-                />
-                <Label
-                  value={
-                    skill.potion
-                      ? String(potions[skill.potion])
-                      : skill.flee
-                        ? `${fleeChance(battle.state, hero)}%`
-                        : String(skill.ap)
-                  }
-                  type="caption2"
-                  color={palette.muted}
-                />
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-      {side ? <View style={styles.plannerSide}>{side}</View> : null}
     </View>
   );
 }
@@ -864,10 +605,7 @@ function ReadyButton({
         type="caption2"
         color={palette.muted}
       />
-      <Row gap={6}>
-        <GIcon name="check" size={15} color={palette.text} />
-        <Label value={t("battle.ready")} type="callout" />
-      </Row>
+      <Label value={t("battle.ready")} type="subheadline" />
       <Label
         value={planning ? `${secondsLeft}s` : "…"}
         type="headline"
@@ -885,8 +623,10 @@ export default function BattleScreen() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const portrait = height > width;
-  const [pending, setPending] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // The slot whose action picker is open, and the foe actions aim at.
+  const [picking, setPicking] = useState<number | null>(null);
+  const [chosenFoe, setChosenFoe] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 200);
@@ -910,9 +650,9 @@ export default function BattleScreen() {
       : false,
   );
   useEffect(() => {
-    if (phase !== "planning" || hinting) return;
+    if (phase !== "planning" || hinting || picking !== null) return;
     if (now >= deadline) actions.ready();
-  }, [now, deadline, phase, hinting]);
+  }, [now, deadline, phase, hinting, picking]);
   useEffect(() => {
     if (phase !== "planning" || !(auto || heroStunned)) return;
     const id = setTimeout(() => {
@@ -937,99 +677,117 @@ export default function BattleScreen() {
     RULES.roundSeconds,
     Math.max(0, Math.ceil((battle.deadline - now) / 1000)),
   );
-  const pendingSkill = pending ? getSkill(pending) : null;
-  const melee = pendingSkill?.effects.some(
-    (e) => e.type === "damage" && e.delivery === "melee",
-  );
-  const foes = living(battle.state, 1);
-  const front = foes.filter((f) => f.row === 0);
-  const reachable = new Set(
-    (melee && front.length > 0 ? front : foes).map((f) => f.id),
-  );
+  const hero = shown.actors.find((a) => a.id === "hero");
+  // The selected foe: the one tapped, while it stands; else the front one.
+  const foes = living(shown, 1);
+  const foe =
+    foes.find((f) => f.id === chosenFoe) ??
+    foes.find((f) => f.row === 0) ??
+    foes[0];
+  const planning = battle.phase === "planning";
+  const slotSize = portrait
+    ? Math.min(58, Math.floor((width - 24 - insets.left - insets.right) / 6))
+    : height < 420
+      ? 50
+      : 58;
 
-  const controls = (
-    <View style={portrait ? styles.readyColumnPortrait : styles.readyColumn}>
-      <GButton
-        label={t("battle.auto")}
-        icon="robot"
-        compact
-        tone={auto ? "primary" : "default"}
-        onPress={actions.toggleAuto}
-        style={styles.auto}
-      />
-      <ReadyButton
-        round={battle.state.round}
-        planning={battle.phase === "planning"}
-        msLeft={battle.deadline - now}
-        secondsLeft={secondsLeft}
-        onPress={() => {
-          setPending(null);
-          actions.ready();
-        }}
-        style={portrait ? styles.readyPortrait : styles.ready}
-      />
-    </View>
+  const ally = <ActorPanel actor={hero} />;
+  const enemy = (
+    <ActorPanel actor={foe} heroLevel={hero?.level ?? 1} align="end" />
+  );
+  const slots = (
+    <ActionSlots battle={battle} size={slotSize} onOpen={setPicking} />
   );
 
   return (
-    <View
-      style={[
-        styles.page,
-        {
-          paddingTop: insets.top + 6,
-          paddingBottom: insets.bottom + 6,
-          paddingStart: insets.left + 8,
-          paddingEnd: insets.right + 8,
-        },
-      ]}
-    >
-      <View style={styles.field}>
-        <BattleBackdrop zone={getZone(zoneId)} />
-        <SideGrid
-          state={shown}
-          side={0}
-          playback={playback}
-          pick={null}
-          marks={{}}
-        />
-        <View style={styles.versus}>
-          <GIcon name="horse-head" size={22} color={palette.lineSoft} />
+    <View style={styles.page}>
+      <BattleBackdrop zone={getZone(zoneId)} />
+      <View
+        style={[
+          styles.frame,
+          {
+            paddingTop: insets.top + 6,
+            paddingBottom: insets.bottom + 6,
+            paddingStart: insets.left + 8,
+            paddingEnd: insets.right + 8,
+          },
+        ]}
+      >
+        <View style={styles.topBar}>
+          <TacticsBar battle={battle} />
+          <Row gap={6}>
+            <GButton
+              label={t("battle.auto")}
+              icon="robot"
+              compact
+              tone={auto ? "primary" : "default"}
+              onPress={actions.toggleAuto}
+              style={styles.auto}
+            />
+            <ReadyButton
+              round={battle.state.round}
+              planning={planning}
+              msLeft={battle.deadline - now}
+              secondsLeft={secondsLeft}
+              onPress={() => {
+                setPicking(null);
+                actions.ready();
+              }}
+              style={styles.ready}
+            />
+          </Row>
         </View>
-        <SideGrid
-          state={shown}
-          side={1}
-          playback={playback}
-          marks={battle.phase === "planning" ? marks : {}}
-          pick={
-            pending && battle.phase === "planning"
-              ? {
-                  reachable,
-                  onPick: (id) => {
-                    actions.addAttack(pending, id);
-                    setPending(null);
-                  },
-                }
-              : null
-          }
-        />
-        {playback.banner ? (
-          <View style={styles.banner} pointerEvents="none">
-            <Label value={playback.banner} type="title2" color="#d9a0ff" />
-          </View>
-        ) : null}
-      </View>
-      <View style={portrait ? styles.bottomPortrait : styles.bottom}>
-        <View style={portrait ? null : styles.flex}>
-          <Planner
-            battle={battle}
-            pending={pending}
-            setPending={setPending}
-            side={portrait ? controls : undefined}
+        {/* The fighters stand in the middle, between the HUD's edges. */}
+        <View style={styles.stage}>
+          <SideGrid
+            state={shown}
+            side={0}
+            playback={playback}
+            selected={hero?.id}
+            marks={{}}
           />
+          <View style={styles.versus}>
+            <GIcon name="horse-head" size={22} color={palette.lineSoft} />
+          </View>
+          <SideGrid
+            state={shown}
+            side={1}
+            playback={playback}
+            selected={planning ? foe?.id : undefined}
+            onSelect={setChosenFoe}
+            marks={planning ? marks : {}}
+          />
+          {playback.banner ? (
+            <View style={styles.banner} pointerEvents="none">
+              <Label value={playback.banner} type="title2" color="#d9a0ff" />
+            </View>
+          ) : null}
         </View>
-        {portrait ? null : controls}
+        {portrait ? (
+          <View style={styles.hudPortrait}>
+            <Row gap={8} style={styles.panels}>
+              <View style={styles.flex}>{ally}</View>
+              <View style={styles.flex}>{enemy}</View>
+            </Row>
+            {slots}
+          </View>
+        ) : (
+          <View style={styles.hud}>
+            <View style={styles.panelSide}>{ally}</View>
+            {slots}
+            <View style={styles.panelSide}>{enemy}</View>
+          </View>
+        )}
       </View>
-      {battle.phase === "planning" ? (
+      {picking !== null && planning ? (
+        <ActionPicker
+          battle={battle}
+          index={picking}
+          targetId={foe?.id}
+          onClose={() => setPicking(null)}
+        />
+      ) : null}
+      {planning && picking === null ? (
         <HintCard where="battle" round={battle.state.round} />
       ) : null}
       {battle.phase === "over" ? <Results battle={battle} /> : null}
@@ -1040,19 +798,33 @@ export default function BattleScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#120e0b" },
-  flex: { flex: 1 },
-  field: {
+  /** Everything over the full-screen backdrop: top bar, stage, HUD. */
+  frame: { ...StyleSheet.absoluteFill, gap: 6 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  stage: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "#1b1611",
-    borderWidth: 1,
-    borderColor: palette.lineSoft,
-    overflow: "hidden",
+    justifyContent: "center",
+    maxWidth: 760,
+    width: "100%",
+    alignSelf: "center",
   },
+  hud: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  hudPortrait: { gap: 8, alignItems: "center" },
+  panels: { alignSelf: "stretch" },
+  panelSide: { flex: 1, maxWidth: 240 },
+  flex: { flex: 1 },
   side: { flex: 1, flexDirection: "row", justifyContent: "space-evenly" },
   column: { justifyContent: "space-evenly", gap: 4 },
   versus: { width: 30, alignItems: "center" },
@@ -1103,91 +875,8 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: palette.overlay,
   },
-  bottom: { flexDirection: "row", gap: 10, alignItems: "flex-end" },
-  bottomPortrait: { gap: 8 },
-  planner: {
-    gap: 8,
-    padding: 8,
-    borderRadius: 10,
-    backgroundColor: palette.panel,
-    borderWidth: 1,
-    borderColor: palette.lineSoft,
-  },
-  pip: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: palette.gold,
-    backgroundColor: palette.night,
-  },
-  pipOn: { backgroundColor: palette.gold },
-  pipFrozen: { borderColor: palette.status.freeze, backgroundColor: "#1a2a3a" },
-  slots: { flexDirection: "row", gap: 4 },
-  slot: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: palette.lineSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  slotFull: {
-    borderStyle: "solid",
-    borderColor: palette.gold,
-    backgroundColor: palette.panelHi,
-  },
-  defense: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    height: 30,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: palette.lineSoft,
-    backgroundColor: palette.night,
-  },
-  tactic: {
-    width: 34,
-    height: 30,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: palette.lineSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tacticFilled: { borderStyle: "solid", backgroundColor: palette.panelHi },
-  tacticActive: { borderColor: palette.gold, borderWidth: 2 },
-  tacticTool: {
-    width: 30,
-    height: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  readyColumn: { gap: 6 },
-  readyColumnPortrait: { width: 112, gap: 6 },
-  plannerRow: { flexDirection: "row", alignItems: "flex-start" },
-  plannerMain: { flex: 1, gap: 6 },
-  plannerSide: { flexShrink: 0 },
-  bar: { flexDirection: "row", flexWrap: "wrap", gap: 5 },
-  action: {
-    width: 46,
-    height: 46,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: palette.panelHi,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionPending: { borderColor: palette.white, borderWidth: 2 },
-  actionOff: { opacity: 0.35 },
   readyButton: {
-    height: 92,
+    minHeight: 62,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
@@ -1199,9 +888,8 @@ const styles = StyleSheet.create({
     backgroundColor: palette.panelHi,
   },
   readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
-  auto: { minHeight: 46 },
+  auto: { minHeight: 62 },
   ready: { minWidth: 110 },
-  readyPortrait: { paddingHorizontal: 6 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,

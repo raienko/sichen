@@ -58,24 +58,25 @@ async function fight(packId, { manualFirst = false } = {}) {
     await game((id) => globalThis.__game.actions.startBattle(id), packId);
   await page.getByText("Round 1").waitFor({ timeout: 10000 });
   if (manualFirst) {
-    // One round by hand: Strike the first foe, a melee defence point, Ready.
-    // With one foe a skill targets it directly; otherwise pick on the field.
+    // One round by hand: select the first foe in the scene, put Strike in
+    // slot 1 from the action popup, defend against melee, Ready.
     const foes = await game(() =>
       globalThis.__game.store
         .get()
         .battle.state.actors.filter((a) => a.side === 1)
-        .map((a) => a.name.en),
+        .map((a) => ({ id: a.id, name: a.name.en })),
     );
-    await page.getByLabel("Strike").first().click();
-    if (foes.length > 1) {
-      await page.getByText("Pick a target").waitFor();
-      await page.getByLabel(foes[0]).first().click();
-    }
+    await page.getByLabel(foes[0].name).first().click();
+    await page.getByLabel("Slot 1", { exact: true }).click();
+    await page.getByLabel("Strike", { exact: true }).click();
     await page.getByLabel("Defence: Melee").first().click();
     const plan = await game(() => globalThis.__game.store.get().battle.plan);
     check(
-      plan.attacks.length === 1 && plan.defense.melee === 1,
-      "manual plan built",
+      plan.attacks.length === 1 &&
+        plan.attacks[0].skillId === "strike" &&
+        plan.attacks[0].targetId === foes[0].id &&
+        plan.defense.melee === 1,
+      "manual plan built through the slot popup",
     );
     await click("Ready");
     await page
