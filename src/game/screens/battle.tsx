@@ -37,6 +37,7 @@ import { DELIVERIES } from "../sim/types";
 import { BattleBackdrop } from "../ui/backdrop";
 import { nextHint } from "../state/tutorial";
 import { HintCard } from "../ui/hint";
+import { LevelBadge } from "../ui/level-badge";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
@@ -235,6 +236,7 @@ function Unit({
   marked,
   compact,
   narrow,
+  heroLevel,
 }: {
   actor: Combatant;
   floaters: Floater[];
@@ -248,6 +250,8 @@ function Unit({
   compact: boolean;
   /** Slimmer units for narrow (portrait phone) screens. */
   narrow: boolean;
+  /** Foes' level badges are coloured by danger against this. */
+  heroLevel: number;
 }) {
   const { tr } = useT();
   const typography = useTypography();
@@ -296,34 +300,41 @@ function Unit({
       ]}
     >
       <Animated.View style={[styles.unitInner, moveStyle]}>
-        <View
-          style={[
-            styles.portrait,
-            boss && styles.bossPortrait,
-            compact &&
-              (boss ? styles.bossPortraitCompact : styles.portraitCompact),
-            { borderColor: targetable ? palette.white : ring },
-            acting && styles.actingPortrait,
-          ]}
-        >
-          <GIcon
-            name={dead ? "skull" : actor.icon}
-            size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
-            color={dead ? palette.faint : ring}
+        <View>
+          <View
+            style={[
+              styles.portrait,
+              boss && styles.bossPortrait,
+              compact &&
+                (boss ? styles.bossPortraitCompact : styles.portraitCompact),
+              { borderColor: targetable ? palette.white : ring },
+              acting && styles.actingPortrait,
+            ]}
+          >
+            <GIcon
+              name={dead ? "skull" : actor.icon}
+              size={compact ? (boss ? 26 : 18) : boss ? 40 : 28}
+              color={dead ? palette.faint : ring}
+            />
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.blink, blinkStyle]}
+            />
+            {marked > 0 ? (
+              <View style={styles.mark}>
+                <Label
+                  value={String(marked)}
+                  type="caption2"
+                  color={palette.night}
+                />
+              </View>
+            ) : null}
+          </View>
+          <LevelBadge
+            level={actor.level}
+            heroLevel={actor.side === 0 ? undefined : heroLevel}
+            style={styles.level}
           />
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.blink, blinkStyle]}
-          />
-          {marked > 0 ? (
-            <View style={styles.mark}>
-              <Label
-                value={String(marked)}
-                type="caption2"
-                color={palette.night}
-              />
-            </View>
-          ) : null}
         </View>
         {/* Two lines tall whatever the name, so units line up in a row. */}
         <View
@@ -333,21 +344,12 @@ function Unit({
           ]}
         >
           <Label
-            value={
-              compact ? `${tr(actor.name)} · ${actor.level}` : tr(actor.name)
-            }
+            value={tr(actor.name)}
             type="caption2"
             numberOfLines={NAME_LINES}
             style={styles.nameText}
           />
         </View>
-        {compact ? null : (
-          <Label
-            value={`Lv ${actor.level}`}
-            type="caption2"
-            color={palette.muted}
-          />
-        )}
         <Bar
           value={actor.hp}
           max={actor.base.maxHp}
@@ -409,6 +411,7 @@ function SideGrid({
   const compact = window.height < 520;
   // Four unit columns plus the gap must fit a phone held upright.
   const narrow = window.width < 440;
+  const heroLevel = state.actors.find((a) => a.id === "hero")?.level ?? 1;
   // Front rows face each other in the middle of the field.
   const rows: (0 | 1)[] = side === 0 ? [1, 0] : [0, 1];
   return (
@@ -446,6 +449,7 @@ function SideGrid({
                 marked={marks[actor.id] ?? 0}
                 compact={compact}
                 narrow={narrow}
+                heroLevel={heroLevel}
               />
             );
           })}
@@ -1058,6 +1062,8 @@ const styles = StyleSheet.create({
   unitInner: { alignItems: "center", gap: 1, width: "100%" },
   name: { width: "100%", justifyContent: "center" },
   nameText: { textAlign: "center" },
+  /** Overhangs the portrait's bottom corner, like a badge on an avatar. */
+  level: { position: "absolute", bottom: -4, end: -12 },
   dead: { opacity: 0.35 },
   dimmed: { opacity: 0.4 },
   portrait: {
