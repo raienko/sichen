@@ -28,7 +28,7 @@ import {
   restore,
   xpToNext,
 } from "./hero";
-import { canUseRelic, rollDrops, rollItem, useRelic } from "./loot";
+import { canUseRelic, rollDrops, rollItem, applyRelicTo } from "./loot";
 import { accept, onKills, turnIn } from "./quests";
 import { Rng } from "./rng";
 import { emptyStats, heroStats } from "./stats";
@@ -290,10 +290,10 @@ describe("loot", () => {
     const rng = new Rng(5);
     const normal = rollItem(rng, 3, "normal");
     expect(canUseRelic("change", normal)).toBe(false);
-    const magic = useRelic(rng, "ascent", normal)!;
+    const magic = applyRelicTo(rng, "ascent", normal)!;
     expect(magic.rarity).toBe("magic");
     expect(magic.affixes).toHaveLength(1);
-    const rare = useRelic(rng, "ascent", magic)!;
+    const rare = applyRelicTo(rng, "ascent", magic)!;
     expect(rare.rarity).toBe("rare");
   });
 });

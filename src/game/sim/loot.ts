@@ -287,7 +287,7 @@ export function canUseRelic(relic: Relic, item: Item): boolean {
 }
 
 /** Returns the changed item, or null if the relic does nothing to it. */
-export function useRelic(rng: Rng, relic: Relic, item: Item): Item | null {
+export function applyRelicTo(rng: Rng, relic: Relic, item: Item): Item | null {
   if (!canUseRelic(relic, item)) return null;
   const next: Item = { ...item, affixes: [...item.affixes] };
   switch (relic) {

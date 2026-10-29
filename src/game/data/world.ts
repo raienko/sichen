@@ -145,7 +145,7 @@ export const QUESTS: readonly QuestDef[] = [
         },
         {
           id: "slay",
-          icon: "khanda",
+          icon: "slash",
           label: { en: "Slay them", uk: "Знищити їх" },
           battlePackId: "p_kurgan_mavka",
           reward: { xp: 200, gold: 150, relics: { ascent: 1 } },

@@ -75,7 +75,7 @@ const lytsar: Skill[] = [
     id: "sabre_cleave",
     classId: "lytsar",
     name: { en: "Sabre cleave", uk: "Рубка шаблею" },
-    icon: "khanda",
+    icon: "slash",
     ap: 2,
     cost: { stamina: 6 },
     target: "enemy",

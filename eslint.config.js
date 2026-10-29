@@ -148,6 +148,12 @@ module.exports = defineConfig([
       globals: globals.node,
     },
   },
+  // react-three-fiber elements take three.js props (position, args, …) that
+  // the DOM-oriented rule doesn't know.
+  {
+    files: ["src/game/render/**/*.tsx"],
+    rules: { "react/no-unknown-property": "off" },
+  },
   {
     files: ["jest.setup.js"],
     languageOptions: {

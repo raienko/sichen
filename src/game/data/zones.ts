@@ -199,7 +199,7 @@ export const ZONES: readonly ZoneDef[] = [
     packs: [],
     interactables: [],
     exits: [{ x: 29, z: 11, to: "vyshhorod", spawn: { x: 3, z: 17 } }],
-    palette: { ground: 0x3a3a2c, fog: 0x1a1814, sky: 0x221e1a },
+    palette: { ground: 0x4c4a38, fog: 0x1e1c18, sky: 0x221e1a },
   },
   {
     id: "vyshhorod",
@@ -337,6 +337,6 @@ export const ZONES: readonly ZoneDef[] = [
       },
     ],
     exits: [{ x: 0, z: 17, to: "kyiv", spawn: { x: 26, z: 11 } }],
-    palette: { ground: 0x2c3326, fog: 0x14161a, sky: 0x101318 },
+    palette: { ground: 0x36422c, fog: 0x161a1e, sky: 0x101318 },
   },
 ];
