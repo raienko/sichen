@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -754,6 +761,81 @@ function Results({ battle }: { battle: BattleSession }) {
   );
 }
 
+/** The clock turns red for the last seconds of planning. */
+const URGENT_SECONDS = 5;
+const URGENT_BG = "#3a1410";
+
+/**
+ * Ready, the round number and the planning clock in one button: its fill
+ * drains as time runs out and turns red near the end, and pressing it ends
+ * planning early.
+ */
+function ReadyButton({
+  round,
+  planning,
+  msLeft,
+  secondsLeft,
+  onPress,
+  style,
+}: {
+  round: number;
+  planning: boolean;
+  msLeft: number;
+  secondsLeft: number;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { t } = useT();
+  const urgent = planning && secondsLeft <= URGENT_SECONDS;
+  const share = planning
+    ? Math.max(0, Math.min(1, msLeft / (RULES.roundSeconds * 1000)))
+    : 0;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${t("battle.ready")}, ${t("battle.round", { round })}`}
+      disabled={!planning}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.readyButton,
+        {
+          borderColor: urgent ? palette.bad : palette.gold,
+          backgroundColor: urgent ? URGENT_BG : palette.panelHi,
+          opacity: !planning ? 0.6 : pressed ? 0.75 : 1,
+        },
+        style,
+      ]}
+    >
+      <View
+        style={[
+          styles.readyFill,
+          {
+            width: `${share * 100}%`,
+            backgroundColor: urgent ? palette.bad : palette.line,
+          },
+        ]}
+      />
+      <Label
+        value={t("battle.round", { round })}
+        type="caption2"
+        color={palette.muted}
+      />
+      <Row gap={6}>
+        <GIcon name="check" size={15} color={palette.text} />
+        <Label value={t("battle.ready")} type="callout" />
+        <Label
+          value={planning ? `${secondsLeft}s` : "…"}
+          type="headline"
+          color={urgent ? palette.white : palette.gold}
+        />
+      </Row>
+    </Pressable>
+  );
+}
+
 export default function BattleScreen() {
   const { t } = useT();
   const battle = useGame((s) => s.battle);
@@ -836,25 +918,6 @@ export default function BattleScreen() {
         },
       ]}
     >
-      <Row gap={10} style={styles.topBar}>
-        <Label
-          value={t("battle.round", { round: battle.state.round })}
-          type="headline"
-          color={palette.gold}
-        />
-        <View style={styles.timer}>
-          <Bar
-            value={battle.phase === "planning" ? battle.deadline - now : 0}
-            max={RULES.roundSeconds * 1000}
-            color={secondsLeft <= 5 ? palette.bad : palette.gold}
-            height={8}
-          />
-        </View>
-        <Label
-          value={battle.phase === "planning" ? `${secondsLeft}s` : "…"}
-          type="headline"
-        />
-      </Row>
       <View style={styles.field}>
         <BattleBackdrop zone={getZone(zoneId)} />
         <SideGrid
@@ -902,11 +965,11 @@ export default function BattleScreen() {
             tone={auto ? "primary" : "default"}
             onPress={actions.toggleAuto}
           />
-          <GButton
-            label={t("battle.ready")}
-            icon="check"
-            tone="primary"
-            disabled={battle.phase !== "planning"}
+          <ReadyButton
+            round={battle.state.round}
+            planning={battle.phase === "planning"}
+            msLeft={battle.deadline - now}
+            secondsLeft={secondsLeft}
             onPress={() => {
               setPending(null);
               actions.ready();
@@ -927,8 +990,6 @@ export default function BattleScreen() {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#120e0b" },
   flex: { flex: 1 },
-  topBar: { minHeight: 40 },
-  timer: { flex: 1 },
   field: {
     flex: 1,
     flexDirection: "row",
@@ -1065,6 +1126,18 @@ const styles = StyleSheet.create({
   },
   actionPending: { borderColor: palette.white, borderWidth: 2 },
   actionOff: { opacity: 0.35 },
+  readyButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    overflow: "hidden",
+    backgroundColor: palette.panelHi,
+  },
+  readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
   ready: { minHeight: 64, minWidth: 110 },
   readyPortrait: { minHeight: 52 },
   resultsBackdrop: {
