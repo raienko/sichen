@@ -17,6 +17,12 @@ const native = Platform.OS !== "web";
  */
 const softwareGl = native && !Device.isDevice;
 
+/**
+ * How much GLFrame scales its canvas up: the canvas' own pixel sizes (and
+ * points projected in it) times this are screen points.
+ */
+export const GL_SCALE = softwareGl ? PixelRatio.get() : 1;
+
 /** MSAA on expo-gl; too slow for software GL. */
 export const ANTIALIAS = !softwareGl;
 

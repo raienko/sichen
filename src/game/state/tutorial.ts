@@ -122,6 +122,9 @@ export function nextHint(
   battleRound = 0,
 ): HintDef | null {
   if (!save.settings.tutorial) return null;
+  // Battle hints would flash by for a second under auto-battle; they wait
+  // for a round the player plans by hand.
+  if (where === "battle" && save.settings.autoBattle) return null;
   return (
     HINTS.find(
       (h) =>

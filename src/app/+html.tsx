@@ -31,10 +31,16 @@ export default function Html({ children }: PropsWithChildren) {
         <link rel="apple-touch-icon" href={`${BASE}/icon-web-192.png`} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        {/* The light background until the app loads; then
-            @/features/web-app keeps it on the active theme. */}
-        <meta name="theme-color" content={colors.light.background} />
+        {/* The installed iOS app draws under a transparent status bar (white
+            text); the game is always dark, and its HUD pads for the inset. */}
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        {/* Dark until the app loads; then @/features/web-app keeps it on the
+            active theme, which the game pins to dark. */}
+        <meta name="theme-color" content={colors.dark.background} />
+        <style>{`html, body { background-color: ${colors.dark.background}; }`}</style>
         {/* Body doesn't scroll; ScrollViews do (react-native-web's reset). */}
         <ScrollViewStyleReset />
       </head>

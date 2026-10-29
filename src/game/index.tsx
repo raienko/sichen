@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 
+import { useTheme } from "@/features/theme";
+
 import { validateContent } from "./data";
 import BattleScreen from "./screens/battle";
 import CreateScreen from "./screens/create";
@@ -27,6 +29,12 @@ export default function Game() {
   useEffect(() => {
     void anonymousAuth.signIn();
   }, []);
+  // The game always plays dark; pinning the app theme keeps the browser and
+  // installed-app chrome (theme-color) and system UI dark with it.
+  const { preference, setPreference } = useTheme();
+  useEffect(() => {
+    if (preference !== "dark") setPreference("dark");
+  }, [preference, setPreference]);
   return (
     <View style={styles.root}>
       {scene.name === "title" ? <TitleScreen /> : null}

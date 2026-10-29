@@ -604,6 +604,25 @@ export function addAttack(skillId: string, targetId?: string) {
   );
 }
 
+/**
+ * Puts an action in attack slot `index`, replacing what was there, or in
+ * the first free slot when `index` is past the filled ones. Refused when
+ * the AP left (with that slot emptied) can't pay for it.
+ */
+export function setAttack(index: number, skillId: string, targetId?: string) {
+  const battle = get().battle;
+  const hero = battle?.state.actors.find((a) => a.id === "hero");
+  if (!battle || !hero || battle.phase !== "planning") return;
+  const attacks = [...battle.plan.attacks];
+  const without = attacks.filter((_, i) => i !== index);
+  const left = apFor(hero) - planCost({ ...battle.plan, attacks: without });
+  if (getSkill(skillId).ap > left) return;
+  if (index < attacks.length) attacks[index] = { skillId, targetId };
+  else if (attacks.length < RULES.attackSlots)
+    attacks.push({ skillId, targetId });
+  updatePlan((plan) => ({ ...plan, attacks }));
+}
+
 export function removeAttack(index: number) {
   updatePlan((plan) => ({
     ...plan,

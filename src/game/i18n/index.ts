@@ -57,7 +57,7 @@ const en = {
   "hint.mobs":
     "Tap a foe to attack or look it over. Some charge on sight, and so does anything far above you.",
   "hint.battle":
-    "Five AP a round. Attacks fill the slots; a shield guards one kind of blow for 1 AP. Then Ready, or let Auto think for you.",
+    "Five AP a round. Tap a foe to aim, tap a slot to choose what to do; a shield guards one kind of blow for 1 AP. Then Ready, or let Auto think for you.",
   "hint.tactics":
     "Your plan carries over to the next round. Long-press 1, 2 or 3 to save it as a tactic, tap to switch.",
   "hint.loot":
@@ -94,6 +94,14 @@ const en = {
   "battle.saveTactic": "Save the plan as the selected tactic",
   "battle.tacticSaved": "Tactic {{n}} saved",
   "battle.clear": "Clear the plan",
+  "battle.slot": "Slot {{n}}",
+  "battle.emptySlot": "Empty the slot",
+  "battle.tab.attacks": "Attacks",
+  "battle.tab.skills": "Skills",
+  "battle.tab.items": "Items",
+  "battle.tab.other": "Other",
+  "battle.ap": "AP {{left}}/{{total}}",
+  "battle.noTarget": "Tap a foe to pick a target",
   "battle.fleeChance": "{{chance}}% to escape",
   "battle.defense": "Defence",
   "battle.pickTarget": "Pick a target",
@@ -237,7 +245,7 @@ const uk: Record<StringKey, string> = {
   "hint.mobs":
     "Торкнися ворога, щоб напасти чи роздивитися. Деякі кидаються одразу, як і все, що значно сильніше за тебе.",
   "hint.battle":
-    "П'ять ОД на раунд. Атаки займають слоти; щит за 1 ОД береже від одного роду ударів. Тоді «Готово» — або хай думає «Авто».",
+    "П'ять ОД на раунд. Торкнись ворога, щоб націлитись, і слота — щоб обрати дію; щит за 1 ОД береже від одного роду ударів. Тоді «Готово» — або хай думає «Авто».",
   "hint.tactics":
     "План переходить у наступний раунд. Затисни 1, 2 чи 3, щоб зберегти тактику, торкнись — щоб перемкнути.",
   "hint.loot":
@@ -274,6 +282,14 @@ const uk: Record<StringKey, string> = {
   "battle.saveTactic": "Зберегти план як обрану тактику",
   "battle.tacticSaved": "Тактику {{n}} збережено",
   "battle.clear": "Очистити план",
+  "battle.slot": "Слот {{n}}",
+  "battle.emptySlot": "Звільнити слот",
+  "battle.tab.attacks": "Атаки",
+  "battle.tab.skills": "Вміння",
+  "battle.tab.items": "Речі",
+  "battle.tab.other": "Інше",
+  "battle.ap": "ОД {{left}}/{{total}}",
+  "battle.noTarget": "Торкнися ворога, щоб обрати ціль",
   "battle.fleeChance": "{{chance}}% утекти",
   "battle.defense": "Захист",
   "battle.pickTarget": "Обери ціль",
