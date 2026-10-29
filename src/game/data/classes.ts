@@ -59,14 +59,17 @@ export const CLASSES: readonly ClassDef[] = [
       maxStamina: 42,
       hpRegen: 1,
       manaRegen: 3,
-      staminaRegen: 7,
+      // Every Plastun attack costs stamina; less would starve long fights.
+      staminaRegen: 10,
       accuracy: 18,
       evasion: 15,
       speed: 13,
+      // Scouts carry charms against the unclean.
+      resChaos: 10,
       critChance: 8,
       critMulti: 160,
     },
-    perLevel: { dex: 2, str: 1, maxHp: 8, maxMana: 2, maxStamina: 3 },
+    perLevel: { dex: 2, str: 1, maxHp: 9, maxMana: 2, maxStamina: 3 },
     treeStart: "dex_0",
     masterNpc: "karmaliuk",
     skills: [
@@ -104,7 +107,7 @@ export const CLASSES: readonly ClassDef[] = [
       critChance: 5,
       critMulti: 150,
     },
-    perLevel: { int: 2, dex: 1, maxHp: 7, maxMana: 5, maxStamina: 1 },
+    perLevel: { int: 2, dex: 1, maxHp: 8, maxMana: 5, maxStamina: 1 },
     treeStart: "int_0",
     masterNpc: "olha",
     skills: [

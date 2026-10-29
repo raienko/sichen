@@ -168,20 +168,25 @@ describe("battle", () => {
     }
   });
 
-  it("makes the boss a real fight for a level 9 hero", () => {
-    let wins = 0;
-    let phases = 0;
-    for (let seed = 1; seed <= 20; seed++) {
-      const { state, events } = fight(seed, "lytsar", 9, [
-        { enemyId: "likho", level: 10 },
-      ]);
-      if (state.result === "won") wins += 1;
-      if (events.some((e) => e.t === "phase")) phases += 1;
-    }
-    expect(phases).toBeGreaterThan(5);
-    expect(wins).toBeGreaterThan(2);
-    expect(wins).toBeLessThan(20);
-  });
+  it.each(["lytsar", "plastun", "kharakternyk"])(
+    "makes the boss a real fight for a level 9 %s",
+    (classId) => {
+      // On auto-battle a geared level 9 hero wins about a third of the
+      // time (2026-10 tuning: 25-42% over 100 seeds); a player does better.
+      let wins = 0;
+      let phases = 0;
+      for (let seed = 1; seed <= 40; seed++) {
+        const { state, events } = fight(seed, classId, 9, [
+          { enemyId: "likho", level: 10 },
+        ]);
+        if (state.result === "won") wins += 1;
+        if (events.some((e) => e.t === "phase")) phases += 1;
+      }
+      expect(phases).toBeGreaterThan(10);
+      expect(wins).toBeGreaterThanOrEqual(6);
+      expect(wins).toBeLessThanOrEqual(28);
+    },
+  );
 
   it("caps a plan at the AP the actor has", () => {
     const rng = new Rng(1);

@@ -719,7 +719,7 @@ const monster: Skill[] = [
         base: [9, 14],
         weapon: 0,
       },
-      { type: "status", status: "stun", chance: 25, turns: 1 },
+      { type: "status", status: "stun", chance: 15, turns: 1 },
     ],
   },
   {
@@ -755,7 +755,7 @@ const monster: Skill[] = [
         base: [10, 15],
         weapon: 0,
       },
-      { type: "status", status: "stun", chance: 20, turns: 1 },
+      { type: "status", status: "stun", chance: 12, turns: 1 },
     ],
   },
   {
