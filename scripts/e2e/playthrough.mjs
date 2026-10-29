@@ -9,6 +9,8 @@ const { chromium } = createRequire(import.meta.url)("playwright");
 
 const base = process.argv[2] ?? "http://localhost:8081/";
 const classId = process.argv[3] ?? "lytsar";
+// The kurgan quest's branch: "spare" (no fight) or "slay" (a battle).
+const kurgan = process.argv[4] ?? "spare";
 const CLASS_NAMES = {
   lytsar: "Lytsar",
   plastun: "Plastun",
@@ -51,7 +53,9 @@ async function shot(name) {
 
 /** Fights a pack through the battle UI with auto-battle on; returns the outcome. */
 async function fight(packId, { manualFirst = false } = {}) {
-  await game((id) => globalThis.__game.actions.startBattle(id), packId);
+  // null: a battle something else (a quest choice) already started.
+  if (packId)
+    await game((id) => globalThis.__game.actions.startBattle(id), packId);
   await page.getByText("Round 1").waitFor({ timeout: 10000 });
   if (manualFirst) {
     // One round by hand: Strike the first foe, a melee defence point, Ready.
@@ -67,7 +71,7 @@ async function fight(packId, { manualFirst = false } = {}) {
       await page.getByText("Pick a target").waitFor();
       await page.getByLabel(foes[0]).first().click();
     }
-    await page.getByLabel("Melee +").first().click();
+    await page.getByLabel("Defence: Melee").first().click();
     const plan = await game(() => globalThis.__game.store.get().battle.plan);
     check(
       plan.attacks.length === 1 && plan.defense.melee === 1,
@@ -124,12 +128,18 @@ async function enter(zone, spawn) {
   );
   await page.waitForTimeout(500);
 }
-/** Debug grind: grants XP directly so the boss can be reached quickly. */
+/** Debug grind: sets the level, gold and potions so the boss comes fast. */
 async function grantLevels(target) {
   await game((lvl) => {
     const { store } = globalThis.__game;
     const s = store.get().save;
-    store.set({ save: { ...s, hero: { ...s.hero, level: lvl, xp: 0 } } });
+    store.set({
+      save: {
+        ...s,
+        gold: s.gold + 2000,
+        hero: { ...s.hero, level: lvl, xp: 0, potions: { hp: 6, mana: 6 } },
+      },
+    });
   }, target);
 }
 
@@ -237,20 +247,35 @@ try {
   check((await save()).quests.q_shrine.status === "ready", "shrine explored");
   await closePanel();
 
-  // Kurgan: spare.
+  // Kurgan: spare, or slay (a battle that pays out on a win).
   await game(() => globalThis.__game.actions.examine("kurgan"));
   await page.waitForTimeout(300);
   await shot("10-kurgan");
-  await click("Spare the mavky");
-  const s2 = await save();
-  check(
-    s2.quests.q_mavka.status === "done" && s2.quests.q_mavka.choice === "spare",
-    "kurgan: spared",
-  );
-  check(
-    s2.inventory.some((i) => i.uniqueId === "mavka_thread"),
-    "got Mavka's thread",
-  );
+  if (kurgan === "spare") {
+    await click("Spare the mavky");
+    const s2 = await save();
+    check(
+      s2.quests.q_mavka.status === "done" &&
+        s2.quests.q_mavka.choice === "spare",
+      "kurgan: spared",
+    );
+    check(
+      s2.inventory.some((i) => i.uniqueId === "mavka_thread"),
+      "got Mavka's thread",
+    );
+  } else {
+    const relics = (await save()).relics.ascent;
+    await click("Slay them");
+    await page.getByText("Round 1").waitFor({ timeout: 10000 });
+    const r = await fight(null);
+    const s2 = await save();
+    if (r === "won") {
+      check(s2.quests.q_mavka.choice === "slay", "kurgan: slain");
+      check(s2.relics.ascent >= relics + 1, "slay reward paid");
+    } else {
+      check(s2.quests.q_mavka.status === "active", "kurgan: retry allowed");
+    }
+  }
 
   await enter("kyiv", { x: 26, z: 11 });
   await talk("sirko");
@@ -266,14 +291,53 @@ try {
   await closePanel();
 
   // Boss at level 9.
+  // Boss at level 9 with every class skill bought from the grand master.
   await grantLevels(9);
+  await talk(MASTERS[classId]);
+  for (;;) {
+    const btn = page.getByText(/^Learn \d+$/).first();
+    if (!(await btn.count())) break;
+    await btn.click();
+  }
+  check((await save()).hero.learned.length >= 6, "learned the class skills");
+  await closePanel();
   await enter("vyshhorod", { x: 3, z: 17 });
-  const r = await fight("p_likho");
-  log("boss →", r);
-  await shot("12-after-boss");
+  let r = "lost";
+  for (let attempt = 1; attempt <= 3 && r !== "won"; attempt++) {
+    await game(() => globalThis.__game.actions.heal());
+    r = await fight("p_likho");
+    log(`boss attempt ${attempt} →`, r);
+    await shot(`12-boss-${attempt}`);
+    if (r === "lost") {
+      // Death: pick a card, rise in Kyiv, ride back out.
+      await page.getByText("The death god deals").waitFor();
+      const before = await save();
+      await page.getByLabel("3").first().click();
+      await click("Rise again in Kyiv");
+      await page.waitForFunction(
+        () => globalThis.__game.store.get().scene.name === "world",
+      );
+      const after = await save();
+      check(
+        after.world.zoneId === "kyiv" && after.hero.level === before.hero.level,
+        "death: back in Kyiv, no level lost",
+      );
+      check(after.gold >= 0, "death: no gold debt");
+      await enter("vyshhorod", { x: 3, z: 17 });
+    }
+  }
   if (r === "won") {
     const s3 = await save();
     check(s3.quests.q_likho.status === "ready", "q_likho ready after the boss");
+    check(
+      s3.inventory.some((i) => i.uniqueId === "likho_eye") ||
+        s3.hero.equipment && Object.values(s3.hero.equipment).some((i) => i?.uniqueId === "likho_eye"),
+      "Likho's Eye dropped",
+    );
+    await enter("kyiv", { x: 26, z: 11 });
+    await talk("sirko");
+    await click("Complete");
+    check((await save()).quests.q_likho.status === "done", "slice main quest done");
   }
 
   check(errors.length === 0, `no page errors (${errors.length})`);

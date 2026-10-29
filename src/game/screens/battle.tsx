@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptics } from "@/features/haptics";
 
-import { getSkill, RULES } from "../data";
+import { getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
 import * as actions from "../state/actions";
 import { useGame, useSave, type BattleSession } from "../state/store";
@@ -26,6 +26,7 @@ import {
 } from "../sim/battle";
 import { battleActions } from "../sim/hero";
 import { DELIVERIES } from "../sim/types";
+import { BattleBackdrop } from "../ui/backdrop";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
@@ -755,6 +756,7 @@ export default function BattleScreen() {
   const { t } = useT();
   const battle = useGame((s) => s.battle);
   const auto = useGame((s) => s.save?.settings.autoBattle ?? false);
+  const zoneId = useGame((s) => s.save?.world.zoneId ?? "kyiv");
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const portrait = height > width;
@@ -799,7 +801,11 @@ export default function BattleScreen() {
 
   if (!battle) return null;
   const shown = battle.phase === "playing" ? playback.shown : battle.state;
-  const secondsLeft = Math.max(0, Math.ceil((battle.deadline - now) / 1000));
+  // `now` ticks every 200 ms, so right after a new deadline it can lag.
+  const secondsLeft = Math.min(
+    RULES.roundSeconds,
+    Math.max(0, Math.ceil((battle.deadline - now) / 1000)),
+  );
   const pendingSkill = pending ? getSkill(pending) : null;
   const melee = pendingSkill?.effects.some(
     (e) => e.type === "damage" && e.delivery === "melee",
@@ -842,6 +848,7 @@ export default function BattleScreen() {
         />
       </Row>
       <View style={styles.field}>
+        <BattleBackdrop zone={getZone(zoneId)} />
         <SideGrid
           state={shown}
           side={0}
