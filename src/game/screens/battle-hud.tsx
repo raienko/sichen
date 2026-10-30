@@ -478,31 +478,6 @@ export function ActionPicker({
                 );
               })}
             </View>
-            {/* Emptying the slot: a tile like the others, bottom-right. */}
-            <View style={styles.clearRow}>
-              {current ? (
-                <Pressable
-                  accessibilityLabel={t("battle.emptySlot")}
-                  onPress={() => {
-                    actions.removeAttack(index);
-                    onClose();
-                  }}
-                  style={styles.option}
-                >
-                  <View style={[styles.optionIcon, styles.clearIcon]}>
-                    <GIcon name="eraser" size={22} color={palette.bad} />
-                  </View>
-                  <View style={[styles.optionNameBox, { height: nameBox }]}>
-                    <Label
-                      value={t("battle.emptySlot")}
-                      type="caption2"
-                      numberOfLines={2}
-                      style={styles.optionName}
-                    />
-                  </View>
-                </Pressable>
-              ) : null}
-            </View>
           </View>
           {/* Tabs down the right edge, as icons. */}
           <View style={styles.tabs}>
@@ -530,6 +505,20 @@ export function ActionPicker({
                 </Pressable>
               );
             })}
+            {/* Emptying the slot: always here, at the column's foot. */}
+            <View style={styles.flex} />
+            <Pressable
+              accessibilityLabel={t("battle.emptySlot")}
+              accessibilityState={{ disabled: !current }}
+              disabled={!current}
+              onPress={() => {
+                actions.removeAttack(index);
+                onClose();
+              }}
+              style={[styles.tab, styles.clearTab, !current && styles.off]}
+            >
+              <GIcon name="eraser" size={18} color={palette.bad} />
+            </Pressable>
           </View>
         </View>
       </View>
@@ -665,8 +654,7 @@ const styles = StyleSheet.create({
   },
   optionNameBox: { justifyContent: "center", alignSelf: "stretch" },
   optionName: { textAlign: "center" },
-  clearRow: { alignItems: "flex-end", marginTop: 8 },
-  clearIcon: { borderStyle: "dashed", borderColor: palette.bad },
+  clearTab: { borderStyle: "dashed", borderColor: palette.bad },
   tabs: {
     gap: 6,
     paddingStart: 8,
