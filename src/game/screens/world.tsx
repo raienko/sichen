@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useTypography } from "@/features/responsive";
+
 import { getClass, getEnemy, getNpc, getZone } from "../data";
 import { useT } from "../i18n";
 import WorldScene from "../render/world-scene";
@@ -129,6 +131,7 @@ const SMALL = 46;
  */
 function ActionArc({ save }: { save: SaveData }) {
   const { t } = useT();
+  const typography = useTypography();
   const near = useNearby(save);
   const layout = useMemo(() => arcLayout(SMALL, CONTEXT, ARC.length, 290), []);
   const at = (p: { x: number; y: number }, size: number) => ({
@@ -181,16 +184,25 @@ function ActionArc({ save }: { save: SaveData }) {
           )}
         </RoundButton>
       </View>
-      {near ? (
-        <Label
-          value={near.name}
-          type="subheadline"
-          display
-          color={palette.ivory}
-          numberOfLines={1}
-          style={styles.contextName}
-        />
-      ) : null}
+      {/* Reserve the name row even when nothing is nearby. */}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.contextNameSlot,
+          { height: typography.subheadline.lineHeight },
+        ]}
+      >
+        {near ? (
+          <Label
+            value={near.name}
+            type="subheadline"
+            display
+            color={palette.ivory}
+            numberOfLines={1}
+            style={styles.contextName}
+          />
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -493,7 +505,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   arcWrap: { alignItems: "flex-end" },
-  contextName: { maxWidth: 200, marginTop: 4, textAlign: "center" },
+  contextNameSlot: { width: 200, marginTop: 4, alignItems: "flex-end" },
+  contextName: { maxWidth: 200, textAlign: "center" },
   toasts: {
     position: "absolute",
     top: 12,
