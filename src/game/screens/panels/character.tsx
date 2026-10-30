@@ -131,7 +131,7 @@ export function CharacterScreen({
 }: {
   save: SaveData;
   onClose: () => void;
-  /** Opens with the full stat list on top. */
+  /** The full stat list on top; closing it goes back to the bag. */
   showStats?: boolean;
 }) {
   const { t } = useT();
@@ -139,7 +139,6 @@ export function CharacterScreen({
   const wide = width > height;
   const [selected, setSelected] = useState<Selection | null>(null);
   const [category, setCategory] = useState<Category>("all");
-  const [stats, setStats] = useState(showStats);
   const [gridWidth, setGridWidth] = useState(0);
   const { hero } = save;
 
@@ -360,17 +359,19 @@ export function CharacterScreen({
     <>
       <Workspace
         save={save}
-        tab="inventory"
+        tab={showStats ? "character" : "inventory"}
         onClose={onClose}
-        onAttributes={() => setStats(true)}
       >
         <View style={wide ? styles.wide : styles.tall}>
           <View style={wide ? styles.half : styles.top}>{equipment}</View>
           <View style={wide ? styles.half : styles.flex}>{bag}</View>
         </View>
       </Workspace>
-      {stats ? (
-        <CharacterPanel save={save} onClose={() => setStats(false)} />
+      {showStats ? (
+        <CharacterPanel
+          save={save}
+          onClose={() => actions.openPanel({ name: "inventory" })}
+        />
       ) : null}
     </>
   );
