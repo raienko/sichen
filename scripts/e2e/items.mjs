@@ -69,19 +69,23 @@ try {
   ok(s.inventory.length === 0 && s.gold > g1, `sold it (${g1}→${s.gold})`);
   await p.evaluate(() => globalThis.__game.actions.openPanel(null));
 
-  // Relic of Ascent on the equipped weapon (normal → magic).
+  // Relics tab: Relic of Ascent on the equipped weapon (normal → magic).
   await p.evaluate(() =>
     globalThis.__game.actions.openPanel({ name: "inventory" }),
   );
   await p.waitForTimeout(400);
-  await p.getByLabel("Sabre").first().click();
+  await p.getByText(/^Relics \d+$/).click();
   await p.getByLabel("Relic of Ascent").click();
+  await shot("3-relics");
+  await p.getByLabel(/sabre/i).first().click();
   s = await save();
   ok(
     s.hero.equipment.weapon.rarity === "magic" && s.relics.ascent === 0,
     `ascent: weapon is ${s.hero.equipment.weapon.rarity}`,
   );
   await shot("3-relic");
+  await p.getByText("Items", { exact: true }).click();
+  await p.getByLabel(/sabre/i).first().click();
   // Unequip the weapon, then to the stash and back.
   await p.getByText("Take off").click();
   s = await save();

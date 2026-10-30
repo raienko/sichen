@@ -233,7 +233,6 @@ function UnitTag({
   spot,
   floaters,
   marked,
-  ring,
   heroLevel,
   onPress,
 }: {
@@ -241,8 +240,6 @@ function UnitTag({
   spot: UnitSpot;
   floaters: Floater[];
   marked: number;
-  /** A ring at the feet: the hero, or the selected foe. */
-  ring?: string;
   heroLevel: number;
   onPress?: () => void;
 }) {
@@ -251,15 +248,6 @@ function UnitTag({
   const tall = Math.max(40, spot.feet - spot.head);
   return (
     <>
-      {ring && !dead ? (
-        <View
-          pointerEvents="none"
-          style={[
-            styles.ring,
-            { left: spot.x - 34, top: spot.feet - 10, borderColor: ring },
-          ]}
-        />
-      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={tr(actor.name)}
@@ -587,6 +575,9 @@ export default function BattleScreen() {
       ? 50
       : 58;
 
+  // The hero's shadow glows gold, the selected foe's white (while planning).
+  const highlights: Record<string, number> = { hero: 0xd4a94e };
+  if (planning && foe) highlights[foe.id] = 0xffffff;
   // Short (landscape phone) screens get slimmer panels, more room to fight.
   const short = height < 500;
   const ally = <ActorPanel actor={hero} compact={short} />;
@@ -659,6 +650,7 @@ export default function BattleScreen() {
               actors={shown.actors}
               hero={heroLook}
               motion={playback}
+              highlights={highlights}
               onProject={setSpots}
             />
           </View>
@@ -675,13 +667,6 @@ export default function BattleScreen() {
                   spot={spot}
                   floaters={playback.floaters.filter((f) => f.actor === a.id)}
                   marked={planning ? (marks[a.id] ?? 0) : 0}
-                  ring={
-                    a.id === "hero"
-                      ? palette.gold
-                      : planning && isFoe && a.id === foe?.id
-                        ? palette.white
-                        : undefined
-                  }
                   heroLevel={hero?.level ?? 1}
                   onPress={
                     isFoe && a.hp > 0 ? () => setChosenFoe(a.id) : undefined
@@ -764,13 +749,6 @@ const styles = StyleSheet.create({
   commit: { alignItems: "flex-end", gap: 6 },
   commitButtons: { alignItems: "stretch" },
   ready: { minWidth: 84 },
-  ring: {
-    position: "absolute",
-    width: 68,
-    height: 20,
-    borderRadius: 34,
-    borderWidth: 2,
-  },
   hitArea: { position: "absolute", width: 76 },
   tag: { position: "absolute", width: 80, alignItems: "center", gap: 2 },
   tagBar: { width: 56 },

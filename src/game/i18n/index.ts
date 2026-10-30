@@ -44,6 +44,9 @@ const en = {
   "menu.language": "Language",
   "menu.lootFilter": "Hide loot below",
   "menu.tutorial": "Tutorial hints",
+  "menu.fullscreen": "Fullscreen",
+  "menu.homeScreen":
+    "For fullscreen on iPhone: Share → Add to Home Screen, then play from the icon.",
   "hint.gotIt": "Got it",
   "hint.death":
     "Fell, did you? The death god deals his cards. Most cost little, some take gold or progress — never a level. Pick one and get up.",
@@ -160,6 +163,18 @@ const en = {
   "relic.ascent": "Relic of Ascent",
   "relic.addition": "Relic of Addition",
   "relic.purge": "Relic of Purging",
+  "relic.about":
+    "Relics drop from foes and quests. Pick one, then the item to use it on.",
+  "relic.pickItem": "Use it on:",
+  "relic.change.desc": "Rerolls a magic or rare item's properties.",
+  "relic.ascent.desc": "Raises an item's rarity: normal → magic → rare.",
+  "relic.addition.desc": "Adds a property to a magic or rare item.",
+  "relic.purge.desc": "Removes one property from an item.",
+  "inv.tab.items": "Items",
+  "inv.tab.relics": "Relics",
+  "toast.relicUsed": "{{name}} used",
+  "hint.relics":
+    "That glint in your pack is a relic. The Relics tab in your inventory says what each does; spend them on gear worth keeping.",
   "stat.str": "Strength",
   "stat.dex": "Dexterity",
   "stat.int": "Intellect",
@@ -232,6 +247,9 @@ const uk: Record<StringKey, string> = {
   "menu.language": "Мова",
   "menu.lootFilter": "Ховати здобич нижче",
   "menu.tutorial": "Підказки",
+  "menu.fullscreen": "На весь екран",
+  "menu.homeScreen":
+    "Щоб грати на весь екран на iPhone: Поділитися → На початковий екран, і запускай з іконки.",
   "hint.gotIt": "Зрозумів",
   "hint.death":
     "Що, впав? Бог смерті роздає карти. Більшість коштує мало, деякі забирають золото чи досвід — але не рівень. Тягни одну й вставай.",
@@ -348,6 +366,18 @@ const uk: Record<StringKey, string> = {
   "relic.ascent": "Реліквія піднесення",
   "relic.addition": "Реліквія додавання",
   "relic.purge": "Реліквія очищення",
+  "relic.about":
+    "Реліквії падають з ворогів і за завдання. Обери реліквію, а тоді річ, на яку її використати.",
+  "relic.pickItem": "Використати на:",
+  "relic.change.desc": "Перекидає властивості магічної чи рідкісної речі.",
+  "relic.ascent.desc": "Підвищує рідкість речі: звичайна → магічна → рідкісна.",
+  "relic.addition.desc": "Додає властивість магічній чи рідкісній речі.",
+  "relic.purge.desc": "Прибирає одну властивість з речі.",
+  "inv.tab.items": "Речі",
+  "inv.tab.relics": "Реліквії",
+  "toast.relicUsed": "Використано: {{name}}",
+  "hint.relics":
+    "Те, що блищить у торбі, — реліквія. Вкладка «Реліквії» в спорядженні каже, що вона робить; трать їх на речі, які варто берегти.",
   "stat.str": "Сила",
   "stat.dex": "Спритність",
   "stat.int": "Розум",

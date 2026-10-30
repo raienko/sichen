@@ -10,6 +10,7 @@ import DeathScreen from "./screens/death";
 import TitleScreen from "./screens/title";
 import WorldScreen from "./screens/world";
 import { anonymousAuth } from "./state/platform";
+import { fullscreenOnFirstTap } from "./ui/fullscreen";
 import * as actions from "./state/actions";
 import { runtime } from "./state/runtime";
 import { store, useGame } from "./state/store";
@@ -29,6 +30,8 @@ export default function Game() {
   useEffect(() => {
     void anonymousAuth.signIn();
   }, []);
+  // Web: no tabs or address bar once the player first taps.
+  useEffect(fullscreenOnFirstTap, []);
   // The game always plays dark; pinning the app theme keeps the browser and
   // installed-app chrome (theme-color) and system UI dark with it.
   const { preference, setPreference } = useTheme();

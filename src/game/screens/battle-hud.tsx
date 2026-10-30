@@ -207,37 +207,7 @@ export function ActionSlots({
           type="caption1"
           color={ap > 0 ? palette.gold : palette.faint}
         />
-        {DELIVERIES.map((kind) => {
-          const on = battle.plan.defense[kind] > 0;
-          return (
-            <Pressable
-              key={kind}
-              accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
-              accessibilityState={{ selected: on }}
-              disabled={!planning || stunned || (!on && ap <= 0)}
-              onPress={() => actions.toggleDefense(kind)}
-              style={[
-                styles.defense,
-                on && {
-                  borderColor: palette.delivery[kind],
-                  backgroundColor: "rgba(42, 34, 27, 0.95)",
-                },
-                !on && planning && ap <= 0 && styles.off,
-              ]}
-            >
-              <GIcon
-                name="shield-halved"
-                size={11}
-                color={on ? palette.delivery[kind] : palette.faint}
-              />
-              <GIcon
-                name={DELIVERY_ICON[kind]}
-                size={12}
-                color={on ? palette.delivery[kind] : palette.muted}
-              />
-            </Pressable>
-          );
-        })}
+        <DefenseToggles battle={battle} />
       </Row>
       {stunned || frozen ? (
         <Label
@@ -303,10 +273,59 @@ function skillColor(skill: Skill): string {
   return palette.text;
 }
 
+/** The three defence shields, on or off, 1 AP each. */
+function DefenseToggles({ battle }: { battle: BattleSession }) {
+  const { t } = useT();
+  const planning = battle.phase === "planning";
+  const { hero, ap } = resourcesLeft(battle);
+  const stunned = hasStatus(hero, "stun");
+  return (
+    <Row gap={6}>
+      {DELIVERIES.map((kind) => {
+        const on = battle.plan.defense[kind] > 0;
+        return (
+          <Pressable
+            key={kind}
+            accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
+            accessibilityState={{ selected: on }}
+            disabled={!planning || stunned || (!on && ap <= 0)}
+            onPress={() => actions.toggleDefense(kind)}
+            style={[
+              styles.defense,
+              on && {
+                borderColor: palette.delivery[kind],
+                backgroundColor: "rgba(42, 34, 27, 0.95)",
+              },
+              !on && planning && ap <= 0 && styles.off,
+            ]}
+          >
+            <GIcon
+              name="shield-halved"
+              size={14}
+              color={on ? palette.delivery[kind] : palette.faint}
+            />
+            <GIcon
+              name={DELIVERY_ICON[kind]}
+              size={16}
+              color={on ? palette.delivery[kind] : palette.muted}
+            />
+          </Pressable>
+        );
+      })}
+    </Row>
+  );
+}
+
 // ---------------------------------------------------------------- picker
 
 type Tab = "attacks" | "skills" | "items" | "other";
 const TABS: readonly Tab[] = ["attacks", "skills", "items", "other"];
+const TAB_ICON: Record<Tab, string> = {
+  attacks: "hand-fist",
+  skills: "wand-magic-sparkles",
+  items: "flask",
+  other: "person-running",
+};
 
 function tabOf(skill: Skill): Tab {
   if (skill.potion) return "items";
@@ -341,6 +360,9 @@ export function ActionPicker({
   const all = battleActions(save.hero).map((id) => getSkill(id));
   const listed = all.filter((s) => tabOf(s) === tab);
 
+  // Names always take two lines, so tiles and costs line up.
+  const nameBox = useTypography().caption2.lineHeight * 2;
+
   const pick = (skill: Skill) => {
     const aimed = skill.target === "enemy" || skill.target === "enemyRow";
     actions.setAttack(index, skill.id, aimed ? targetId : undefined);
@@ -355,138 +377,150 @@ export function ActionPicker({
         accessibilityLabel={t("menu.close")}
       />
       <View style={styles.picker}>
-        <Row gap={8}>
+        <Row gap={8} wrap style={styles.pickerHead}>
           <Label
             value={t("battle.slot", { n: index + 1 })}
             type="headline"
             color={palette.gold}
-            style={styles.flex}
           />
           <Label
             value={t("battle.ap", { left: ap, total: apFor(hero) })}
             type="caption1"
             color={palette.muted}
           />
+          {/* The shields again, to free or spend AP without leaving. */}
+          <View style={styles.flex} />
+          <DefenseToggles battle={battle} />
           <Pressable
             onPress={onClose}
             accessibilityLabel={t("menu.close")}
             style={styles.pickerClose}
           >
-            <GIcon name="xmark" size={14} color={palette.muted} />
+            <GIcon name="xmark" size={16} color={palette.muted} />
           </Pressable>
         </Row>
-        <Row gap={4} style={styles.tabs}>
-          {TABS.map((id) => {
-            const count = all.filter((s) => tabOf(s) === id).length;
-            return (
-              <Pressable
-                key={id}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: tab === id }}
-                disabled={count === 0}
-                onPress={() => setTab(id)}
-                style={[
-                  styles.tab,
-                  tab === id && styles.tabOn,
-                  count === 0 && styles.off,
-                ]}
-              >
-                <Label
-                  value={t(`battle.tab.${id}` as StringKey)}
-                  type="caption1"
-                  color={tab === id ? palette.gold : palette.muted}
-                />
-              </Pressable>
-            );
-          })}
-        </Row>
-        <View style={styles.options}>
-          {listed.map((skill) => {
-            const ok =
-              skill.ap <= ap &&
-              (skill.potion
-                ? potions[skill.potion] > 0
-                : (skill.cost.mana ?? 0) <= mana &&
-                  (skill.cost.stamina ?? 0) <= stamina);
-            const chosen = currentSkill?.id === skill.id;
-            return (
-              <Pressable
-                key={skill.id}
-                accessibilityLabel={tr(skill.name)}
-                accessibilityState={{ disabled: !ok, selected: chosen }}
-                disabled={!ok}
-                onPress={() => pick(skill)}
-                style={[styles.option, !ok && styles.off]}
-              >
-                <View
+        <View style={styles.pickerBody}>
+          <View style={styles.flex}>
+            <View style={styles.options}>
+              {listed.map((skill) => {
+                const ok =
+                  skill.ap <= ap &&
+                  (skill.potion
+                    ? potions[skill.potion] > 0
+                    : (skill.cost.mana ?? 0) <= mana &&
+                      (skill.cost.stamina ?? 0) <= stamina);
+                const chosen = currentSkill?.id === skill.id;
+                return (
+                  <Pressable
+                    key={skill.id}
+                    accessibilityLabel={tr(skill.name)}
+                    accessibilityState={{ disabled: !ok, selected: chosen }}
+                    disabled={!ok}
+                    onPress={() => pick(skill)}
+                    style={[styles.option, !ok && styles.off]}
+                  >
+                    <View
+                      style={[
+                        styles.optionIcon,
+                        chosen && { borderColor: palette.gold, borderWidth: 2 },
+                      ]}
+                    >
+                      <GIcon
+                        name={skill.icon}
+                        size={22}
+                        color={skillColor(skill)}
+                      />
+                    </View>
+                    <View style={[styles.optionNameBox, { height: nameBox }]}>
+                      <Label
+                        value={tr(skill.name)}
+                        type="caption2"
+                        numberOfLines={2}
+                        style={styles.optionName}
+                      />
+                    </View>
+                    <Row gap={5}>
+                      <Cost
+                        icon="circle"
+                        value={skill.ap}
+                        color={palette.gold}
+                      />
+                      {skill.cost.mana ? (
+                        <Cost
+                          icon="droplet"
+                          value={skill.cost.mana}
+                          color={palette.mana}
+                        />
+                      ) : null}
+                      {skill.cost.stamina ? (
+                        <Cost
+                          icon="bolt"
+                          value={skill.cost.stamina}
+                          color={palette.stamina}
+                        />
+                      ) : null}
+                      {skill.potion ? (
+                        <Label
+                          value={`×${potions[skill.potion]}`}
+                          type="caption2"
+                          color={palette.muted}
+                        />
+                      ) : null}
+                      {skill.flee ? (
+                        <Label
+                          value={`${fleeChance(battle.state, hero)}%`}
+                          type="caption2"
+                          color={palette.good}
+                        />
+                      ) : null}
+                    </Row>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+          {/* Tabs down the right edge, as icons. */}
+          <View style={styles.tabs}>
+            {TABS.map((id) => {
+              const count = all.filter((s) => tabOf(s) === id).length;
+              return (
+                <Pressable
+                  key={id}
+                  accessibilityRole="tab"
+                  accessibilityLabel={t(`battle.tab.${id}` as StringKey)}
+                  accessibilityState={{ selected: tab === id }}
+                  disabled={count === 0}
+                  onPress={() => setTab(id)}
                   style={[
-                    styles.optionIcon,
-                    chosen && { borderColor: palette.gold, borderWidth: 2 },
+                    styles.tab,
+                    tab === id && styles.tabOn,
+                    count === 0 && styles.off,
                   ]}
                 >
                   <GIcon
-                    name={skill.icon}
-                    size={22}
-                    color={skillColor(skill)}
+                    name={TAB_ICON[id]}
+                    size={18}
+                    color={tab === id ? palette.gold : palette.muted}
                   />
-                </View>
-                <Label
-                  value={tr(skill.name)}
-                  type="caption2"
-                  numberOfLines={2}
-                  style={styles.optionName}
-                />
-                <Row gap={5}>
-                  <Cost icon="circle" value={skill.ap} color={palette.gold} />
-                  {skill.cost.mana ? (
-                    <Cost
-                      icon="droplet"
-                      value={skill.cost.mana}
-                      color={palette.mana}
-                    />
-                  ) : null}
-                  {skill.cost.stamina ? (
-                    <Cost
-                      icon="bolt"
-                      value={skill.cost.stamina}
-                      color={palette.stamina}
-                    />
-                  ) : null}
-                  {skill.potion ? (
-                    <Label
-                      value={`×${potions[skill.potion]}`}
-                      type="caption2"
-                      color={palette.muted}
-                    />
-                  ) : null}
-                  {skill.flee ? (
-                    <Label
-                      value={`${fleeChance(battle.state, hero)}%`}
-                      type="caption2"
-                      color={palette.good}
-                    />
-                  ) : null}
-                </Row>
-              </Pressable>
-            );
-          })}
+                </Pressable>
+              );
+            })}
+            {/* Emptying the slot: always here, at the column's foot. */}
+            <View style={styles.flex} />
+            <Pressable
+              accessibilityLabel={t("battle.emptySlot")}
+              accessibilityState={{ disabled: !current }}
+              disabled={!current}
+              onPress={() => {
+                actions.removeAttack(index);
+                onClose();
+              }}
+              style={[styles.tab, styles.clearTab, !current && styles.off]}
+            >
+              <GIcon name="eraser" size={18} color={palette.bad} />
+            </Pressable>
+          </View>
         </View>
-        {current ? (
-          <Pressable
-            onPress={() => {
-              actions.removeAttack(index);
-              onClose();
-            }}
-            style={styles.emptySlot}
-          >
-            <GIcon name="eraser" size={12} color={palette.muted} />
-            <Label
-              value={t("battle.emptySlot")}
-              type="caption1"
-              color={palette.muted}
-            />
-          </Pressable>
-        ) : null}
       </View>
     </View>
   );
@@ -541,7 +575,7 @@ export function TacticsBar({ battle }: { battle: BattleSession }) {
           >
             <Label
               value={String(i + 1)}
-              type="subheadline"
+              type="headline"
               color={
                 active ? palette.gold : tactic ? palette.text : palette.faint
               }
@@ -555,7 +589,7 @@ export function TacticsBar({ battle }: { battle: BattleSession }) {
         onPress={() => actions.saveTactic(save.settings.tactic)}
         style={styles.tacticTool}
       >
-        <GIcon name="floppy-disk" size={13} color={palette.muted} />
+        <GIcon name="floppy-disk" size={17} color={palette.muted} />
       </Pressable>
       <Pressable
         accessibilityLabel={t("battle.clear")}
@@ -563,7 +597,7 @@ export function TacticsBar({ battle }: { battle: BattleSession }) {
         onPress={actions.clearPlan}
         style={[styles.tacticTool, empty && styles.off]}
       >
-        <GIcon name="eraser" size={13} color={palette.muted} />
+        <GIcon name="eraser" size={17} color={palette.muted} />
       </Pressable>
     </Row>
   );
@@ -599,19 +633,65 @@ const styles = StyleSheet.create({
   },
   panelLevel: { position: "absolute", bottom: -5, end: -8 },
   panelBody: { flex: 1, gap: 3, minWidth: 0 },
-  slotsWrap: { alignItems: "center", gap: 6 },
-  slotsTop: { alignItems: "center" },
   defense: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
-    height: 28,
-    paddingHorizontal: 7,
-    borderRadius: 14,
+    gap: 4,
+    height: 40,
+    paddingHorizontal: 10,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: palette.lineSoft,
     backgroundColor: GLASS,
   },
+  pickerHead: { alignItems: "center" },
+  pickerBody: { flexDirection: "row", gap: 10 },
+  options: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    alignContent: "flex-start",
+  },
+  optionNameBox: { justifyContent: "center", alignSelf: "stretch" },
+  optionName: { textAlign: "center" },
+  clearTab: { borderStyle: "dashed", borderColor: palette.bad },
+  tabs: {
+    gap: 6,
+    paddingStart: 8,
+    borderStartWidth: 1,
+    borderColor: palette.lineSoft,
+  },
+  tab: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  tabOn: { borderColor: palette.gold, backgroundColor: palette.panelHi },
+  tactic: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: palette.lineSoft,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: GLASS,
+  },
+  tacticTool: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: GLASS,
+  },
+  slotsWrap: { alignItems: "center", gap: 6 },
+  slotsTop: { alignItems: "center" },
   slot: {
     borderWidth: 2,
     alignItems: "center",
@@ -654,18 +734,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  tabs: {
-    borderBottomWidth: 1,
-    borderColor: palette.lineSoft,
-  },
-  tab: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderBottomWidth: 2,
-    borderColor: "transparent",
-  },
-  tabOn: { borderColor: palette.gold },
-  options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   option: { width: 76, alignItems: "center", gap: 3 },
   optionIcon: {
     width: 52,
@@ -677,33 +745,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: palette.panelHi,
   },
-  optionName: { textAlign: "center" },
-  emptySlot: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    paddingVertical: 6,
-  },
-  tactic: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: palette.lineSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GLASS,
-  },
   tacticFilled: { borderStyle: "solid" },
   tacticActive: { borderColor: palette.gold, borderWidth: 2 },
-  tacticTool: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GLASS,
-  },
 });

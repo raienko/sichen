@@ -19,6 +19,7 @@ export type HintId =
   | "loot"
   | "tree"
   | "master"
+  | "relics"
   | "death";
 
 export type HintWhere = "world" | "battle" | "death";
@@ -75,6 +76,14 @@ export const HINTS: readonly HintDef[] = [
     where: "world",
     key: "hint.loot",
     when: (s) => s.inventory.length > 0,
+  },
+  {
+    id: "relics",
+    icon: "gem",
+    where: "world",
+    key: "hint.relics",
+    when: (s) =>
+      s.stats.battles > 0 && Object.values(s.relics).some((n) => n > 0),
   },
   {
     id: "tree",
