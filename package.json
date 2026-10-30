@@ -179,7 +179,10 @@
     "setupFiles": [
       "<rootDir>/jest.setup.js"
     ],
-    "resolver": "react-native-worklets/jest/resolver.js"
+    "resolver": "react-native-worklets/jest/resolver.js",
+    "modulePathIgnorePatterns": [
+      "<rootDir>/.claude/worktrees/"
+    ]
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md}": [
