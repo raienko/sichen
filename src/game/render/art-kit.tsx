@@ -114,8 +114,18 @@ function Weapon({ kind }: { kind?: string }) {
   switch (kind) {
     case "bow":
       return (
-        <group position={[0.38, 0.85, 0.1]} rotation={[0, 0, Math.PI / 2]}>
-          <Part geometry={G.torus} color={0x6b4423} scale={[1, 1.4, 1]} />
+        // Held upright at the side, belly forward and turned a little
+        // outwards so it reads from behind too; string on the hand side.
+        <group
+          position={[0.36, 0.82, 0.04]}
+          rotation={[0, -Math.PI / 2 + 0.6, -Math.PI / 2]}
+        >
+          <Part geometry={G.torus} color={0x6b4423} scale={[1.6, 0.7, 1.2]} />
+          <Part
+            geometry={G.box}
+            color={0xe8dcc0}
+            scale={[1.28, 0.018, 0.018]}
+          />
         </group>
       );
     case "staff":
