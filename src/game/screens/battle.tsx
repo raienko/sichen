@@ -500,9 +500,9 @@ export default function BattleScreen() {
   )
     slotSize -= 1;
 
-  // The hero's shadow glows gold, the selected foe's white (while planning).
+  // The hero's shadow glows gold, the selected foe's white (all battle long).
   const highlights: Record<string, number> = { hero: 0xd4a94e };
-  if (planning && foe) highlights[foe.id] = 0xffffff;
+  if (foe) highlights[foe.id] = 0xffffff;
   // Short (landscape phone) screens get slimmer panels, more room to fight.
   const short = height < 500;
   const ally = <ActorPanel actor={hero} compact={short} />;
@@ -644,7 +644,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-  panelSide: { flex: 1, maxWidth: 260 },
+  // Each panel hugs its content at its own edge.
+  panelSide: { flexShrink: 1 },
   middle: { flex: 1, justifyContent: "center" },
   hudRowEnd: {
     flexDirection: "row",
