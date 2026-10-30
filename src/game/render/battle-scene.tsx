@@ -59,10 +59,13 @@ function Fighter({
   actor,
   hero,
   motion,
+  highlight,
 }: {
   actor: Combatant;
   hero: HeroLookProps;
   motion: Motion;
+  /** Colours the shadow and rings it: the hero, or the selected foe. */
+  highlight?: number;
 }) {
   const ref = useRef<THREE.Group>(null);
   const home = useMemo(() => spotOf(actor), [actor]);
@@ -128,11 +131,22 @@ function Fighter({
       ) : (
         <HeroFigure {...hero} speed={() => speed.current} />
       )}
-      {/* A soft shadow so figures stand on the painted ground. */}
+      {/* A soft shadow so figures stand on the painted ground; the selected
+          one glows in its colour with a bright rim. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <circleGeometry args={[0.55, 20]} />
-        <meshBasicMaterial color={0x000000} transparent opacity={0.35} />
+        <circleGeometry args={[0.62, 28]} />
+        <meshBasicMaterial
+          color={highlight ?? 0x000000}
+          transparent
+          opacity={highlight ? 0.38 : 0.35}
+        />
       </mesh>
+      {highlight && actor.hp > 0 ? (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+          <ringGeometry args={[0.6, 0.72, 36]} />
+          <meshBasicMaterial color={highlight} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -189,11 +203,14 @@ export default function BattleStage({
   actors,
   hero,
   motion,
+  highlights,
   onProject,
 }: {
   actors: Combatant[];
   hero: HeroLookProps;
   motion: { acting: string | null; hitAt: Record<string, number> };
+  /** Unit id → the colour its shadow glows (selection). */
+  highlights: Record<string, number>;
   onProject: (spots: Record<string, UnitSpot>) => void;
 }) {
   return (
@@ -223,6 +240,7 @@ export default function BattleStage({
               acting: motion.acting === a.id,
               hitAt: motion.hitAt[a.id],
             }}
+            highlight={highlights[a.id]}
           />
         ))}
         <Rig actors={actors} onProject={onProject} />

@@ -11,6 +11,13 @@ import { questTarget } from "../../sim/quests";
 import { heroStats, setCounts } from "../../sim/stats";
 import { RARITIES, type StatKey } from "../../sim/types";
 import { Bar, Divider, GButton, GIcon, Label, Row, Sheet } from "../../ui/kit";
+import {
+  canFullscreen,
+  enterFullscreen,
+  exitFullscreen,
+  isFullscreen,
+  needsHomeScreen,
+} from "../../ui/fullscreen";
 import { LevelBadge } from "../../ui/level-badge";
 import { palette, rarityColor } from "../../ui/palette";
 import { startPackAttack } from "../../render/world-scene";
@@ -216,6 +223,22 @@ export function MenuPanel({
           />
         ))}
       </Row>
+      {canFullscreen() ? (
+        <GButton
+          label={t("menu.fullscreen")}
+          icon="expand"
+          compact
+          onPress={() =>
+            isFullscreen() ? exitFullscreen() : enterFullscreen()
+          }
+        />
+      ) : needsHomeScreen() ? (
+        <Label
+          value={t("menu.homeScreen")}
+          type="caption1"
+          color={palette.muted}
+        />
+      ) : null}
       <GButton
         label={t("menu.tutorial")}
         icon="comment"

@@ -44,6 +44,9 @@ const en = {
   "menu.language": "Language",
   "menu.lootFilter": "Hide loot below",
   "menu.tutorial": "Tutorial hints",
+  "menu.fullscreen": "Fullscreen",
+  "menu.homeScreen":
+    "For fullscreen on iPhone: Share → Add to Home Screen, then play from the icon.",
   "hint.gotIt": "Got it",
   "hint.death":
     "Fell, did you? The death god deals his cards. Most cost little, some take gold or progress — never a level. Pick one and get up.",
@@ -232,6 +235,9 @@ const uk: Record<StringKey, string> = {
   "menu.language": "Мова",
   "menu.lootFilter": "Ховати здобич нижче",
   "menu.tutorial": "Підказки",
+  "menu.fullscreen": "На весь екран",
+  "menu.homeScreen":
+    "Щоб грати на весь екран на iPhone: Поділитися → На початковий екран, і запускай з іконки.",
   "hint.gotIt": "Зрозумів",
   "hint.death":
     "Що, впав? Бог смерті роздає карти. Більшість коштує мало, деякі забирають золото чи досвід — але не рівень. Тягни одну й вставай.",
