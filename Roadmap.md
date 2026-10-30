@@ -119,3 +119,7 @@ Open items only, as of 2026-09-26. Done items (U01–U05, U07–U09, U11–U13, 
 | Store submission, staged rollout, and rollback                                           | Steps 18 and 19      |
 
 Web behaviour was verified in a browser throughout: bridge round-trips, chart rendering, barcode decoding through the browser's own `BarcodeDetector`, timer tick rates, and the share/clipboard fallback. Native equivalents of all of those are unverified.
+
+## Game features after MVP
+
+- [ ] [Salt Road: salt-cart chase quest](docs/game/post-mvp/salt-road/README.md) — planned after the playable slice, with two retained illustrations. Prototype driving/drifting, obstacle avoidance and salt-bag escapes before authoritative mounted-player pursuit and tactical PvP handoff. Reward, interruption and failure rules remain open. See the [game post-MVP backlog](docs/game/post-mvp/README.md); this does not expand the current MVP deadline.

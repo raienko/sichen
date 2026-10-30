@@ -24,6 +24,10 @@
 | [**Features**](features/index.md)     | The foundations every screen uses — theme, responsive, localization, accessibility — and app services such as storage and deep links |
 | [**Components**](components/index.md) | Every component by category, with a one-line summary and a link to its guide                                                         |
 
+## Game
+
+[Game documentation](game/README.md) collects the MVP plan, seven approved screen illustrations, visual guidelines and [post-MVP feature proposals](game/post-mvp/README.md), including the Salt Road chase quest.
+
 ## Also in the code
 
 | Guide                                                    | What it covers                                                                                                      |

@@ -2,6 +2,10 @@
 
 > Everything a fresh session needs to continue the game with no other context. Read this, then [docs/game/vertical-slice.md](game/vertical-slice.md) (design + architecture), then the code under `src/game/`.
 
+## Current design and later features
+
+The [game documentation](game/README.md) indexes the current design references. Battle and character/inventory now use the wilderness-style low-poly art. The [Salt Road chase quest](game/post-mvp/salt-road/README.md), with its two illustrations, is planned for after MVP; it does not expand the slice or imply implemented racing/PvP.
+
 ## The goal and the deadline
 
 A casual dark-fantasy RPG on Ukrainian/Slavic folklore, cossacks as heroes: free 3D exploration with a fixed PoE2-like camera, Taern-style turn-based battles in a separate side-view scene, a simplified PoE2 passive tree and loot, Taern-style gear sets. Expo / React Native for iOS, Android and web; **the deployed target is web on GitHub Pages**.

@@ -4,20 +4,21 @@
 
 ## Approved references
 
-Keep these seven approved images unchanged in `redesign-concepts/`. Earlier alternative illustrations have been removed. The latest character/inventory and active-skills concepts are accepted for now, alongside the passive tree and four core scenes. Only these seven illustrations are retained; draft versions, duplicates and generation history have been removed.
+Keep seven canonical screen references in `redesign-concepts/`. The battle board and character/inventory illustration now use the wilderness reference's faceted low-poly style. Their approved HUD/composition rules are preserved. Town, merchant, active skills and passive-tree illustrations remain unchanged.
 
-| Scene      | Reference                                                                             | What it establishes                                                                        |
-| ---------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Battle     | [Portrait, landscape and foldable board](redesign-concepts/living-folk-world-arc.png) | Full-scene 3D encounter, five-action planner, curved Ready controls, outer-edge HUD groups |
-| Wilderness | [Modular crawler](redesign-concepts/wilderness-crawler.png)                           | Elevated 3D camera, readable clearings, compact encounter information and thumb controls   |
-| Merchant   | [Hordii's shop](redesign-concepts/merchant-shop.png)                                  | Counter-facing merchant, physical category displays, glowing interaction contours          |
-| Town       | [Kyiv exploration](redesign-concepts/exploration.png)                                 | Autumn settlement, Ukrainian architecture and clothing, contextual interaction HUD         |
+| Scene                 | Reference                                                                             | What it establishes                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Battle                | [Portrait, landscape and foldable board](redesign-concepts/living-folk-world-arc.png) | Low-poly 3D encounter, five-action planner, curved Ready controls and outer-edge groups |
+| Wilderness            | [Modular crawler](redesign-concepts/wilderness-crawler.png)                           | Low-poly terrain, elevated camera, readable clearings and thumb controls                |
+| Merchant              | [Hordii's shop](redesign-concepts/merchant-shop.png)                                  | Counter-facing NPC, physical category displays and interaction contours                 |
+| Town                  | [Kyiv exploration](redesign-concepts/exploration.png)                                 | Settlement composition, Ukrainian architecture/clothing and contextual HUD              |
+| Passive tree          | [Shared three-arm graph](redesign-concepts/passive-tree.png)                          | Folk ritual surface, progression graph and reachable allocation details                 |
+| Character / inventory | [Preview-overlay composition](redesign-concepts/character-inventory.png)              | Low-poly hero/items, ten worn positions, bag filters and detail overlay                 |
+| Active skills         | [Library and horizontal loadout](redesign-concepts/active-skills.png)                 | Top information, scrollable library and six drag/tap assignment slots below             |
 
-| Passive tree | [Shared three-arm graph](redesign-concepts/passive-tree.png) | Folk ritual surface, branching progression and reachable allocation details |
-| Character / inventory | [Preview-overlay composition](redesign-concepts/character-inventory.png) | Ten equipment positions, bag filters and item details over a soft fade/blur |
-| Active skills | [Library and horizontal loadout](redesign-concepts/active-skills.png) | Top skill information, scrollable library and six drag/tap assignment slots below |
+Battle, wilderness and character/inventory establish the current economical rendering target: broad faceted geometry, flat matte materials, muted moss/olive/slate colors, soft lighting and restrained ochre/torch accents. The more detailed town/shop/skills/tree paintings remain composition and atmosphere references; they do not require photoreal geometry or a separate rendering pipeline. Preserve their approved layouts when applying a coherent asset kit.
 
-The exploration references use different detail budgets. Town is a composed landmark scene; wilderness uses a simpler reusable environment kit. Share character identity, palette, lighting logic and HUD symbols across both.
+The separate [Salt Road chase quest and two illustrations](post-mvp/salt-road/README.md) are retained under [post-MVP features](post-mvp/README.md), outside these seven screen references and the current playable slice.
 
 ## World and art
 
@@ -25,7 +26,7 @@ Keep the current 3D engine, movement and tactical systems. The world fills the v
 
 Build the Ukrainian folk identity through embroidered linen, oxblood cloth, woven rushnyky, carved timber, sabres, regional architecture and recognizable character silhouettes. Put most ornament on clothing and world objects, with small motifs used sparingly in the interface. This remains a fantasy setting informed by historical references.
 
-Use warm autumn light, amber leaves, timber and stone, with quieter moss/slate shadows. Give mobs readable silhouettes against low-detail ground. Soften occluding foregrounds around the hero. Fire, fog and leaves must leave movement, target rings and status information clear.
+Use matte low-poly timber/stone, muted moss/olive/slate shadows, soft daylight and sparse ochre leaves or warm torch accents. Build major forms from simple geometry rather than detailed painted surface textures. Give mobs readable silhouettes against low-detail ground. Soften occluding foregrounds around the hero. Fire, fog and leaves must leave movement, target rings and status information clear.
 
 An economical route combines free meshes, the existing procedural kit, generated portraits/textures and a few custom accessories. Candidate sources are the [Kenney Fantasy Town Kit](https://kenney.nl/assets/fantasy-town-kit), [Quaternius animated characters](https://quaternius.com/packs/ultimatedanimatedcharacter) and [Poly Haven materials](https://polyhaven.com/license); see the [asset plan](combined-design.md#free-and-generated-asset-route). Adapt stock silhouettes and materials to the setting. Generated raster images supply references, icons and textures; animated 3D geometry still needs modelling/rigging and device testing. This direction does not require paid assets.
 
@@ -103,4 +104,4 @@ Preserve simulation, content and saves while changing assets, scene composition 
 
 Build shared overlay primitives, then one representative scene slice. Validate reach, contrast, accessible states, localization, native performance and fold layouts on devices. Generated numbers and control positions are illustrative rather than balancing data or measured responsive layouts.
 
-See [approved file hashes and history](redesign-concepts/README.md) and the [implementation review](redesign-review.md).
+See [approved file hashes](redesign-concepts/README.md) and the [implementation review](redesign-review.md).

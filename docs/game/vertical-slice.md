@@ -66,6 +66,8 @@ src/game/
 
 `.github/workflows/pages.yml` exports the web build with `EXPO_BASE_URL=/<repo name>` and publishes it to GitHub Pages on every push to `main`. The manifest, service worker and page links are relative to that base, so the PWA installs and works offline from the sub-path. One-time setup: **Settings → Pages → Source: GitHub Actions**.
 
-## Out of the slice (engine ready for them)
+## Out of the slice (future features)
 
 Other zones and bosses, levels 11-20, ascendancies, support runes and sockets in use, crafting bench, coop and PvP, cloud saves, Google/Apple sign-in, music, other languages' game text, export/import of saves.
+
+The [post-MVP feature backlog](post-mvp/README.md) includes [Salt Road](post-mvp/salt-road/README.md): a horse-cart salt delivery chase with drifting, obstacles, cargo throws and mounted-player pursuit into tactical PvP. Its two illustrations are retained for planning. Cart physics, multiplayer pursuit and quest integration require new work; this is not part of the current MVP or its deadline.

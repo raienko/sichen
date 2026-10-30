@@ -10,9 +10,9 @@ Later refinements cover the [physical merchant-shop interface](merchant-design.m
 
 ## Design decision
 
-Keep the **fully 3D game**, the current movement and tactical engine, and the elevated camera. Combine autumn environment atmosphere, Cossack silhouettes and Ukrainian folk motifs. Express the folk treatment through costume, architecture, texture, sound and small interface marks. Use a restrained stylized 3D asset level that can be assembled from free models, procedural additions and generated textures.
+Keep the **fully 3D game**, the current movement and tactical engine, and the elevated camera. Combine autumn environment atmosphere, Cossack silhouettes and Ukrainian folk motifs. Express the folk treatment through costume, architecture, texture, sound and small interface marks. Use the updated wilderness-style low-poly kit: broad faceted geometry, flat matte surfaces, muted woodland colors and soft lighting, assembled from free models, procedural additions and generated texture motifs.
 
-[Open the combined portrait, landscape and foldable concept](redesign-concepts/living-folk-world-arc.png)
+[Open the updated low-poly portrait, landscape and foldable concept](redesign-concepts/living-folk-world-arc.png)
 
 The world fills the entire screen. The HUD floats over it as small, separate symbols and thin resource marks. There are no permanent header/footer sections, command desks, card frames or rectangular actor panels. A subtle edge vignette supplies contrast. Decoration never competes with targets, resource levels or touch affordances.
 
@@ -124,4 +124,4 @@ No assets have been downloaded, installed or integrated as part of this proposal
 
 One 3D hero, Sirko, one ordinary enemy, Likho, a small shrine/settlement kit, and the overlay battle planner. Verify portrait with one-finger interaction, short landscape with two thumb groups, and split/fold mode including its open action picker. Then carry the same icons, materials and reach rules into world interactions, inventory and creation.
 
-The three-layout generated board is a visual proposal, not an implemented feature or a claim that foldable handling has been tested. Only approved illustrations and their design guidelines are retained.
+The three-layout generated board is a visual proposal, not an implemented feature or a claim that foldable handling has been tested. The seven screen references are retained separately from the planned [post-MVP Salt Road chase](post-mvp/salt-road/README.md).

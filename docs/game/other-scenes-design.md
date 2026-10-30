@@ -1,18 +1,18 @@
 # Character, inventory and progression: current concepts
 
-30 October 2026. The passive tree and latest character/inventory and active-skills illustrations are retained references, accepted for now and preserved unchanged. Their layouts incorporate the user-supplied references and subsequent overlay/slot revisions. See [design-guidelines.md](design-guidelines.md) for the full approved direction. The supplied screenshots guide composition only; their text and mechanics are not product requirements.
+30 October 2026. The passive tree and latest character/inventory and active-skills illustrations are retained references, accepted for now and preserved unchanged. Their layouts incorporate the user-supplied references and subsequent overlay/slot revisions. Character/inventory now uses the wilderness-style low-poly hero, item icons and forest-edge courtyard; the skills and passive-tree illustrations are unchanged. See [design-guidelines.md](design-guidelines.md) for the full approved direction. The supplied screenshots guide composition only; their text and mechanics are not product requirements.
 
 ## Shared workspace
 
 Use consistent lower navigation: bag/hero for character and inventory, book for active skills, branch for the passive tree. Keep Back reachable and separate from Equip, assignment and Allocate. The world stays visible behind the overlay, with restrained dimming for legibility.
 
-The concepts use Kyiv, training and shrine scenery to communicate atmosphere. The revised skills view subdues scenery so the list and details dominate. Production can reuse the current hero preview and quieter environment props. Opening a menu does not teleport the hero; three bespoke animated backgrounds are not a requirement.
+The concepts use a modular forest-edge courtyard, training area and shrine scenery to communicate atmosphere. The revised skills view subdues scenery so the list and details dominate. Production can reuse the current hero preview and quieter environment props. Opening a menu does not teleport the hero; three bespoke animated backgrounds are not a requirement.
 
 ## Character and inventory together
 
 [Open retained concept](redesign-concepts/character-inventory.png).
 
-Follow the supplied character reference: compact identity and derived stats at the top, centered 3D hero with five worn positions down each side, then a filtered bag below. Keep the costume and equipment silhouette readable while leaving room to browse items. Rotation may supplement selection; precise dragging must not be the only way to inspect gear.
+Follow the supplied character reference: compact identity and derived stats at the top, centered low-poly 3D hero with five worn positions down each side, then a filtered bag below. Keep the costume and equipment silhouette readable while leaving room to browse items. Rotation may supplement selection; precise dragging must not be the only way to inspect gear.
 
 Show weapon, offhand, helm, chest, gloves, boots, belt, amulet and two rings. A reachable equipment chooser provides the same slot/category selection as the high silhouettes. A worn slot filters compatible bag items; selecting an item shows its actual compatible slot.
 
