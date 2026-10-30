@@ -28,6 +28,7 @@ import {
 } from "./art-kit";
 import { distance, step, walkable } from "./movement";
 import { heroOnScreen, Nature } from "./nature";
+import { Walls } from "./walls";
 import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
 const HERO_SPEED = 4.2;
@@ -394,7 +395,8 @@ function Scene({ save }: { save: SaveData }) {
       />
       <Ground width={width} height={height} color={zone.palette.ground} />
       <Nature map={zone.map} grass={zone.palette.ground} town={!!zone.town} />
-      <Tiles map={zone.map} />
+      <Tiles map={zone.map} town={!!zone.town} />
+      {zone.town ? <Walls map={zone.map} /> : null}
       {zone.npcs.map((n) => {
         const npc = getNpc(n.npcId);
         const ready = readyFor(save.quests, npc.id).length > 0;

@@ -129,8 +129,9 @@ function kyivMap(): string[] {
   ] as const)
     m.clear(x, z, 1);
   m.rect(26, 10, 29, 12, "=").set(29, 10, "W").set(29, 12, "W");
-  // The Golden Gates: the east road runs through their arch to the exit.
-  m.rect(26, 9, 28, 10, "g").rect(26, 12, 28, 13, "g");
+  // The Golden Gates stand in the east wall; the road runs out through
+  // their arch, and their ramparts carry the wall on either side.
+  m.rect(28, 8, 29, 10, "g").rect(28, 12, 29, 14, "g");
   // St. Sophia's bell tower, at the road's end before the cathedral.
   m.set(14, 6, "b");
   // Market stalls by the merchant and on the south road.

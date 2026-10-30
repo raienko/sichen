@@ -217,7 +217,7 @@ function fadeAroundHero(shader: THREE.WebGLProgramParametersWithUniforms) {
 
 // ---------------------------------------------------------------- instances
 
-type Item = {
+export type Item = {
   x: number;
   y: number;
   z: number;
@@ -228,7 +228,7 @@ type Item = {
 };
 
 /** One instanced mesh: a geometry repeated at each item, each tinted. */
-function Instances({
+export function Instances({
   geometry,
   items,
   color = 0xffffff,
