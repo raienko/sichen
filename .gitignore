@@ -33,6 +33,9 @@ yarn-error.*
 /.idea
 *.pem
 
+# Local Claude worktrees
+/.claude/worktrees/
+
 # local env files
 .env*
 !.env.example
