@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 
 import { useTypography } from "@/features/responsive";
 
@@ -16,7 +17,8 @@ import {
 } from "../sim/battle";
 import { battleActions } from "../sim/hero";
 import { DELIVERIES, type Skill, type StatusKind } from "../sim/types";
-import { Bar, GIcon, Label, Row } from "../ui/kit";
+import { Glyph } from "../ui/glyphs";
+import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { LevelBadge } from "../ui/level-badge";
 import { palette } from "../ui/palette";
 
@@ -64,7 +66,7 @@ export function ActorPanel({
     );
   }
   const foe = actor.side === 1;
-  const ring = foe ? (actor.boss ? "#b04ae8" : palette.bad) : palette.gold;
+  const ring = foe ? (actor.boss ? "#b04ae8" : palette.bad) : palette.ivory;
   const portrait = (
     <View>
       <View
@@ -101,8 +103,9 @@ export function ActorPanel({
         {compact ? null : (
           <Label
             value={tr(actor.name)}
-            type="caption1"
-            color={palette.text}
+            type="subheadline"
+            display
+            color={palette.ivory}
             numberOfLines={1}
           />
         )}
@@ -169,24 +172,28 @@ function resourcesLeft(battle: BattleSession, except?: number) {
   return { hero, mana, stamina, potions, ap };
 }
 
-const DELIVERY_ICON = {
-  melee: "hand-fist",
-  ranged: "crosshairs",
-  mental: "brain",
+/** One line glyph per delivery: what the defence button guards against. */
+const DELIVERY_GLYPH = {
+  melee: "sabre",
+  ranged: "bow",
+  mental: "eye",
 } as const;
 
-/** AP left, the three defence toggles, and the five action slots. */
+/**
+ * The left thumb group, top to bottom: round and AP pips, the three saved
+ * tactics with Save and Clear, and exactly five action slots in one row.
+ * Every row is five `size` circles with 4-point gaps, so the group is as
+ * wide as the slot row.
+ */
 export function ActionSlots({
   battle,
   size,
   onOpen,
-  align = "center",
 }: {
   battle: BattleSession;
-  /** Diameter of a slot. */
+  /** Diameter of a slot, and of a tactics button. */
   size: number;
   onOpen: (index: number) => void;
-  align?: "center" | "start";
 }) {
   const { t, tr } = useT();
   const planning = battle.phase === "planning";
@@ -195,74 +202,76 @@ export function ActionSlots({
   const frozen = hasStatus(hero, "freeze");
   const total = apFor(hero);
   return (
-    <View
-      style={[
-        styles.slotsWrap,
-        align === "start" && { alignItems: "flex-start" },
-      ]}
-    >
-      <Row gap={6} style={styles.slotsTop}>
+    <View style={styles.slotsWrap}>
+      <Row gap={8}>
+        <Label
+          value={t("battle.round", { round: battle.state.round })}
+          type="caption1"
+          color={palette.muted}
+        />
+        <Row gap={3} style={styles.pips}>
+          {Array.from({ length: total }, (_, i) => (
+            <View key={i} style={[styles.pip, i < ap && styles.pipOn]} />
+          ))}
+        </Row>
         <Label
           value={t("battle.ap", { left: ap, total })}
           type="caption1"
-          color={ap > 0 ? palette.gold : palette.faint}
+          color={ap > 0 ? palette.amber : palette.faint}
         />
-        <DefenseToggles battle={battle} />
+        {stunned || frozen ? (
+          <Label
+            value={stunned ? t("battle.stunned") : t("battle.frozen")}
+            type="caption1"
+            color={stunned ? palette.status.stun : palette.status.freeze}
+          />
+        ) : null}
       </Row>
-      {stunned || frozen ? (
-        <Label
-          value={stunned ? t("battle.stunned") : t("battle.frozen")}
-          type="caption1"
-          color={stunned ? palette.status.stun : palette.status.freeze}
-        />
-      ) : null}
-      <Row gap={Math.round(size * 0.14)}>
+      <TacticsBar battle={battle} size={size} />
+      <View style={styles.slotRow}>
         {Array.from({ length: RULES.attackSlots }, (_, i) => {
           const action = battle.plan.attacks[i];
           const skill = action ? getSkill(action.skillId) : null;
           return (
-            <Pressable
-              key={i}
-              accessibilityLabel={
-                skill
-                  ? `${t("battle.slot", { n: i + 1 })}: ${tr(skill.name)}`
-                  : t("battle.slot", { n: i + 1 })
-              }
-              disabled={!planning || stunned}
-              onPress={() => onOpen(i)}
-              style={({ pressed }) => [
-                styles.slot,
-                {
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                  borderColor: skill ? palette.gold : palette.line,
-                  opacity: pressed ? 0.7 : !planning || stunned ? 0.6 : 1,
-                },
-              ]}
-            >
-              {skill ? (
-                <>
-                  <GIcon
-                    name={skill.icon}
-                    size={size * 0.42}
-                    color={skillColor(skill)}
-                  />
-                  <View style={styles.slotCost}>
-                    <Label
-                      value={String(skill.ap)}
-                      type="caption2"
-                      color={palette.night}
+            <View key={i} style={styles.slotCell}>
+              <Label
+                value={String(i + 1)}
+                type="caption2"
+                color={palette.muted}
+              />
+              <RoundButton
+                size={size}
+                accessibilityLabel={
+                  skill
+                    ? `${t("battle.slot", { n: i + 1 })}: ${tr(skill.name)}`
+                    : t("battle.slot", { n: i + 1 })
+                }
+                disabled={!planning || stunned}
+                onPress={() => onOpen(i)}
+              >
+                {skill ? (
+                  <>
+                    <GIcon
+                      name={skill.icon}
+                      size={size * 0.4}
+                      color={skillColor(skill)}
                     />
-                  </View>
-                </>
-              ) : (
-                <GIcon name="plus" size={size * 0.3} color={palette.faint} />
-              )}
-            </Pressable>
+                    <View style={styles.slotCost}>
+                      <Label
+                        value={String(skill.ap)}
+                        type="caption2"
+                        color={palette.night}
+                      />
+                    </View>
+                  </>
+                ) : (
+                  <GIcon name="plus" size={size * 0.36} color={palette.ivory} />
+                )}
+              </RoundButton>
+            </View>
           );
         })}
-      </Row>
+      </View>
     </View>
   );
 }
@@ -304,8 +313,8 @@ function DefenseToggles({ battle }: { battle: BattleSession }) {
               size={14}
               color={on ? palette.delivery[kind] : palette.faint}
             />
-            <GIcon
-              name={DELIVERY_ICON[kind]}
+            <Glyph
+              name={DELIVERY_GLYPH[kind]}
               size={16}
               color={on ? palette.delivery[kind] : palette.muted}
             />
@@ -546,8 +555,18 @@ function Cost({
 
 // ---------------------------------------------------------------- tactics
 
-/** The three saved plans, a save button and a clear button. */
-export function TacticsBar({ battle }: { battle: BattleSession }) {
+/**
+ * The three saved plans, Save and Clear. Tap a preset to switch to it, Save
+ * (or a long press) stores the current plan in the selected preset, and
+ * Clear empties the current plan without touching saved ones.
+ */
+export function TacticsBar({
+  battle,
+  size,
+}: {
+  battle: BattleSession;
+  size: number;
+}) {
   const { t } = useT();
   const save = useSave();
   const planning = battle.phase === "planning";
@@ -556,50 +575,200 @@ export function TacticsBar({ battle }: { battle: BattleSession }) {
       DELIVERIES.reduce((n, k) => n + battle.plan.defense[k], 0) ===
     0;
   return (
-    <Row gap={5}>
+    <View style={styles.slotRow}>
       {save.tactics.map((tactic, i) => {
         const active = save.settings.tactic === i;
         return (
-          <Pressable
+          <RoundButton
             key={i}
+            size={size}
             accessibilityLabel={t("battle.tactic", { n: i + 1 })}
-            accessibilityState={{ selected: active }}
+            selected={active}
+            dim={!tactic && !active}
             disabled={!planning}
             onPress={() => actions.pickTactic(i)}
             onLongPress={() => actions.saveTactic(i)}
-            style={[
-              styles.tactic,
-              tactic ? styles.tacticFilled : null,
-              active ? styles.tacticActive : null,
-            ]}
           >
             <Label
               value={String(i + 1)}
-              type="headline"
-              color={
-                active ? palette.gold : tactic ? palette.text : palette.faint
-              }
+              type="title3"
+              color={active ? palette.amber : palette.ivory}
             />
-          </Pressable>
+          </RoundButton>
         );
       })}
-      <Pressable
+      <RoundButton
+        size={size}
         accessibilityLabel={t("battle.saveTactic")}
         disabled={!planning}
         onPress={() => actions.saveTactic(save.settings.tactic)}
-        style={styles.tacticTool}
       >
-        <GIcon name="floppy-disk" size={17} color={palette.muted} />
-      </Pressable>
-      <Pressable
+        <GIcon name="floppy-disk" size={size * 0.36} color={palette.ivory} />
+      </RoundButton>
+      <RoundButton
+        size={size}
         accessibilityLabel={t("battle.clear")}
         disabled={!planning || empty}
         onPress={actions.clearPlan}
-        style={[styles.tacticTool, empty && styles.off]}
       >
-        <GIcon name="eraser" size={17} color={palette.muted} />
-      </Pressable>
-    </Row>
+        <GIcon name="eraser" size={size * 0.36} color={palette.ivory} />
+      </RoundButton>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------- ready arc
+
+/** Gap between neighbouring circles in the arc, in points. */
+const ARC_GAP = 6;
+/** The last defence stays near the top of Ready, not past its right edge. */
+const ARC_END = (285 * Math.PI) / 180;
+
+/**
+ * Where Auto and the three defences sit on one circle around Ready. Ready's
+ * centre is the origin, y grows downwards, and angles run from Auto (lower
+ * left, its bottom level with Ready's and the slot row's) up over the top.
+ * The circle grows until the defences fit before ARC_END without touching.
+ */
+export function arcLayout(slot: number, ready: number) {
+  const dy = ready / 2 - slot / 2;
+  let radius = Math.hypot(ready / 2 + ARC_GAP + slot / 2, dy);
+  let angles: number[] = [];
+  for (let i = 0; i < 100; i++) {
+    const first = Math.atan2(dy, -Math.sqrt(radius * radius - dy * dy));
+    const step = 2 * Math.asin(Math.min(1, (slot + ARC_GAP) / (2 * radius)));
+    angles = [0, 1, 2, 3].map((k) => first + k * step);
+    if (angles[3] <= ARC_END) break;
+    radius += 2;
+  }
+  const points = angles.map((a) => ({
+    x: radius * Math.cos(a),
+    y: radius * Math.sin(a),
+  }));
+  // The box around Ready and every circle, with Ready's centre inside it.
+  const r = slot / 2;
+  const left = Math.min(-ready / 2, ...points.map((p) => p.x - r));
+  const right = Math.max(ready / 2, ...points.map((p) => p.x + r));
+  const top = Math.min(-ready / 2, ...points.map((p) => p.y - r));
+  const bottom = ready / 2;
+  return {
+    width: right - left,
+    height: bottom - top,
+    centre: { x: -left, y: -top },
+    points,
+  };
+}
+
+/** The clock turns red for the last seconds of planning. */
+const URGENT_SECONDS = 5;
+
+/**
+ * The right thumb group: Ready, with the round's clock draining around its
+ * ring, and Auto plus the three defences curving around it.
+ */
+export function ReadyArc({
+  battle,
+  slot,
+  ready,
+  msLeft,
+  secondsLeft,
+  auto,
+  onReady,
+}: {
+  battle: BattleSession;
+  /** Diameter of Auto and the defences: the action slot's. */
+  slot: number;
+  /** Diameter of Ready. */
+  ready: number;
+  msLeft: number;
+  secondsLeft: number;
+  auto: boolean;
+  onReady: () => void;
+}) {
+  const { t } = useT();
+  const planning = battle.phase === "planning";
+  const { hero, ap } = resourcesLeft(battle);
+  const stunned = hasStatus(hero, "stun");
+  const layout = arcLayout(slot, ready);
+  const at = (p: { x: number; y: number }, size: number) => ({
+    position: "absolute" as const,
+    left: layout.centre.x + p.x - size / 2,
+    top: layout.centre.y + p.y - size / 2,
+  });
+  const urgent = planning && secondsLeft <= URGENT_SECONDS;
+  const share = planning
+    ? Math.max(0, Math.min(1, msLeft / (RULES.roundSeconds * 1000)))
+    : 0;
+  const ring = ready - 6;
+  const circumference = Math.PI * ring;
+  return (
+    <View
+      pointerEvents="box-none"
+      style={{ width: layout.width, height: layout.height }}
+    >
+      <RoundButton
+        size={slot}
+        accessibilityLabel={t("battle.auto")}
+        selected={auto}
+        onPress={actions.toggleAuto}
+        style={at(layout.points[0], slot)}
+      >
+        <Label
+          value="A"
+          type="title3"
+          display
+          color={auto ? palette.amber : palette.ivory}
+        />
+      </RoundButton>
+      {DELIVERIES.map((kind, i) => {
+        const on = battle.plan.defense[kind] > 0;
+        return (
+          <RoundButton
+            key={kind}
+            size={slot}
+            accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
+            selected={on}
+            disabled={!planning || stunned || (!on && ap <= 0)}
+            onPress={() => actions.toggleDefense(kind)}
+            style={at(layout.points[i + 1], slot)}
+          >
+            <Glyph
+              name={DELIVERY_GLYPH[kind]}
+              size={slot * 0.48}
+              color={on ? palette.amber : palette.ivory}
+            />
+          </RoundButton>
+        );
+      })}
+      <RoundButton
+        size={ready}
+        accessibilityLabel={`${t("battle.ready")}, ${t("battle.round", { round: battle.state.round })}`}
+        disabled={!planning}
+        onPress={onReady}
+        style={[at({ x: 0, y: 0 }, ready), styles.ready]}
+      >
+        <Svg width={ready} height={ready} style={StyleSheet.absoluteFill}>
+          <Circle
+            cx={ready / 2}
+            cy={ready / 2}
+            r={ring / 2}
+            stroke={urgent ? palette.bad : palette.amber}
+            strokeWidth={3}
+            fill="none"
+            strokeDasharray={`${circumference * share} ${circumference}`}
+            strokeLinecap="round"
+            // Drains clockwise from twelve o'clock.
+            transform={`rotate(-90 ${ready / 2} ${ready / 2})`}
+          />
+        </Svg>
+        <Glyph name="check" size={ready * 0.42} weight={2.6} />
+        <Label
+          value={planning ? `${secondsLeft}s` : "…"}
+          type="caption1"
+          color={urgent ? palette.bad : palette.ivory}
+        />
+      </RoundButton>
+    </View>
   );
 }
 
@@ -613,10 +782,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: GLASS,
+    borderRadius: 32,
+    // No frame: a soft local shade is enough to read the bars on the scene.
+    backgroundColor: "rgba(10, 8, 6, 0.4)",
   },
   panelEnd: { flexDirection: "row-reverse" },
   panelCompact: { paddingVertical: 5, gap: 8 },
@@ -671,33 +839,19 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   tabOn: { borderColor: palette.gold, backgroundColor: palette.panelHi },
-  tactic: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
+  slotsWrap: { gap: 6 },
+  slotRow: { flexDirection: "row", gap: 4 },
+  slotCell: { alignItems: "center" },
+  pips: { alignItems: "center" },
+  pip: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: palette.lineSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GLASS,
+    borderColor: palette.bronze,
   },
-  tacticTool: {
-    width: 42,
-    height: 42,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GLASS,
-  },
-  slotsWrap: { alignItems: "center", gap: 6 },
-  slotsTop: { alignItems: "center" },
-  slot: {
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: GLASS,
-  },
+  pipOn: { backgroundColor: palette.amber, borderColor: palette.amber },
+  ready: { borderWidth: 2, gap: 0 },
   slotCost: {
     position: "absolute",
     top: -3,
@@ -745,6 +899,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: palette.panelHi,
   },
-  tacticFilled: { borderStyle: "solid" },
-  tacticActive: { borderColor: palette.gold, borderWidth: 2 },
 });
