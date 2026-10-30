@@ -17,18 +17,20 @@ import { palette } from "../../ui/palette";
 /**
  * The hero's management workspace: character and bag, active skills and the
  * passive tree share one full-screen frame over the dimmed world. A short
- * header names the hero; three symbols along the bottom switch between the
- * screens, with Back in the outer corner.
+ * header names the hero; symbols along the bottom switch between the
+ * screens (the character sheet opens over the bag), with Back in the outer
+ * corner.
  */
 
-export type WorkspaceTab = "inventory" | "skills" | "tree";
+export type WorkspaceTab = "inventory" | "character" | "skills" | "tree";
 
 const TABS: {
   id: WorkspaceTab;
   icon: string;
-  key: "menu.inventory" | "menu.skills" | "menu.tree";
+  key: "menu.inventory" | "menu.character" | "menu.skills" | "menu.tree";
 }[] = [
   { id: "inventory", icon: "bag-shopping", key: "menu.inventory" },
+  { id: "character", icon: "user", key: "menu.character" },
   { id: "skills", icon: "book-open", key: "menu.skills" },
   { id: "tree", icon: "code-branch", key: "menu.tree" },
 ];
@@ -44,15 +46,12 @@ export function Workspace({
   save,
   tab,
   onClose,
-  onAttributes,
   right,
   children,
 }: {
   save: SaveData;
   tab: WorkspaceTab;
   onClose: () => void;
-  /** Opens the full stat list; the attributes are its button. */
-  onAttributes?: () => void;
   /** Replaces the attributes at the header's right, e.g. tree points. */
   right?: ReactNode;
   children: ReactNode;
@@ -108,8 +107,7 @@ export function Workspace({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("menu.character")}
-            disabled={!onAttributes}
-            onPress={onAttributes}
+            onPress={() => actions.openPanel({ name: "character" })}
             style={styles.attrs}
           >
             {ATTRS.map((a) => (
