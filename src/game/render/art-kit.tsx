@@ -723,6 +723,62 @@ export function MonsterFigure({
           </group>
         </group>
       );
+    case "protector":
+      // Oberih: a tall robed warden in white and gold, a glowing halo and
+      // a staff; its light should read as "do not touch" from any distance.
+      return (
+        <group ref={body} scale={1.5}>
+          {legs(0xe8e2d4, 0.2)}
+          <Part
+            geometry={G.cone}
+            color={0xf2eee2}
+            position={[0, 0.95, 0]}
+            scale={[0.95, 1.3, 0.95]}
+          />
+          <Part
+            geometry={G.box}
+            color={0xc9a24a}
+            emissive={0x3a2600}
+            position={[0, 0.95, 0]}
+            scale={[0.62, 0.1, 0.5]}
+          />
+          <Part
+            geometry={G.sphere}
+            color={0xe0b48f}
+            position={[0, 1.8, 0]}
+            scale={[0.38, 0.42, 0.38]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, 0]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, Math.PI]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={0x8a6a42}
+            position={[0.5, 1.1, 0.1]}
+            scale={[0.07, 2.2, 0.07]}
+          />
+          <Part
+            geometry={G.octa}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0.5, 2.3, 0.1]}
+            scale={[0.28, 0.4, 0.28]}
+          />
+        </group>
+      );
     default:
       return (
         <group ref={body}>
@@ -751,7 +807,75 @@ export function GroundRing({ color }: { color: number }) {
   );
 }
 
+/** A chumak ox-cart: plank bed, four wheels, sacks of salt under a hide. */
+function SaltCart() {
+  const WOOD = 0x7a5636;
+  const wheels: Vec3[] = [
+    [-0.9, 0.55, -0.85],
+    [0.9, 0.55, -0.85],
+    [-0.9, 0.55, 0.85],
+    [0.9, 0.55, 0.85],
+  ];
+  return (
+    <group rotation={[0, 0.4, 0]}>
+      <Part
+        geometry={G.box}
+        color={WOOD}
+        position={[0, 0.85, 0]}
+        scale={[1.5, 0.25, 2.4]}
+      />
+      {wheels.map((p, i) => (
+        <Part
+          key={i}
+          geometry={G.cyl}
+          color={0x5a3f2a}
+          position={p}
+          rotation={[0, 0, Math.PI / 2]}
+          scale={[1.1, 0.14, 1.1]}
+        />
+      ))}
+      {[-0.45, 0.45].flatMap((x) =>
+        [-0.75, 0, 0.75].map((z) => (
+          <Part
+            key={`${x}${z}`}
+            geometry={G.sphere}
+            color={0xf2eee2}
+            position={[x, 1.25, z]}
+            scale={[0.7, 0.55, 0.65]}
+          />
+        )),
+      )}
+      {/* The shaft, and a heap of salt spilt beside the cart. */}
+      <Part
+        geometry={G.box}
+        color={WOOD}
+        position={[0, 0.7, 1.9]}
+        rotation={[0.15, 0, 0]}
+        scale={[0.12, 0.12, 1.6]}
+      />
+      <Part
+        geometry={G.cone}
+        color={0xfaf6ea}
+        position={[1.5, 0.25, 0.4]}
+        scale={[0.9, 0.5, 0.9]}
+      />
+    </group>
+  );
+}
+
 export function InteractableFigure({ kind }: { kind: string }) {
+  if (kind === "salt_cart") {
+    return (
+      <group>
+        <group position={[-1.2, 0, 0]}>
+          <SaltCart />
+        </group>
+        <group position={[1.4, 0, -0.6]} rotation={[0, -0.8, 0]}>
+          <SaltCart />
+        </group>
+      </group>
+    );
+  }
   if (kind === "shrine") {
     // A roadside shrine: stone plinth, timber body under a pitched roof, a
     // red rushnyk over the icon and candles burning in front.

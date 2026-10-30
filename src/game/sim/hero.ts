@@ -168,6 +168,7 @@ export function heroCombatant(hero: Hero): Combatant {
     skillLevel: skillLevel(hero),
     potions: { ...hero.potions },
     controller: "player",
+    player: true,
     phase: 0,
     xp: 0,
   };

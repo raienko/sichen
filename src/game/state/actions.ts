@@ -6,6 +6,7 @@ import {
   createBattle,
   emptyPlan,
   fitPlan,
+  joinBattle,
   living,
   planCost,
   resolveRound,
@@ -26,6 +27,7 @@ import {
   respec,
   restore,
   unequip,
+  xpToNext,
 } from "../sim/hero";
 import {
   itemName,
@@ -285,16 +287,21 @@ export function examine(interactableId: string) {
       q.objective.interactableId === interactableId
     );
   });
-  const { log, changed } = quests.onExplore(data.quests, interactableId);
+  const explored = quests.onExplore(data.quests, interactableId);
+  const picked = quests.onPickup(explored.log, interactableId);
+  const { log } = picked;
+  const changed = [...explored.changed, ...picked.changed];
   if (changed.length > 0) {
     commit((s) => ({ ...s, quests: log }));
-    for (const id of changed)
+    for (const id of explored.changed)
       toast(
         "circle-check",
         "toast.questReady",
         { name: getQuest(id).name },
         "good",
       );
+    for (const id of picked.changed)
+      toast("box", "toast.cargo", { name: getQuest(id).name }, "good");
   }
   set({
     panel:
@@ -592,6 +599,37 @@ export function startBattle(
   });
 }
 
+/**
+ * Development only, until the multiplayer server exists: another player's
+ * hero at `level` joins the current fight on `side` (0 with the hero, 1
+ * against), with the protector rule applied. Plays like a round's events.
+ */
+export function devJoinPlayer(level: number, side: 0 | 1 = 1) {
+  const battle = get().battle;
+  if (!__DEV__ || !battle || battle.phase !== "planning") return;
+  const rng = new Rng(level * 7919 + side);
+  let hero = createHero(rng, "Ivan", save().hero.look, "lytsar");
+  let xp = 0;
+  for (let l = 1; l < level; l++) xp += xpToNext(l);
+  hero = restore(gainXp(hero, xp).hero);
+  const joiner = {
+    ...heroCombatant(hero),
+    id: `p${battle.state.actors.length}`,
+    controller: "ai" as const,
+  };
+  const out = joinBattle(battle.state, joiner, side);
+  if (!out) return;
+  set({
+    battle: {
+      ...battle,
+      before: battle.state,
+      state: out.state,
+      events: out.events,
+      phase: "playing",
+    },
+  });
+}
+
 function updatePlan(update: (plan: Plan) => Plan) {
   const battle = get().battle;
   if (!battle || battle.phase !== "planning") return;
@@ -764,10 +802,15 @@ export function finishPlayback() {
   } else if (state.result === "fled") {
     set({ battle: { ...battle, phase: "over", rewards: null } });
   } else {
+    // Cargo carried into the fight is lost with it.
+    const lost = quests.dropCargo(save().quests);
     commit((s) => ({
       ...s,
+      quests: lost.log,
       stats: { ...s.stats, deaths: s.stats.deaths + 1 },
     }));
+    for (const id of lost.changed)
+      toast("box", "toast.cargoLost", { name: getQuest(id).name }, "bad");
     set({
       scene: { name: "death", cards: drawCards(rng()), picked: null },
       battle: null,

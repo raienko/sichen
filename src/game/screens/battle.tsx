@@ -52,6 +52,7 @@ const PACE: Partial<Record<BattleEvent["t"], number>> = {
   death: 380,
   phase: 1100,
   summon: 450,
+  join: 900,
   flee: 700,
   skip: 320,
   end: 500,
@@ -83,6 +84,7 @@ function applyEvent(state: BattleState, e: BattleEvent): BattleState {
       break;
     }
     case "summon":
+    case "join":
       next.actors.push(e.actor);
       break;
     case "action": {
@@ -165,6 +167,16 @@ function usePlayback(battle: BattleSession) {
           case "summon":
             float(e.actor.id, t("battle.summon"), "#b04ae8");
             break;
+          case "join":
+            if (e.actor.protector) setBanner(t("battle.protector"));
+            float(
+              e.actor.id,
+              e.actor.protector
+                ? t("battle.protectorShort")
+                : t("battle.joined"),
+              e.actor.protector ? palette.amber : palette.good,
+            );
+            break;
           case "skip":
             if (e.reason === "stun")
               float(e.actor, t("battle.stunned"), palette.status.stun);
@@ -178,7 +190,7 @@ function usePlayback(battle: BattleSession) {
             break;
         }
         await new Promise((r) => setTimeout(r, PACE[e.t] ?? 0));
-        if (e.t === "phase") setBanner(null);
+        if (e.t === "phase" || e.t === "join") setBanner(null);
       }
       setActing(null);
       if (!cancelled) actions.finishPlayback();

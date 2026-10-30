@@ -44,12 +44,12 @@ try {
   const g0 = (await save()).gold,
     h0 = (await save()).hero.potions.hp;
   await p
-    .getByText(/^Buy 15$/)
+    .getByText(/^Buy 20$/)
     .first()
     .click();
   let s = await save();
   ok(
-    s.gold === g0 - 15 && s.hero.potions.hp === h0 + 1,
+    s.gold === g0 - 20 && s.hero.potions.hp === h0 + 1,
     `bought a potion (${g0}→${s.gold})`,
   );
 

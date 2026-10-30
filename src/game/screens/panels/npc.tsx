@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 import {
@@ -30,7 +31,11 @@ export function NpcPanel({
 }) {
   const { t, tr } = useT();
   const npc = getNpc(npcId);
-  if (npc.roles.includes("merchant"))
+  // A merchant with quest business talks first; Trade opens the shop.
+  const [trading, setTrading] = useState(false);
+  const business =
+    offeredBy(save.quests, npcId).length + readyFor(save.quests, npcId).length;
+  if (npc.roles.includes("merchant") && (trading || business === 0))
     return (
       <InventoryPanel
         save={save}
@@ -50,6 +55,13 @@ export function NpcPanel({
   return (
     <Sheet title={tr(npc.name)} icon="comment" onClose={onClose}>
       <Label value={tr(npc.title)} type="caption1" color={palette.muted} />
+      {npc.roles.includes("merchant") ? (
+        <GButton
+          icon="coins"
+          label={t("npc.trade")}
+          onPress={() => setTrading(true)}
+        />
+      ) : null}
       {npc.bark.en ? (
         <Label
           value={`“${tr(npc.bark)}”`}

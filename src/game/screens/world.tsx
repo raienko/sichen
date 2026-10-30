@@ -19,7 +19,7 @@ import { Glyph } from "../ui/glyphs";
 import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { LevelBadge } from "../ui/level-badge";
 import { Minimap } from "../ui/minimap";
-import { palette } from "../ui/palette";
+import { dangerColor, palette } from "../ui/palette";
 
 import { CharacterScreen } from "./panels/character";
 import { InspectPanel, MenuPanel, QuestsPanel } from "./panels/misc";
@@ -287,16 +287,30 @@ function Hud() {
       <View pointerEvents="box-none" style={styles.top}>
         <HeroStatus save={save} />
         <View pointerEvents="box-none" style={styles.topRight}>
-          <View style={styles.minimap}>
+          <View
+            style={[styles.minimap, { borderColor: dangerColor[zone.danger] }]}
+          >
             <Minimap save={save} size={portrait ? 104 : 120} />
           </View>
-          <Label
-            value={tr(zone.name)}
-            type="subheadline"
-            display
-            color={palette.ivory}
-            numberOfLines={1}
-          />
+          <View
+            accessible
+            accessibilityLabel={`${tr(zone.name)}. ${t(`danger.${zone.danger}`)}`}
+          >
+            <Row gap={6}>
+              <GIcon
+                name={zone.danger === "green" ? "shield-halved" : "skull"}
+                size={12}
+                color={dangerColor[zone.danger]}
+              />
+              <Label
+                value={tr(zone.name)}
+                type="subheadline"
+                display
+                color={palette.ivory}
+                numberOfLines={1}
+              />
+            </Row>
+          </View>
           <Row gap={8}>
             {quest && qs ? (
               <Pressable
