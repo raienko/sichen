@@ -29,14 +29,9 @@ import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
 
 import BattleStage, { type UnitSpot } from "../render/battle-scene";
+import { arcLayout } from "../ui/arc";
 
-import {
-  ActionPicker,
-  ActionSlots,
-  ActorPanel,
-  arcLayout,
-  ReadyArc,
-} from "./battle-hud";
+import { ActionPicker, ActionSlots, ActorPanel, ReadyArc } from "./battle-hud";
 import { Toasts } from "./world";
 
 // ---------------------------------------------------------------- playback

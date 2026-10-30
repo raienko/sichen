@@ -17,6 +17,7 @@ import {
 } from "../sim/battle";
 import { battleActions } from "../sim/hero";
 import { DELIVERIES, type Skill, type StatusKind } from "../sim/types";
+import { arcLayout } from "../ui/arc";
 import { Glyph } from "../ui/glyphs";
 import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { LevelBadge } from "../ui/level-badge";
@@ -618,46 +619,6 @@ export function TacticsBar({
 }
 
 // ---------------------------------------------------------------- ready arc
-
-/** Gap between neighbouring circles in the arc, in points. */
-const ARC_GAP = 6;
-/** The last defence stays near the top of Ready, not past its right edge. */
-const ARC_END = (285 * Math.PI) / 180;
-
-/**
- * Where Auto and the three defences sit on one circle around Ready. Ready's
- * centre is the origin, y grows downwards, and angles run from Auto (lower
- * left, its bottom level with Ready's and the slot row's) up over the top.
- * The circle grows until the defences fit before ARC_END without touching.
- */
-export function arcLayout(slot: number, ready: number) {
-  const dy = ready / 2 - slot / 2;
-  let radius = Math.hypot(ready / 2 + ARC_GAP + slot / 2, dy);
-  let angles: number[] = [];
-  for (let i = 0; i < 100; i++) {
-    const first = Math.atan2(dy, -Math.sqrt(radius * radius - dy * dy));
-    const step = 2 * Math.asin(Math.min(1, (slot + ARC_GAP) / (2 * radius)));
-    angles = [0, 1, 2, 3].map((k) => first + k * step);
-    if (angles[3] <= ARC_END) break;
-    radius += 2;
-  }
-  const points = angles.map((a) => ({
-    x: radius * Math.cos(a),
-    y: radius * Math.sin(a),
-  }));
-  // The box around Ready and every circle, with Ready's centre inside it.
-  const r = slot / 2;
-  const left = Math.min(-ready / 2, ...points.map((p) => p.x - r));
-  const right = Math.max(ready / 2, ...points.map((p) => p.x + r));
-  const top = Math.min(-ready / 2, ...points.map((p) => p.y - r));
-  const bottom = ready / 2;
-  return {
-    width: right - left,
-    height: bottom - top,
-    centre: { x: -left, y: -top },
-    points,
-  };
-}
 
 /** The clock turns red for the last seconds of planning. */
 const URGENT_SECONDS = 5;
