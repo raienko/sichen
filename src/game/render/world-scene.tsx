@@ -119,7 +119,9 @@ function Hero({ save }: { save: SaveData }) {
       ref.current.position.set(runtime.x * TILE, 0, runtime.z * TILE);
       ref.current.rotation.y = runtime.heading;
     }
-    const far = cameraDistance(size.width / Math.max(1, size.height));
+    const far =
+      cameraDistance(size.width / Math.max(1, size.height)) *
+      runtime.cameraZoom;
     const aimZ = runtime.z * TILE - LOOK_AHEAD;
     camera.position.set(
       runtime.x * TILE + CAMERA.x * far,

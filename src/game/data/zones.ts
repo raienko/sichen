@@ -9,8 +9,20 @@ import type { ZoneDef } from "../sim/types";
  *   #  tree            r  rock                   ~  water
  *   h  house           W  palisade wall          c  church
  *   t  tent            f  campfire (walkable glow)
+ *   g  Golden Gates    b  bell tower             m  market stall
  */
-export const BLOCKING = new Set(["#", "r", "~", "h", "W", "c", "t"]);
+export const BLOCKING = new Set([
+  "#",
+  "r",
+  "~",
+  "h",
+  "W",
+  "c",
+  "t",
+  "g",
+  "b",
+  "m",
+]);
 
 /** A small drawing kit so the maps stay readable as code. */
 class MapBuilder {
@@ -117,6 +129,12 @@ function kyivMap(): string[] {
   ] as const)
     m.clear(x, z, 1);
   m.rect(26, 10, 29, 12, "=").set(29, 10, "W").set(29, 12, "W");
+  // The Golden Gates: the east road runs through their arch to the exit.
+  m.rect(26, 9, 28, 10, "g").rect(26, 12, 28, 13, "g");
+  // St. Sophia's bell tower, at the road's end before the cathedral.
+  m.set(14, 6, "b");
+  // Market stalls by the merchant and on the south road.
+  m.set(19, 14, "m").set(20, 14, "m").set(11, 16, "m").set(12, 16, "m");
   return m.build();
 }
 

@@ -8,7 +8,17 @@ import type { Look } from "../sim/types";
 import { HeroFigure } from "./art-kit";
 import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
-function Turntable({ look, classId }: { look: Look; classId: string }) {
+function Turntable({
+  look,
+  classId,
+  weapon,
+  helmet,
+}: {
+  look: Look;
+  classId: string;
+  weapon?: string;
+  helmet?: boolean;
+}) {
   const ref = useRef<THREE.Group>(null);
   useFrame((_, dt) => {
     if (ref.current) ref.current.rotation.y += dt * 0.6;
@@ -18,20 +28,29 @@ function Turntable({ look, classId }: { look: Look; classId: string }) {
       <HeroFigure
         look={look}
         classId={classId}
-        weapon={getBase(getClass(classId).startWeapon).kind}
+        weapon={weapon ?? getBase(getClass(classId).startWeapon).kind}
+        helmet={helmet}
         speed={() => 0}
       />
     </group>
   );
 }
 
-/** The hero being made, slowly turning, for the character creation screen. */
+/**
+ * The hero, slowly turning: being made on the creation screen, or as worn
+ * on the character screen. Without `weapon`, the class's starting one.
+ */
 export default function HeroPreview({
   look,
   classId,
+  weapon,
+  helmet,
 }: {
   look: Look;
   classId: string;
+  /** The weapon family to hold, as the art kit names it. */
+  weapon?: string;
+  helmet?: boolean;
 }) {
   return (
     <GLFrame>
@@ -47,7 +66,12 @@ export default function HeroPreview({
         <ambientLight intensity={0.9} />
         <directionalLight position={[2, 4, 3]} intensity={2.2} />
         <pointLight position={[-2, 2, -1]} intensity={6} color={0xffc890} />
-        <Turntable look={look} classId={classId} />
+        <Turntable
+          look={look}
+          classId={classId}
+          weapon={weapon}
+          helmet={helmet}
+        />
       </Canvas>
     </GLFrame>
   );

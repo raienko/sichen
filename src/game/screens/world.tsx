@@ -21,13 +21,8 @@ import { LevelBadge } from "../ui/level-badge";
 import { Minimap } from "../ui/minimap";
 import { palette } from "../ui/palette";
 
-import { InventoryPanel } from "./panels/inventory";
-import {
-  CharacterPanel,
-  InspectPanel,
-  MenuPanel,
-  QuestsPanel,
-} from "./panels/misc";
+import { CharacterScreen } from "./panels/character";
+import { InspectPanel, MenuPanel, QuestsPanel } from "./panels/misc";
 import { InteractPanel, NpcPanel } from "./panels/npc";
 import { SkillsPanel } from "./panels/skills";
 import { TreePanel } from "./panels/tree";
@@ -374,9 +369,9 @@ function Panels() {
   if (!panel) return null;
   switch (panel.name) {
     case "inventory":
-      return <InventoryPanel save={save} onClose={close} />;
+      return <CharacterScreen save={save} onClose={close} />;
     case "character":
-      return <CharacterPanel save={save} onClose={close} />;
+      return <CharacterScreen save={save} onClose={close} showStats />;
     case "skills":
       return <SkillsPanel save={save} onClose={close} />;
     case "tree":
@@ -403,6 +398,11 @@ function Panels() {
 export default function WorldScreen() {
   const save = useSave();
   const version = useGame((s) => s.worldVersion);
+  const workspace = useGame(
+    (s) =>
+      s.panel !== null &&
+      ["inventory", "character", "skills", "tree"].includes(s.panel.name),
+  );
   const onKey = useCallback((code: string) => {
     const entry = MENU.find((m) => m.hotkey === code);
     if (!entry) return;
@@ -417,7 +417,8 @@ export default function WorldScreen() {
   return (
     <View style={styles.page}>
       <WorldScene save={save} version={version} />
-      <Hud />
+      {/* The workspace screens bring their own header and navigation. */}
+      {workspace ? null : <Hud />}
       <HintCard where="world" />
       <Panels />
       <Toasts />
