@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 
-import { gableGeometry, TILE } from "./art-kit";
+import { gableGeometry, Tiles, TILE } from "./art-kit";
 import { Instances, type Item } from "./nature";
 
 /**
@@ -144,5 +144,73 @@ export function Walls({ map }: { map: readonly string[] }) {
       <Instances geometry={G.gable} items={items.roofs} />
       <Instances geometry={G.tent} items={items.tents} />
     </>
+  );
+}
+
+/** Tiles of town shown beyond the wall, and of margin past the zone's ends. */
+const DEPTH = 8;
+const MARGIN = 6;
+
+/**
+ * A strip of the town beyond the wall, in its own frame: the wall runs down
+ * the last column, the Golden Gates stand across the road at row `road`,
+ * and a few houses and the cathedral show behind.
+ */
+function edgeMap(rows: number, road: number): string[] {
+  const m = Array.from({ length: rows }, () => Array<string>(DEPTH).fill("."));
+  const set = (x: number, z: number, ch: string) => {
+    if (m[z] && x >= 0 && x < DEPTH) m[z]![x] = ch;
+  };
+  for (let z = 0; z < rows; z++) set(DEPTH - 1, z, "W");
+  for (let z = road - 3; z <= road + 3; z++)
+    if (z !== road) {
+      set(DEPTH - 2, z, "g");
+      set(DEPTH - 1, z, "g");
+    }
+  set(DEPTH - 1, road, ".");
+  const block = (x0: number, z0: number, w: number, d: number, ch: string) => {
+    for (let z = z0; z < z0 + d; z++)
+      for (let x = x0; x < x0 + w; x++) set(x, z, ch);
+  };
+  block(2, road - 7, 3, 2, "h");
+  block(1, road + 5, 3, 2, "h");
+  block(3, road + 9, 3, 2, "h");
+  block(0, road - 13, 4, 4, "c");
+  return m.map((r) => r.join(""));
+}
+
+/**
+ * Seen from outside a town: its wall, the Golden Gates where the road
+ * leaves the zone towards it, and the roofs behind. Drawn past the zone's
+ * west or east edge, for an exit on that edge; decoration only.
+ */
+export function TownEdge({
+  exit,
+  width,
+  height,
+}: {
+  exit: { x: number; z: number };
+  width: number;
+  height: number;
+}) {
+  const west = exit.x === 0;
+  const east = exit.x === width - 1;
+  const rows = height + MARGIN * 2;
+  // In the strip's frame the town lies at low x and the wall faces +x.
+  const road = west ? exit.z + MARGIN : height - 1 - exit.z + MARGIN;
+  const map = useMemo(() => edgeMap(rows, road), [rows, road]);
+  if (!west && !east) return null;
+  return (
+    <group
+      position={
+        west
+          ? [-DEPTH * TILE, 0, -MARGIN * TILE]
+          : [(width + DEPTH - 1) * TILE, 0, (height - 1 + MARGIN) * TILE]
+      }
+      rotation={[0, west ? 0 : Math.PI, 0]}
+    >
+      <Tiles map={map} town />
+      <Walls map={map} />
+    </group>
   );
 }
