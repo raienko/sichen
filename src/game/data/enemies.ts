@@ -210,4 +210,33 @@ export const ENEMIES: readonly EnemyDef[] = [
       },
     ],
   },
+  {
+    // The protector: never met as a pack. It stands with a much weaker side
+    // when a far stronger player attacks (RULES.protector), deliberately
+    // out of balance so attacking the weak never pays.
+    id: "oberih",
+    name: { en: "Oberih the Warden", uk: "Оберіг-Охоронець" },
+    kind: "protector",
+    icon: "shield-heart",
+    tags: ["protector"],
+    base: {
+      maxHp: 900,
+      maxStamina: 99,
+      staminaRegen: 99,
+      maxMana: 99,
+      manaRegen: 99,
+      hpRegen: 60,
+      accuracy: 400,
+      evasion: 60,
+      speed: 60,
+      resPhysical: 75,
+      resMagical: 75,
+      resChaos: 75,
+      critChance: 25,
+      critMulti: 200,
+    },
+    perLevel: { maxHp: 80, incChaos: 60, accuracy: 20 },
+    skills: ["m_judgement", "m_judgement"],
+    xp: 0,
+  },
 ];

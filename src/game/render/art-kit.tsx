@@ -723,6 +723,62 @@ export function MonsterFigure({
           </group>
         </group>
       );
+    case "protector":
+      // Oberih: a tall robed warden in white and gold, a glowing halo and
+      // a staff; its light should read as "do not touch" from any distance.
+      return (
+        <group ref={body} scale={1.5}>
+          {legs(0xe8e2d4, 0.2)}
+          <Part
+            geometry={G.cone}
+            color={0xf2eee2}
+            position={[0, 0.95, 0]}
+            scale={[0.95, 1.3, 0.95]}
+          />
+          <Part
+            geometry={G.box}
+            color={0xc9a24a}
+            emissive={0x3a2600}
+            position={[0, 0.95, 0]}
+            scale={[0.62, 0.1, 0.5]}
+          />
+          <Part
+            geometry={G.sphere}
+            color={0xe0b48f}
+            position={[0, 1.8, 0]}
+            scale={[0.38, 0.42, 0.38]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, 0]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, Math.PI]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={0x8a6a42}
+            position={[0.5, 1.1, 0.1]}
+            scale={[0.07, 2.2, 0.07]}
+          />
+          <Part
+            geometry={G.octa}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0.5, 2.3, 0.1]}
+            scale={[0.28, 0.4, 0.28]}
+          />
+        </group>
+      );
     default:
       return (
         <group ref={body}>

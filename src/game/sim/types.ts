@@ -291,10 +291,18 @@ export type InteractableDef = {
   name: Localized;
 };
 
+/**
+ * Who may attack whom in a zone (PvP, with the multiplayer server): green
+ * nobody, yellow only players with a high PvP rank, red anyone. Red zones
+ * pay the most gold and hold the most dangerous packs.
+ */
+export type Danger = "green" | "yellow" | "red";
+
 export type ZoneDef = {
   id: string;
   name: Localized;
   town?: boolean;
+  danger: Danger;
   /** Rows of tile codes; see data/zones.ts for the legend. */
   map: readonly string[];
   spawn: { x: number; z: number };

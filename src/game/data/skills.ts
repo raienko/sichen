@@ -538,6 +538,23 @@ const kharakternyk: Skill[] = [
 /** What enemies use. They share the engine with heroes, not a parallel one. */
 const monster: Skill[] = [
   {
+    id: "m_judgement",
+    name: { en: "Warden's judgement", uk: "Суд Оберега" },
+    icon: "gavel",
+    ap: 2,
+    cost: {},
+    target: "enemy",
+    effects: [
+      {
+        type: "damage",
+        delivery: "mental",
+        damageType: "chaos",
+        base: [40, 60],
+        weapon: 0,
+      },
+    ],
+  },
+  {
     id: "m_bite",
     name: { en: "Bite", uk: "Укус" },
     icon: "tooth",

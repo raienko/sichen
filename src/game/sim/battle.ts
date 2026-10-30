@@ -58,6 +58,12 @@ export type Combatant = {
   boss?: boolean;
   phase: number;
   summoned?: boolean;
+  /** A player's hero (this one or, later, another player's); not a monster. */
+  player?: boolean;
+  /** Joined after the fight began: another player's hero, or a protector. */
+  joined?: boolean;
+  /** The warden that stands with a much weaker side (see guardSides). */
+  protector?: boolean;
   xp: number;
 };
 
@@ -113,6 +119,7 @@ export type BattleEvent =
   | { t: "death"; target: string }
   | { t: "phase"; actor: string; name: Localized }
   | { t: "summon"; actor: Combatant }
+  | { t: "join"; actor: Combatant }
   | { t: "flee"; actor: string; ok: boolean }
   | { t: "end"; result: BattleResult };
 
@@ -480,9 +487,16 @@ function heal(ctx: Ctx, target: Combatant, amount: number) {
 }
 
 function freeSlot(ctx: Ctx, side: Side): { row: 0 | 1; slot: number } | null {
+  return openSlot(ctx.state, side);
+}
+
+function openSlot(
+  state: BattleState,
+  side: Side,
+): { row: 0 | 1; slot: number } | null {
   for (const row of [0, 1] as const) {
     for (const slot of [1, 0, 2]) {
-      const taken = living(ctx.state, side).some(
+      const taken = living(state, side).some(
         (a) => a.row === row && a.slot === slot,
       );
       if (!taken) return { row, slot };
@@ -766,4 +780,80 @@ export function findActor(
   id: string,
 ): Combatant | undefined {
   return byId(state, id);
+}
+
+// ---------------------------------------------------------------- joining
+
+/** The highest level among one side's player heroes, or null if none. */
+function topPlayerLevel(state: BattleState, side: Side): number | null {
+  const levels = living(state, side)
+    .filter((a) => a.player)
+    .map((a) => a.level);
+  return levels.length > 0 ? Math.max(...levels) : null;
+}
+
+/**
+ * Griefing protection. When one side's strongest player hero is
+ * RULES.protector.levelGap or more levels above the other side's, a
+ * protector joins the weaker side: an NPC far out of balance that ends the
+ * fight in a round or two. Only fights with players on both sides count
+ * (monsters never call one), and a side gets at most one.
+ */
+export function guardSides(state: BattleState): {
+  state: BattleState;
+  events: BattleEvent[];
+} {
+  const next: BattleState = structuredClone(state);
+  const events: BattleEvent[] = [];
+  for (const side of [0, 1] as const) {
+    const other: Side = side === 0 ? 1 : 0;
+    const mine = topPlayerLevel(next, side);
+    const theirs = topPlayerLevel(next, other);
+    if (mine === null || theirs === null) continue;
+    if (theirs - mine < RULES.protector.levelGap) continue;
+    if (living(next, side).some((a) => a.protector)) continue;
+    const place = openSlot(next, side);
+    if (!place) continue;
+    const warden = enemyCombatant(
+      { enemyId: RULES.protector.enemyId, level: theirs + 5 },
+      side,
+      place.row,
+      place.slot,
+    );
+    warden.protector = true;
+    warden.joined = true;
+    warden.xp = 0;
+    next.actors.push(warden);
+    events.push({ t: "join", actor: warden });
+  }
+  return { state: next, events };
+}
+
+/**
+ * Another player's hero joins a fight in progress, on `side`, from the next
+ * round. Monsters never join; a side is full at six. Joining can bring a
+ * protector to the other side when the newcomer far outlevels it.
+ */
+export function joinBattle(
+  state: BattleState,
+  hero: Combatant,
+  side: Side,
+): { state: BattleState; events: BattleEvent[] } | null {
+  if (!hero.player || state.result) return null;
+  const place = openSlot(state, side);
+  if (!place) return null;
+  const next: BattleState = structuredClone(state);
+  const joiner: Combatant = {
+    ...structuredClone(hero),
+    side,
+    row: place.row,
+    slot: place.slot,
+    joined: true,
+  };
+  next.actors.push(joiner);
+  const guarded = guardSides(next);
+  return {
+    state: guarded.state,
+    events: [{ t: "join", actor: joiner }, ...guarded.events],
+  };
 }

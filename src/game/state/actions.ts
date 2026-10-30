@@ -6,6 +6,7 @@ import {
   createBattle,
   emptyPlan,
   fitPlan,
+  joinBattle,
   living,
   planCost,
   resolveRound,
@@ -26,6 +27,7 @@ import {
   respec,
   restore,
   unequip,
+  xpToNext,
 } from "../sim/hero";
 import {
   itemName,
@@ -588,6 +590,37 @@ export function startBattle(
       events: [],
       rewards: null,
       returnTo: { x: runtime.x, z: runtime.z },
+    },
+  });
+}
+
+/**
+ * Development only, until the multiplayer server exists: another player's
+ * hero at `level` joins the current fight on `side` (0 with the hero, 1
+ * against), with the protector rule applied. Plays like a round's events.
+ */
+export function devJoinPlayer(level: number, side: 0 | 1 = 1) {
+  const battle = get().battle;
+  if (!__DEV__ || !battle || battle.phase !== "planning") return;
+  const rng = new Rng(level * 7919 + side);
+  let hero = createHero(rng, "Ivan", save().hero.look, "lytsar");
+  let xp = 0;
+  for (let l = 1; l < level; l++) xp += xpToNext(l);
+  hero = restore(gainXp(hero, xp).hero);
+  const joiner = {
+    ...heroCombatant(hero),
+    id: `p${battle.state.actors.length}`,
+    controller: "ai" as const,
+  };
+  const out = joinBattle(battle.state, joiner, side);
+  if (!out) return;
+  set({
+    battle: {
+      ...battle,
+      before: battle.state,
+      state: out.state,
+      events: out.events,
+      phase: "playing",
     },
   });
 }

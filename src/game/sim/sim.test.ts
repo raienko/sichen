@@ -9,8 +9,11 @@ import { planFor } from "./ai";
 import {
   createBattle,
   fitPlan,
+  enemyCombatant,
   fleeChance,
+  guardSides,
   hitChance,
+  joinBattle,
   living,
   resolveRound,
   sanitizePlan,
@@ -274,6 +277,66 @@ describe("battle", () => {
     const d = { ...emptyStats(), evasion: 10 };
     expect(hitChance(a, d, 0)).toBeGreaterThan(hitChance(a, d, 1));
     expect(hitChance(a, d, 3)).toBeGreaterThanOrEqual(5);
+  });
+});
+
+/** A player's hero at a level, as a fighter with its own id. */
+function playerAt(level: number, id: string, classId = "lytsar") {
+  let hero = createHero(new Rng(level), "Ostap", LOOK, classId);
+  hero = gainXp(
+    hero,
+    Array.from({ length: level - 1 }, (_, i) => xpToNext(i + 1)).reduce(
+      (a, b) => a + b,
+      0,
+    ),
+  ).hero;
+  return { ...heroCombatant(restore(hero)), id };
+}
+
+describe("joining and the protector", () => {
+  it("lets players, not monsters, join a fight in progress", () => {
+    const state = createBattle(
+      1,
+      [playerAt(3, "a")],
+      [{ enemyId: "orc_grunt", level: 3 }],
+    );
+    const orc = enemyCombatant({ enemyId: "orc_grunt", level: 3 }, 1, 0, 0);
+    expect(joinBattle(state, orc, 1)).toBeNull();
+    const out = joinBattle(state, playerAt(4, "b"), 0)!;
+    const joiner = out.state.actors.find((a) => a.id === "b")!;
+    expect(joiner.side).toBe(0);
+    expect(joiner.joined).toBe(true);
+    // Not both in the same place.
+    const a = out.state.actors.find((x) => x.id === "a")!;
+    expect([joiner.row, joiner.slot]).not.toEqual([a.row, a.slot]);
+    // Monsters on the other side: no protector, whatever the levels.
+    expect(out.events.map((e) => e.t)).toEqual(["join"]);
+  });
+
+  it("sends no protector when the players are close in level", () => {
+    const state = createBattle(2, [playerAt(5, "low")], []);
+    const out = joinBattle(state, playerAt(10, "high"), 1)!;
+    expect(out.state.actors.some((a) => a.protector)).toBe(false);
+  });
+
+  it("sends one protector to a far weaker side, and it wins", () => {
+    let state = createBattle(3, [playerAt(2, "low")], []);
+    state = joinBattle(state, playerAt(10, "high"), 1)!.state;
+    const wardens = state.actors.filter((a) => a.protector);
+    expect(wardens).toHaveLength(1);
+    expect(wardens[0]!.side).toBe(0);
+    expect(wardens[0]!.level).toBe(15);
+    // Guarding again adds nothing.
+    expect(guardSides(state).events).toHaveLength(0);
+    const rng = new Rng(3);
+    for (let round = 0; round < 3 && !state.result; round++) {
+      const plans: Record<string, Plan> = {};
+      for (const actor of living(state))
+        plans[actor.id] = planFor(state, actor, rng);
+      state = resolveRound(state, plans).state;
+    }
+    expect(state.result).toBe("won");
+    expect(state.actors.find((a) => a.id === "low")!.hp).toBeGreaterThan(0);
   });
 });
 

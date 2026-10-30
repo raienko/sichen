@@ -204,6 +204,7 @@ export const ZONES: readonly ZoneDef[] = [
     id: "kyiv",
     name: { en: "Kyiv", uk: "Київ" },
     town: true,
+    danger: "green",
     map: kyivMap(),
     spawn: { x: 14, z: 12 },
     npcs: [
@@ -223,6 +224,8 @@ export const ZONES: readonly ZoneDef[] = [
   {
     id: "vyshhorod",
     name: { en: "Vyshhorod outskirts", uk: "Околиці Вишгорода" },
+    // The starting wilds: new heroes stay out of PvP here.
+    danger: "green",
     map: vyshhorodMap(),
     spawn: { x: 3, z: 17 },
     npcs: [],
