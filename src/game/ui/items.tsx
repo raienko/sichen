@@ -92,7 +92,16 @@ export function ItemTile({
   );
 }
 
-export function ItemCard({ item, hero }: { item: Item; hero: Hero }) {
+export function ItemCard({
+  item,
+  hero,
+  bare,
+}: {
+  item: Item;
+  hero: Hero;
+  /** No frame or fill: for laying over a scene with its own shade. */
+  bare?: boolean;
+}) {
   const { t, tr } = useT();
   const lines = useModLines();
   const base = getBase(item.baseId);
@@ -120,7 +129,7 @@ export function ItemCard({ item, hero }: { item: Item; hero: Hero }) {
     .filter(Boolean)
     .join(" · ");
   return (
-    <View style={[styles.card, { borderColor: color }]}>
+    <View style={[styles.card, { borderColor: color }, bare && styles.bare]}>
       <Label value={tr(itemName(item))} type="headline" color={color} />
       <Label
         value={`${t(`rarity.${item.rarity}`)} · ${tr(base.name)} · ilvl ${item.ilvl}`}
@@ -203,6 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: palette.night,
   },
+  bare: { borderWidth: 0, backgroundColor: "transparent", padding: 0 },
   setBlock: { gap: 2, marginTop: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
 });

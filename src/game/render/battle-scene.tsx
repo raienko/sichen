@@ -1,12 +1,14 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
 import { getEnemy } from "../data";
 import type { Combatant } from "../sim/battle";
-import type { Look } from "../sim/types";
+import type { Look, ZoneDef } from "../sim/types";
 
+import { Arena } from "./arena";
 import { HeroFigure, MonsterFigure } from "./art-kit";
+import { heroOnScreen } from "./nature";
 import { ANTIALIAS, GL_SCALE, GLFrame, paceFrames } from "./native-gl";
 
 /**
@@ -140,9 +142,9 @@ function Fighter({
       ) : (
         <HeroFigure {...hero} speed={() => speed.current} />
       )}
-      {/* A soft shadow so figures stand on the painted ground; the selected
+      {/* A soft shadow so figures stand on the ground (above its facets); the selected
           one glows in its colour with a bright rim. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
         <circleGeometry args={[0.62, 28]} />
         <meshBasicMaterial
           color={highlight ?? 0x000000}
@@ -151,7 +153,7 @@ function Fighter({
         />
       </mesh>
       {highlight && actor.hp > 0 ? (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.11, 0]}>
           <ringGeometry args={[0.6, 0.72, 36]} />
           <meshBasicMaterial color={highlight} />
         </mesh>
@@ -168,10 +170,13 @@ function Rig({
   actors,
   band,
   onProject,
+  onDistance,
 }: {
   actors: Combatant[];
   band: Band | null;
   onProject: (spots: Record<string, UnitSpot>) => void;
+  /** How far the camera ended up from the field's middle. */
+  onDistance: (distance: number) => void;
 }) {
   const { camera, size } = useThree();
   const key = actors.map((a) => `${a.id}:${a.side}${a.row}${a.slot}`).join();
@@ -223,12 +228,14 @@ function Rig({
         return Math.abs(p.x) < 0.9 && p.y > yBottom + 0.04 && p.y < yTop - 0.04;
       });
     // Never closer than 10: a solo hero would otherwise fill the band.
-    for (let distance = 10; distance < 60; distance += 0.5) {
+    let distance = 10;
+    for (; distance < 60; distance += 0.5) {
       cam.position.copy(dir.clone().multiplyScalar(distance).add(center));
       cam.lookAt(center);
       cam.updateMatrixWorld();
       if (fits()) break;
     }
+    onDistance(distance);
     const spots: Record<string, UnitSpot> = {};
     const toScreen = (v: THREE.Vector3) => {
       const p = v.clone().project(cam);
@@ -253,6 +260,7 @@ function Rig({
     band?.top,
     band?.height,
     onProject,
+    onDistance,
   ]);
   return null;
 }
@@ -263,6 +271,8 @@ export default function BattleStage({
   motion,
   highlights,
   band,
+  zone,
+  arenaSeed,
   onProject,
 }: {
   actors: Combatant[];
@@ -272,8 +282,18 @@ export default function BattleStage({
   highlights: Record<string, number>;
   /** Where on the canvas the fighters must stand clear of the HUD. */
   band: Band | null;
+  /** Whose forest the fight is in: colours and town or wild. */
+  zone: ZoneDef;
+  /** Picks the clearing's layout; the same pack gets the same clearing. */
+  arenaSeed: number;
   onProject: (spots: Record<string, UnitSpot>) => void;
 }) {
+  // Fog starts a little past the field and swallows the far forest.
+  const [distance, setDistance] = useState(20);
+  // The world's trees fade around the hero on screen; here nothing should.
+  useEffect(() => {
+    heroOnScreen.uHero.value.set(-1e4, -1e4, 0);
+  }, []);
   return (
     <GLFrame>
       <Canvas
@@ -285,13 +305,19 @@ export default function BattleStage({
           state.gl.setClearColor(0x000000, 0);
         }}
       >
-        <ambientLight intensity={0.85} color={0xffe8c8} />
-        <hemisphereLight args={[0x9ab0d8, 0x3a3020, 1.6]} />
+        {/* The world's light: a warm low sun and a cool sky fill. */}
+        <ambientLight intensity={0.45} color={0xffe8c8} />
+        <hemisphereLight args={[0xbcd2ff, 0x3a3020, 1.2]} />
         <directionalLight
-          position={[-6, 10, 8]}
-          intensity={1.8}
-          color={0xffe0c0}
+          position={[-20, 30, 10]}
+          intensity={2.4}
+          color={0xffd9a0}
         />
+        <fog
+          attach="fog"
+          args={[zone.palette.fog, distance + 6, distance + 34]}
+        />
+        <Arena zone={zone} seed={arenaSeed} centreX={SLOT_WIDTH} />
         {actors.map((a) => (
           <Fighter
             key={a.id}
@@ -304,7 +330,12 @@ export default function BattleStage({
             highlight={highlights[a.id]}
           />
         ))}
-        <Rig actors={actors} band={band} onProject={onProject} />
+        <Rig
+          actors={actors}
+          band={band}
+          onProject={onProject}
+          onDistance={setDistance}
+        />
       </Canvas>
     </GLFrame>
   );

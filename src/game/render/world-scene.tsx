@@ -27,13 +27,40 @@ import {
   TILE,
 } from "./art-kit";
 import { distance, step, walkable } from "./movement";
+import { heroOnScreen, Nature } from "./nature";
+import { Walls } from "./walls";
 import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
 const HERO_SPEED = 4.2;
 const CHASE_SPEED = 3.3;
 const AGGRO_RANGE = 4.2;
 const CONTACT = 0.95;
-const CAMERA = new THREE.Vector3(0, 13.5, 10);
+/** Raised behind the hero, about 48° down: more from behind than above. */
+const CAMERA = new THREE.Vector3(0, 10, 9).normalize();
+/**
+ * The camera aims this far ahead of the hero (up the screen), so the hero
+ * stands in the lower middle with the way ahead in view.
+ */
+const LOOK_AHEAD = 2;
+const SCRATCH = new THREE.Vector3();
+const BUFFER = new THREE.Vector2();
+const FOV = 42;
+/**
+ * People and creatures stand larger than life against the trees, as in the
+ * crawler concept, so they read from the high camera. Movement and contact
+ * distances are unchanged.
+ */
+const ACTOR_SCALE = 1.35;
+
+/**
+ * How far the camera stands from the hero: far enough to show at least 9
+ * units across and 11 top to bottom around the hero, so a narrow
+ * portrait screen sees as much of the clearing as a wide one.
+ */
+function cameraDistance(aspect: number): number {
+  const half = Math.tan(((FOV / 2) * Math.PI) / 180);
+  return Math.max(4.5 / (half * aspect), 5.5 / half);
+}
 
 type Props = { save: SaveData; version: number };
 
@@ -53,7 +80,9 @@ function Hero({ save }: { save: SaveData }) {
   const ref = useRef<THREE.Group>(null);
   const speed = useRef(0);
   const zone = getZone(save.world.zoneId);
-  const { camera } = useThree();
+  const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
+  const size = useThree((s) => s.size);
   const regen = useRef(0);
   const weapon = save.hero.equipment.weapon;
 
@@ -91,12 +120,27 @@ function Hero({ save }: { save: SaveData }) {
       ref.current.position.set(runtime.x * TILE, 0, runtime.z * TILE);
       ref.current.rotation.y = runtime.heading;
     }
+    const far =
+      cameraDistance(size.width / Math.max(1, size.height)) *
+      runtime.cameraZoom;
+    const aimZ = runtime.z * TILE - LOOK_AHEAD;
     camera.position.set(
-      runtime.x * TILE + CAMERA.x,
-      CAMERA.y,
-      runtime.z * TILE + CAMERA.z,
+      runtime.x * TILE + CAMERA.x * far,
+      0.8 + CAMERA.y * far,
+      aimZ + CAMERA.z * far,
     );
-    camera.lookAt(runtime.x * TILE, 0.8, runtime.z * TILE);
+    camera.lookAt(runtime.x * TILE, 0.8, aimZ);
+    camera.updateMatrixWorld();
+    // Tell the trees where the hero's chest is on screen, to fade for him.
+    const chest = SCRATCH.set(runtime.x * TILE, 1.3, runtime.z * TILE);
+    chest.project(camera);
+    const buffer = gl.getDrawingBufferSize(BUFFER);
+    heroOnScreen.uHero.value.set(
+      (chest.x * 0.5 + 0.5) * buffer.x,
+      (chest.y * 0.5 + 0.5) * buffer.y,
+      chest.z * 0.5 + 0.5,
+    );
+    heroOnScreen.uFadeRadius.value = buffer.y * 0.09;
 
     for (const exit of zone.exits) {
       if (distance(runtime.x, runtime.z, exit.x, exit.z) < 0.8) {
@@ -113,7 +157,7 @@ function Hero({ save }: { save: SaveData }) {
   });
 
   return (
-    <group ref={ref}>
+    <group ref={ref} scale={ACTOR_SCALE}>
       <HeroFigure
         look={save.hero.look}
         classId={save.hero.classId}
@@ -213,6 +257,7 @@ function Pack({
     <group
       ref={ref}
       position={[homeX * TILE, 0, homeZ * TILE]}
+      scale={ACTOR_SCALE}
       userData={INTERACTIVE}
       onPointerDown={onPress}
     >
@@ -260,7 +305,8 @@ function Ground({
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[((width - 1) * TILE) / 2, 0, ((height - 1) * TILE) / 2]}
+      // Below the sunken riverbed, so it never covers the water.
+      position={[((width - 1) * TILE) / 2, -0.6, ((height - 1) * TILE) / 2]}
     >
       <planeGeometry args={[width * TILE + 40, height * TILE + 40]} />
       <meshLambertMaterial color={color} />
@@ -327,6 +373,8 @@ function walkToTap(
 
 function Scene({ save }: { save: SaveData }) {
   const zone = getZone(save.world.zoneId);
+  const size = useThree((s) => s.size);
+  const reach = cameraDistance(size.width / Math.max(1, size.height));
   const width = zone.map[0]?.length ?? 0;
   const height = zone.map.length;
   const packs = zone.packs.filter(
@@ -335,16 +383,20 @@ function Scene({ save }: { save: SaveData }) {
   return (
     <>
       <color attach="background" args={[zone.palette.sky]} />
-      <fog attach="fog" args={[zone.palette.fog, 20, 52]} />
-      <ambientLight intensity={zone.town ? 0.9 : 0.6} color={0xffe8c8} />
-      <hemisphereLight args={[0x9ab0d8, 0x3a3020, zone.town ? 2.2 : 1.5]} />
+      {/* Fog thickens past the hero, darkening the screen's far edge. */}
+      <fog attach="fog" args={[zone.palette.fog, reach + 6, reach + 38]} />
+      {/* A warm low sun from the south-west and a cool sky fill. */}
+      <ambientLight intensity={0.35} color={0xffe8c8} />
+      <hemisphereLight args={[0xbcd2ff, 0x3a3020, 1.2]} />
       <directionalLight
         position={[-20, 30, 10]}
-        intensity={zone.town ? 2.2 : 1.3}
-        color={0xd8dcff}
+        intensity={2.4}
+        color={0xffd9a0}
       />
       <Ground width={width} height={height} color={zone.palette.ground} />
-      <Tiles map={zone.map} />
+      <Nature map={zone.map} grass={zone.palette.ground} town={!!zone.town} />
+      <Tiles map={zone.map} town={!!zone.town} />
+      {zone.town ? <Walls map={zone.map} /> : null}
       {zone.npcs.map((n) => {
         const npc = getNpc(n.npcId);
         const ready = readyFor(save.quests, npc.id).length > 0;
@@ -354,6 +406,7 @@ function Scene({ save }: { save: SaveData }) {
             key={n.npcId}
             position={[n.x * TILE, 0, n.z * TILE]}
             rotation={[0, Math.PI, 0]}
+            scale={ACTOR_SCALE}
             userData={INTERACTIVE}
             onPointerDown={(event) => {
               event.stopPropagation();
@@ -428,10 +481,10 @@ export default function WorldScene({ save, version }: Props) {
           <Canvas
             key={key}
             camera={{
-              fov: 42,
+              fov: FOV,
               near: 0.5,
               far: 120,
-              position: [runtime.x * TILE, 15, runtime.z * TILE + 11],
+              position: [runtime.x * TILE, 15.5, runtime.z * TILE + 8.5],
             }}
             dpr={[1, 1.75]}
             gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}

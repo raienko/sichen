@@ -29,14 +29,9 @@ import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { palette } from "../ui/palette";
 
 import BattleStage, { type UnitSpot } from "../render/battle-scene";
+import { arcLayout } from "../ui/arc";
 
-import {
-  ActionPicker,
-  ActionSlots,
-  ActorPanel,
-  arcLayout,
-  ReadyArc,
-} from "./battle-hud";
+import { ActionPicker, ActionSlots, ActorPanel, ReadyArc } from "./battle-hud";
 import { Toasts } from "./world";
 
 // ---------------------------------------------------------------- playback
@@ -413,6 +408,12 @@ export default function BattleScreen() {
   const [spots, setSpots] = useState<Record<string, UnitSpot>>({});
   // The middle band's top and height in the page, measured.
   const [band, setBand] = useState<{ y: number; h: number } | null>(null);
+  // The same pack always fights in the same clearing.
+  const packId = useGame((s) => s.battle?.packId ?? "");
+  const arenaSeed = useMemo(
+    () => [...packId].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 9973, 7),
+    [packId],
+  );
   const heroSave = useGame((s) => s.save?.hero);
   const heroLook = useMemo(() => {
     const weapon = heroSave?.equipment.weapon;
@@ -552,6 +553,8 @@ export default function BattleScreen() {
           motion={playback}
           highlights={highlights}
           band={fightBand}
+          zone={getZone(zoneId)}
+          arenaSeed={arenaSeed}
           onProject={setSpots}
         />
       </View>

@@ -1,32 +1,33 @@
-import { useCallback } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { getNpc, getZone } from "../data";
+import { getClass, getEnemy, getNpc, getZone } from "../data";
 import { useT } from "../i18n";
 import WorldScene from "../render/world-scene";
 import * as actions from "../state/actions";
+import { runtime } from "../state/runtime";
+import type { SaveData } from "../state/save";
 import { store, useGame, useSave, type Panel } from "../state/store";
 import { xpToNext } from "../sim/hero";
 import { questTarget, trackedQuests } from "../sim/quests";
 import { heroStats } from "../sim/stats";
 import { useKeyboardMovement } from "../ui/input";
 import { HintCard } from "../ui/hint";
-import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
+import { arcLayout } from "../ui/arc";
+import { Glyph } from "../ui/glyphs";
+import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
+import { LevelBadge } from "../ui/level-badge";
 import { Minimap } from "../ui/minimap";
 import { palette } from "../ui/palette";
 
-import { InventoryPanel } from "./panels/inventory";
-import {
-  CharacterPanel,
-  InspectPanel,
-  MenuPanel,
-  QuestsPanel,
-} from "./panels/misc";
+import { CharacterScreen } from "./panels/character";
+import { InspectPanel, MenuPanel, QuestsPanel } from "./panels/misc";
 import { InteractPanel, NpcPanel } from "./panels/npc";
 import { SkillsPanel } from "./panels/skills";
 import { TreePanel } from "./panels/tree";
 
+/** The panels the HUD opens, with their keyboard shortcuts. */
 const MENU: {
   panel: Panel["name"];
   icon: string;
@@ -35,7 +36,7 @@ const MENU: {
 }[] = [
   {
     panel: "inventory",
-    icon: "box-open",
+    icon: "bag-shopping",
     key: "menu.inventory",
     hotkey: "KeyI",
   },
@@ -45,17 +46,230 @@ const MENU: {
   { panel: "quests", icon: "scroll", key: "menu.quests", hotkey: "KeyJ" },
   { panel: "menu", icon: "bars", key: "menu.menu", hotkey: "Escape" },
 ];
+/** The arc around the context action: everything but the system menu. */
+const ARC = MENU.filter((m) => m.panel !== "menu");
+
+/** How near, in tiles, a person, a thing or a pack offers the context action. */
+const TALK_RANGE = 2.5;
+const INSPECT_RANGE = 5;
+
+type Nearby =
+  | { kind: "npc"; id: string; name: string }
+  | { kind: "thing"; id: string; name: string }
+  | { kind: "pack"; id: string; name: string };
+
+/**
+ * The nearest thing the context button acts on: a person or a shrine in
+ * talking range, else a pack in sight. Polled, since the hero moves in the
+ * scene's frame loop, not in React state.
+ */
+function useNearby(save: SaveData): Nearby | null {
+  const { tr } = useT();
+  const [near, setNear] = useState<Nearby | null>(null);
+  useEffect(() => {
+    const zone = getZone(save.world.zoneId);
+    const nearest = (list: { d: number; at: Nearby }[], range: number) =>
+      list.filter((c) => c.d <= range).sort((a, b) => a.d - b.d)[0]?.at ?? null;
+    const find = (): Nearby | null => {
+      const d = (x: number, z: number) =>
+        Math.hypot(x - runtime.x, z - runtime.z);
+      const talk = nearest(
+        [
+          ...zone.npcs.map((n) => ({
+            d: d(n.x, n.z),
+            at: {
+              kind: "npc" as const,
+              id: n.npcId,
+              name: tr(getNpc(n.npcId).name),
+            },
+          })),
+          ...zone.interactables.map((it) => ({
+            d: d(it.x, it.z),
+            at: { kind: "thing" as const, id: it.id, name: tr(it.name) },
+          })),
+        ],
+        TALK_RANGE,
+      );
+      if (talk) return talk;
+      const packs = zone.packs
+        .filter((p) => !p.quest && !(p.id in save.world.cleared))
+        .map((p) => {
+          const mob = runtime.mobs.get(p.id) ?? { x: p.x, z: p.z };
+          const lead = getEnemy(p.enemies[0]!.enemyId);
+          return {
+            d: d(mob.x, mob.z),
+            at: {
+              kind: "pack" as const,
+              id: p.id,
+              name: `${tr(lead.name)} ${p.enemies.map((e) => e.level).join(" · ")}`,
+            },
+          };
+        });
+      return nearest(packs, INSPECT_RANGE);
+    };
+    const tick = () =>
+      setNear((prev) => {
+        const next = find();
+        return prev?.id === next?.id && prev?.name === next?.name ? prev : next;
+      });
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [save.world.zoneId, save.world.cleared, tr]);
+  return near;
+}
+
+/** Diameters of the context action and the buttons around it. */
+const CONTEXT = 68;
+const SMALL = 46;
+
+/**
+ * Lower right: the context action, Inspect near a pack or Talk/Examine near
+ * a person or shrine, with the panels on an arc around it, in thumb reach.
+ */
+function ActionArc({ save }: { save: SaveData }) {
+  const { t } = useT();
+  const near = useNearby(save);
+  const layout = useMemo(() => arcLayout(SMALL, CONTEXT, ARC.length, 290), []);
+  const at = (p: { x: number; y: number }, size: number) => ({
+    position: "absolute" as const,
+    left: layout.centre.x + p.x - size / 2,
+    top: layout.centre.y + p.y - size / 2,
+  });
+  const act = () => {
+    if (!near) return;
+    if (near.kind === "npc") actions.openPanel({ name: "npc", npcId: near.id });
+    else if (near.kind === "thing") actions.examine(near.id);
+    else actions.openPanel({ name: "inspect", packId: near.id });
+  };
+  const label = !near
+    ? t("hud.nothingNear")
+    : near.kind === "npc"
+      ? t("hud.talk", { name: near.name })
+      : near.kind === "thing"
+        ? t("hud.examine", { name: near.name })
+        : t("hud.inspect", { name: near.name });
+  return (
+    <View style={styles.arcWrap} pointerEvents="box-none">
+      <View
+        pointerEvents="box-none"
+        style={{ width: layout.width, height: layout.height }}
+      >
+        {ARC.map((m, i) => (
+          <RoundButton
+            key={m.panel}
+            size={SMALL}
+            accessibilityLabel={t(m.key)}
+            onPress={() => actions.openPanel({ name: m.panel } as Panel)}
+            style={at(layout.points[i]!, SMALL)}
+          >
+            <GIcon name={m.icon} size={18} color={palette.ivory} />
+          </RoundButton>
+        ))}
+        <RoundButton
+          size={CONTEXT}
+          accessibilityLabel={label}
+          selected={!!near}
+          disabled={!near}
+          onPress={act}
+          style={at({ x: 0, y: 0 }, CONTEXT)}
+        >
+          {near?.kind === "pack" ? (
+            <Glyph name="eye" size={30} color={palette.ivory} />
+          ) : (
+            <GIcon name="hand" size={26} color={palette.ivory} />
+          )}
+        </RoundButton>
+      </View>
+      {near ? (
+        <Label
+          value={near.name}
+          type="subheadline"
+          display
+          color={palette.ivory}
+          numberOfLines={1}
+          style={styles.contextName}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+/** Upper left: portrait ring and level, thin bars, purse and potions. */
+function HeroStatus({ save }: { save: SaveData }) {
+  const { hero } = save;
+  const stats = heroStats(hero);
+  return (
+    <Row gap={10} style={styles.status}>
+      <View>
+        <View style={styles.portrait}>
+          <GIcon
+            name={getClass(hero.classId).icon}
+            size={24}
+            color={palette.ivory}
+          />
+        </View>
+        <LevelBadge level={hero.level} style={styles.portraitLevel} />
+      </View>
+      <View style={styles.bars}>
+        <Bar
+          value={hero.hp}
+          max={stats.maxHp}
+          color={palette.hp}
+          height={14}
+          showText
+        />
+        <Bar
+          value={hero.mana}
+          max={stats.maxMana}
+          color={palette.mana}
+          height={6}
+        />
+        <Bar
+          value={hero.stamina}
+          max={stats.maxStamina}
+          color={palette.stamina}
+          height={6}
+        />
+        <Bar
+          value={hero.xp}
+          max={xpToNext(hero.level)}
+          color={palette.xp}
+          height={3}
+        />
+        <Row gap={10}>
+          <Row gap={4}>
+            <GIcon name="coins" size={12} color={palette.gold} />
+            <Label
+              value={String(save.gold)}
+              type="caption1"
+              color={palette.gold}
+            />
+          </Row>
+          <Row gap={4}>
+            <GIcon name="flask" size={12} color={palette.hp} />
+            <Label value={String(hero.potions.hp)} type="caption1" />
+          </Row>
+          <Row gap={4}>
+            <GIcon name="vial" size={12} color={palette.mana} />
+            <Label value={String(hero.potions.mana)} type="caption1" />
+          </Row>
+        </Row>
+      </View>
+    </Row>
+  );
+}
 
 function Hud() {
   const { t, tr } = useT();
   const save = useSave();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  // Portrait puts the menu buttons in one row along the bottom.
   const portrait = height > width;
-  const stats = heroStats(save.hero);
-  const { hero } = save;
-  const tracked = trackedQuests(save.quests).slice(0, 3);
+  // At most one tracked objective: its glyph and count; the journal has
+  // the words.
+  const quest = trackedQuests(save.quests)[0];
+  const qs = quest ? save.quests[quest.id]! : null;
   const zone = getZone(save.world.zoneId);
   return (
     <View
@@ -71,115 +285,51 @@ function Hud() {
       ]}
     >
       <View pointerEvents="box-none" style={styles.top}>
-        <View style={styles.status}>
-          <Row gap={6}>
-            <Label
-              value={hero.name}
-              type="subheadline"
-              color={palette.gold}
-              numberOfLines={1}
-              style={styles.flex}
-            />
-            <Label
-              value={t("hud.level", { level: hero.level })}
-              type="caption1"
-            />
-          </Row>
-          <Bar
-            value={hero.hp}
-            max={stats.maxHp}
-            color={palette.hp}
-            height={13}
-            showText
+        <HeroStatus save={save} />
+        <View pointerEvents="box-none" style={styles.topRight}>
+          <View style={styles.minimap}>
+            <Minimap save={save} size={portrait ? 104 : 120} />
+          </View>
+          <Label
+            value={tr(zone.name)}
+            type="subheadline"
+            display
+            color={palette.ivory}
+            numberOfLines={1}
           />
-          <Bar
-            value={hero.mana}
-            max={stats.maxMana}
-            color={palette.mana}
-            height={9}
-          />
-          <Bar
-            value={hero.stamina}
-            max={stats.maxStamina}
-            color={palette.stamina}
-            height={7}
-          />
-          <Bar
-            value={hero.xp}
-            max={xpToNext(hero.level)}
-            color={palette.xp}
-            height={4}
-          />
-          <Row gap={10}>
-            <Row gap={4}>
-              <GIcon name="coins" size={12} color={palette.gold} />
-              <Label
-                value={String(save.gold)}
-                type="caption1"
-                color={palette.gold}
-              />
-            </Row>
-            <Row gap={4}>
-              <GIcon name="flask" size={12} color={palette.hp} />
-              <Label value={String(hero.potions.hp)} type="caption1" />
-            </Row>
-            <Row gap={4}>
-              <GIcon name="vial" size={12} color={palette.mana} />
-              <Label value={String(hero.potions.mana)} type="caption1" />
-            </Row>
-          </Row>
-        </View>
-        <View
-          pointerEvents="box-none"
-          style={[styles.topRight, portrait && styles.topRightPortrait]}
-        >
-          <Minimap save={save} size={portrait ? 104 : 120} />
-          <Label value={tr(zone.name)} type="caption2" color={palette.muted} />
-          {tracked.map((q) => {
-            const st = save.quests[q.id]!;
-            return (
-              <View
-                key={q.id}
-                style={[styles.tracker, portrait && styles.trackerPortrait]}
+          <Row gap={8}>
+            {quest && qs ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={tr(quest.name)}
+                onPress={() => actions.openPanel({ name: "quests" })}
+                style={styles.tracker}
               >
                 <GIcon
-                  name={st.status === "ready" ? "check" : q.icon}
-                  size={12}
-                  color={st.status === "ready" ? palette.good : palette.gold}
+                  name={qs.status === "ready" ? "check" : quest.icon}
+                  size={13}
+                  color={qs.status === "ready" ? palette.good : palette.gold}
                 />
-                <Label
-                  value={
-                    st.status === "ready"
-                      ? t("quests.ready", { name: getNpc(q.giver).name })
-                      : q.objective.type === "kill"
-                        ? `${tr(q.name)} ${st.progress}/${questTarget(q)}`
-                        : tr(q.name)
-                  }
-                  type="caption2"
-                  numberOfLines={2}
-                  style={styles.flex}
-                />
-              </View>
-            );
-          })}
+                {quest.objective.type === "kill" && qs.status !== "ready" ? (
+                  <Label
+                    value={`${qs.progress}/${questTarget(quest)}`}
+                    type="footnote"
+                    color={palette.ivory}
+                  />
+                ) : null}
+              </Pressable>
+            ) : null}
+            <RoundButton
+              accessibilityLabel={t("menu.menu")}
+              onPress={() => actions.openPanel({ name: "menu" })}
+            >
+              <GIcon name="bars" size={16} color={palette.ivory} />
+            </RoundButton>
+          </Row>
         </View>
       </View>
-      <View
-        pointerEvents="box-none"
-        style={portrait ? styles.bottomPortrait : styles.bottom}
-      >
-        <View style={portrait ? styles.menuPortrait : styles.menu}>
-          {MENU.map((m) => (
-            <GButton
-              key={m.panel}
-              icon={m.icon}
-              compact
-              accessibilityLabel={t(m.key)}
-              onPress={() => actions.openPanel({ name: m.panel } as Panel)}
-              style={styles.menuButton}
-            />
-          ))}
-        </View>
+      <View pointerEvents="box-none" style={styles.bottom}>
+        <ActionArc save={save} />
       </View>
     </View>
   );
@@ -219,9 +369,9 @@ function Panels() {
   if (!panel) return null;
   switch (panel.name) {
     case "inventory":
-      return <InventoryPanel save={save} onClose={close} />;
+      return <CharacterScreen save={save} onClose={close} />;
     case "character":
-      return <CharacterPanel save={save} onClose={close} />;
+      return <CharacterScreen save={save} onClose={close} showStats />;
     case "skills":
       return <SkillsPanel save={save} onClose={close} />;
     case "tree":
@@ -248,6 +398,11 @@ function Panels() {
 export default function WorldScreen() {
   const save = useSave();
   const version = useGame((s) => s.worldVersion);
+  const workspace = useGame(
+    (s) =>
+      s.panel !== null &&
+      ["inventory", "character", "skills", "tree"].includes(s.panel.name),
+  );
   const onKey = useCallback((code: string) => {
     const entry = MENU.find((m) => m.hotkey === code);
     if (!entry) return;
@@ -262,7 +417,8 @@ export default function WorldScreen() {
   return (
     <View style={styles.page}>
       <WorldScene save={save} version={version} />
-      <Hud />
+      {/* The workspace screens bring their own header and navigation. */}
+      {workspace ? null : <Hud />}
       <HintCard where="world" />
       <Panels />
       <Toasts />
@@ -277,44 +433,53 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    gap: 8,
   },
+  // No card: a soft local shade keeps the bars readable over the scene.
   status: {
-    width: 220,
     flexShrink: 1,
-    gap: 4,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(15, 12, 9, 0.72)",
-    borderWidth: 1,
-    borderColor: palette.lineSoft,
+    alignItems: "flex-start",
+    padding: 6,
+    paddingEnd: 12,
+    borderRadius: 36,
+    backgroundColor: "rgba(10, 8, 6, 0.4)",
   },
-  topRight: { alignItems: "flex-end", gap: 4, width: 170 },
-  topRightPortrait: { width: 112, marginStart: 8 },
+  portrait: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: palette.ivory,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: palette.glass,
+  },
+  portraitLevel: { position: "absolute", bottom: -4, end: -6 },
+  bars: { width: 150, gap: 4, paddingTop: 2 },
+  topRight: { alignItems: "flex-end", gap: 4 },
+  minimap: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: palette.ivory,
+    overflow: "hidden",
+  },
   tracker: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    width: 170,
-    padding: 5,
-    borderRadius: 6,
-    backgroundColor: "rgba(15, 12, 9, 0.72)",
+    minHeight: 32,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    backgroundColor: palette.glass,
   },
-  trackerPortrait: { width: 112 },
   bottom: {
     flex: 1,
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "flex-end",
   },
-  // One row in the bottom corner; the stick floats under the finger now.
-  menu: { flexDirection: "row", gap: 6 },
-  bottomPortrait: { flex: 1, justifyContent: "flex-end" },
-  menuPortrait: {
-    flexDirection: "row",
-    gap: 6,
-    justifyContent: "flex-start",
-  },
-  menuButton: { minWidth: 40, minHeight: 40 },
+  arcWrap: { alignItems: "flex-end" },
+  contextName: { maxWidth: 200, marginTop: 4, textAlign: "center" },
   toasts: {
     position: "absolute",
     top: 12,

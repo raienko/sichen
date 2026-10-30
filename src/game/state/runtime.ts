@@ -17,6 +17,8 @@ export const runtime = {
   mobs: new Map<string, MobRuntime>(),
   /** Input: a direction from keys, a gamepad or the joystick, each -1..1. */
   input: { x: 0, z: 0 },
+  /** Multiplies the world camera's distance; 1 is the designed view. */
+  cameraZoom: 1,
 };
 
 export function resetRuntime(x: number, z: number) {

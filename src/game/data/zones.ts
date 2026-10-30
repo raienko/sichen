@@ -9,8 +9,20 @@ import type { ZoneDef } from "../sim/types";
  *   #  tree            r  rock                   ~  water
  *   h  house           W  palisade wall          c  church
  *   t  tent            f  campfire (walkable glow)
+ *   g  Golden Gates    b  bell tower             m  market stall
  */
-export const BLOCKING = new Set(["#", "r", "~", "h", "W", "c", "t"]);
+export const BLOCKING = new Set([
+  "#",
+  "r",
+  "~",
+  "h",
+  "W",
+  "c",
+  "t",
+  "g",
+  "b",
+  "m",
+]);
 
 /** A small drawing kit so the maps stay readable as code. */
 class MapBuilder {
@@ -117,6 +129,13 @@ function kyivMap(): string[] {
   ] as const)
     m.clear(x, z, 1);
   m.rect(26, 10, 29, 12, "=").set(29, 10, "W").set(29, 12, "W");
+  // The Golden Gates stand in the east wall; the road runs out through
+  // their arch, and their ramparts carry the wall on either side.
+  m.rect(28, 8, 29, 10, "g").rect(28, 12, 29, 14, "g");
+  // St. Sophia's bell tower, at the road's end before the cathedral.
+  m.set(14, 6, "b");
+  // Market stalls by the merchant and on the south road.
+  m.set(19, 14, "m").set(20, 14, "m").set(11, 16, "m").set(12, 16, "m");
   return m.build();
 }
 
@@ -199,7 +218,7 @@ export const ZONES: readonly ZoneDef[] = [
     packs: [],
     interactables: [],
     exits: [{ x: 29, z: 11, to: "vyshhorod", spawn: { x: 3, z: 17 } }],
-    palette: { ground: 0x4c4a38, fog: 0x1e1c18, sky: 0x221e1a },
+    palette: { ground: 0x6a6840, fog: 0x2a2418, sky: 0x2a2218 },
   },
   {
     id: "vyshhorod",
@@ -341,6 +360,6 @@ export const ZONES: readonly ZoneDef[] = [
       },
     ],
     exits: [{ x: 0, z: 17, to: "kyiv", spawn: { x: 26, z: 11 } }],
-    palette: { ground: 0x36422c, fog: 0x161a1e, sky: 0x101318 },
+    palette: { ground: 0x6c7a3c, fog: 0x24301e, sky: 0x1f2a1a },
   },
 ];
