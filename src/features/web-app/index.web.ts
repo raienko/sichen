@@ -3,21 +3,6 @@ import { useEffect } from "react";
 import { useTheme } from "@/features/theme";
 
 /**
- * Registers public/sw.js, which caches the app so the installed web app
- * opens offline. Production only: in development the worker would answer
- * with cached bundles instead of Metro's live ones.
- */
-function registerServiceWorker() {
-  if (__DEV__ || !("serviceWorker" in navigator)) return;
-  navigator.serviceWorker
-    .register(`${process.env.EXPO_BASE_URL ?? ""}/sw.js`)
-    .catch(() => {
-      // Not fatal: the app works without it, only not offline. Browsers
-      // refuse it on plain http and in some private modes.
-    });
-}
-
-/**
  * Keeps `<meta name="theme-color">` — the browser bar, and the title bar
  * of the installed app — on the active theme's background, so it follows
  * light/dark like the rest of the page.
@@ -38,12 +23,11 @@ function useThemeColor() {
 }
 
 /**
- * What makes the web build an installable app at runtime; the manifest and
- * icons it installs with are written by `yarn brand` into public/. Mounted
- * once, in Root.
+ * Keeps the web chrome themed after the app mounts. The service worker is
+ * registered in +html.tsx before the app bundle so a failed bundle can still
+ * receive a worker update.
  */
 export function WebApp() {
-  useEffect(registerServiceWorker, []);
   useThemeColor();
   return null;
 }

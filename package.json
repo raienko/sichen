@@ -171,7 +171,7 @@
     "dev": "expo start --dev-client",
     "eas": "npx --yes eas-cli@18.4.0",
     "env:pull": "node scripts/expo-env.mjs",
-    "test:build-config": "node --test scripts/expo-env.test.mjs scripts/ci/build-result.test.mjs .github/actions/summary/summary.test.mjs"
+    "test:build-config": "node --test scripts/expo-env.test.mjs scripts/ci/build-result.test.mjs scripts/web/sw.test.mjs .github/actions/summary/summary.test.mjs"
   },
   "private": true,
   "jest": {

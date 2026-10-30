@@ -12,6 +12,16 @@ import { colors } from "@/features/theme";
 /** "" on a domain root, "/<repo>" on GitHub Pages (app.config.ts). */
 const BASE = process.env.EXPO_BASE_URL ?? "";
 
+// Runs before the deferred app bundle. If an older worker blocks that bundle,
+// React never mounts and cannot register its replacement from an effect.
+const WORKER_BOOTSTRAP = `
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => location.reload());
+  navigator.serviceWorker.register("${BASE}/sw.js", { updateViaCache: "none" })
+    .then((registration) => registration.update())
+    .catch(() => {});
+}`;
+
 export default function Html({ children }: PropsWithChildren) {
   return (
     <html lang="en">
@@ -41,6 +51,9 @@ export default function Html({ children }: PropsWithChildren) {
             active theme, which the game pins to dark. */}
         <meta name="theme-color" content={colors.dark.background} />
         <style>{`html, body { background-color: ${colors.dark.background}; }`}</style>
+        {process.env.NODE_ENV === "production" ? (
+          <script dangerouslySetInnerHTML={{ __html: WORKER_BOOTSTRAP }} />
+        ) : null}
         {/* Body doesn't scroll; ScrollViews do (react-native-web's reset). */}
         <ScrollViewStyleReset />
       </head>
