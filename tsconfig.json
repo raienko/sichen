@@ -14,6 +14,6 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  // Node scripts with their own tsconfig (Node types, ES modules).
-  "exclude": ["node_modules", "scripts/brand"]
+  // Separate checkouts and Node scripts with their own tsconfig.
+  "exclude": ["node_modules", ".claude/worktrees", "scripts/brand"]
 }

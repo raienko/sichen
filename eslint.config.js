@@ -136,6 +136,16 @@ module.exports = defineConfig([
   {
     ignores: ["dist/*"],
   },
+  // Keep one resolver configuration for app code and tests. Switching
+  // options makes the resolver rebuild its tsconfig file map each time.
+  {
+    settings: {
+      "import/resolver": {
+        // Preserve Expo's Node resolver and its platform extensions.
+        typescript: { project: "./tsconfig.json" },
+      },
+    },
+  },
   // Root-level config files run under Node (app.config.ts, metro.config.js,
   // .storybook/*, jest.setup.js), unlike src/, which runs in the app bundle.
   {
@@ -251,13 +261,6 @@ module.exports = defineConfig([
   {
     files: ["src/**/*.{ts,tsx}"],
     ignores: ["**/*.test.{ts,tsx}"],
-    settings: {
-      "import/resolver": {
-        // Merged with eslint-config-expo's own `node` resolver, which keeps
-        // the platform extensions (.web.ts, .ios.tsx, …).
-        typescript: { project: "./tsconfig.json" },
-      },
-    },
     rules: {
       "import/no-restricted-paths": [
         "error",
