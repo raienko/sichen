@@ -179,6 +179,42 @@ function waterGeometry(map: Map) {
   return geometry;
 }
 
+// ---------------------------------------------------------------- see-through
+
+/**
+ * Where the hero stands on screen, for fading what stands in front of him:
+ * x and y in drawing-buffer pixels from the bottom left, z the depth buffer
+ * value (0-1). The world scene updates it every frame; off screen by default.
+ */
+export const heroOnScreen = {
+  uHero: { value: new THREE.Vector3(-1e4, -1e4, 0) },
+  uFadeRadius: { value: 0 },
+};
+
+/**
+ * Trees and rocks nearer the camera than the hero, inside an oval around
+ * him, dissolve in a dither, so he never vanishes behind the forest from
+ * the high camera. Done per pixel in the shader, so batching still works.
+ */
+function fadeAroundHero(shader: THREE.WebGLProgramParametersWithUniforms) {
+  Object.assign(shader.uniforms, heroOnScreen);
+  shader.fragmentShader =
+    "uniform vec3 uHero;\nuniform float uFadeRadius;\n" +
+    shader.fragmentShader.replace(
+      "#include <clipping_planes_fragment>",
+      `#include <clipping_planes_fragment>
+      {
+        // A tall oval: the hero is taller than wide.
+        float r = length((gl_FragCoord.xy - uHero.xy) / vec2(1.0, 1.6));
+        if (gl_FragCoord.z < uHero.z && r < uFadeRadius) {
+          float k = 1.0 - smoothstep(uFadeRadius * 0.55, uFadeRadius, r);
+          float n = fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453);
+          if (n < k * 0.8) discard;
+        }
+      }`,
+    );
+}
+
 // ---------------------------------------------------------------- instances
 
 type Item = {
@@ -197,12 +233,15 @@ function Instances({
   items,
   color = 0xffffff,
   shadow,
+  fade,
 }: {
   geometry: THREE.BufferGeometry;
   items: Item[];
   color?: number;
   /** A soft dark disc on the ground rather than a lit solid. */
   shadow?: boolean;
+  /** Dissolves in front of the hero (see fadeAroundHero). */
+  fade?: boolean;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
@@ -237,7 +276,11 @@ function Instances({
           depthWrite={false}
         />
       ) : (
-        <meshLambertMaterial color={color} flatShading />
+        <meshLambertMaterial
+          color={color}
+          flatShading
+          onBeforeCompile={fade ? fadeAroundHero : undefined}
+        />
       )}
     </instancedMesh>
   );
@@ -441,12 +484,17 @@ export function Nature({
         />
       </mesh>
       <Instances geometry={G.disc} items={items.shadows} shadow />
-      <Instances geometry={G.trunk} items={items.trunks} color={COLORS.trunk} />
+      <Instances
+        geometry={G.trunk}
+        items={items.trunks}
+        color={COLORS.trunk}
+        fade
+      />
       {items.tiers.map((list, t) => (
-        <Instances key={t} geometry={G.cone} items={list} />
+        <Instances key={t} geometry={G.cone} items={list} fade />
       ))}
       {items.rocks.map((list, v) => (
-        <Instances key={v} geometry={G.rocks[v]!} items={list} />
+        <Instances key={v} geometry={G.rocks[v]!} items={list} fade />
       ))}
       <Instances geometry={G.tuft} items={items.tufts} />
       <Instances geometry={G.flower} items={items.flowers} />

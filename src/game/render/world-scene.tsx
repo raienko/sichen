@@ -27,15 +27,22 @@ import {
   TILE,
 } from "./art-kit";
 import { distance, step, walkable } from "./movement";
-import { Nature } from "./nature";
+import { heroOnScreen, Nature } from "./nature";
 import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
 
 const HERO_SPEED = 4.2;
 const CHASE_SPEED = 3.3;
 const AGGRO_RANGE = 4.2;
 const CONTACT = 0.95;
-/** High and steep, crawler style: about 61° down. */
-const CAMERA = new THREE.Vector3(0, 15.5, 8.5).normalize();
+/** Raised behind the hero, about 48° down: more from behind than above. */
+const CAMERA = new THREE.Vector3(0, 10, 9).normalize();
+/**
+ * The camera aims this far ahead of the hero (up the screen), so the hero
+ * stands in the lower middle with the way ahead in view.
+ */
+const LOOK_AHEAD = 2;
+const SCRATCH = new THREE.Vector3();
+const BUFFER = new THREE.Vector2();
 const FOV = 42;
 /**
  * People and creatures stand larger than life against the trees, as in the
@@ -45,13 +52,13 @@ const FOV = 42;
 const ACTOR_SCALE = 1.35;
 
 /**
- * How far the camera stands from the hero: far enough to show at least 11
- * units across and 13 top to bottom around the hero, so a narrow
+ * How far the camera stands from the hero: far enough to show at least 9
+ * units across and 11 top to bottom around the hero, so a narrow
  * portrait screen sees as much of the clearing as a wide one.
  */
 function cameraDistance(aspect: number): number {
   const half = Math.tan(((FOV / 2) * Math.PI) / 180);
-  return Math.max(5.5 / (half * aspect), 6.5 / half);
+  return Math.max(4.5 / (half * aspect), 5.5 / half);
 }
 
 type Props = { save: SaveData; version: number };
@@ -73,6 +80,7 @@ function Hero({ save }: { save: SaveData }) {
   const speed = useRef(0);
   const zone = getZone(save.world.zoneId);
   const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
   const size = useThree((s) => s.size);
   const regen = useRef(0);
   const weapon = save.hero.equipment.weapon;
@@ -112,12 +120,24 @@ function Hero({ save }: { save: SaveData }) {
       ref.current.rotation.y = runtime.heading;
     }
     const far = cameraDistance(size.width / Math.max(1, size.height));
+    const aimZ = runtime.z * TILE - LOOK_AHEAD;
     camera.position.set(
       runtime.x * TILE + CAMERA.x * far,
-      CAMERA.y * far,
-      runtime.z * TILE + CAMERA.z * far,
+      0.8 + CAMERA.y * far,
+      aimZ + CAMERA.z * far,
     );
-    camera.lookAt(runtime.x * TILE, 0.8, runtime.z * TILE);
+    camera.lookAt(runtime.x * TILE, 0.8, aimZ);
+    camera.updateMatrixWorld();
+    // Tell the trees where the hero's chest is on screen, to fade for him.
+    const chest = SCRATCH.set(runtime.x * TILE, 1.3, runtime.z * TILE);
+    chest.project(camera);
+    const buffer = gl.getDrawingBufferSize(BUFFER);
+    heroOnScreen.uHero.value.set(
+      (chest.x * 0.5 + 0.5) * buffer.x,
+      (chest.y * 0.5 + 0.5) * buffer.y,
+      chest.z * 0.5 + 0.5,
+    );
+    heroOnScreen.uFadeRadius.value = buffer.y * 0.09;
 
     for (const exit of zone.exits) {
       if (distance(runtime.x, runtime.z, exit.x, exit.z) < 0.8) {
