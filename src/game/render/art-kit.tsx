@@ -753,35 +753,86 @@ export function GroundRing({ color }: { color: number }) {
 
 export function InteractableFigure({ kind }: { kind: string }) {
   if (kind === "shrine") {
+    // A roadside shrine: stone plinth, timber body under a pitched roof, a
+    // red rushnyk over the icon and candles burning in front.
+    const candles: Vec3[] = [
+      [-0.8, 0.5, 0.75],
+      [0.85, 0.5, 0.7],
+      [-0.45, 0.5, 0.95],
+      [0.5, 0.5, 1.0],
+    ];
     return (
       <group>
         <Part
           geometry={G.box}
-          color={0x6a5a48}
-          position={[0, 0.8, 0]}
-          scale={[1.4, 1.6, 1.4]}
+          color={0x8a8794}
+          position={[0, 0.25, 0.2]}
+          scale={[2.4, 0.5, 2]}
+        />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 1.45, 0]}
+          scale={[1.2, 1.9, 0.9]}
         />
         <Part
           geometry={G.cone4}
-          color={0x3a2a1a}
-          position={[0, 2, 0]}
-          rotation={[0, Math.PI / 4, 0]}
-          scale={[1.4, 0.9, 1.4]}
-        />
-        <Part
-          geometry={G.box}
-          color={0xc9a24a}
-          emissive={0x6a4a00}
-          position={[0, 2.75, 0]}
-          scale={[0.06, 0.6, 0.06]}
-        />
-        <Part
-          geometry={G.box}
-          color={0xc9a24a}
-          emissive={0x6a4a00}
+          color={0x4d4f5a}
           position={[0, 2.85, 0]}
-          scale={[0.34, 0.06, 0.06]}
+          rotation={[0, Math.PI / 4, 0]}
+          scale={[1.5, 0.9, 1.2]}
         />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 3.6, 0]}
+          scale={[0.12, 0.8, 0.12]}
+        />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 3.7, 0]}
+          scale={[0.5, 0.1, 0.1]}
+        />
+        <Part
+          geometry={G.box}
+          color={0xb8302a}
+          position={[0, 1.35, 0.47]}
+          scale={[0.8, 1.1, 0.04]}
+        />
+        <Part
+          geometry={G.box}
+          color={0xf2ead6}
+          position={[0, 1.5, 0.5]}
+          scale={[0.5, 0.5, 0.04]}
+        />
+        {candles.map((p, i) => (
+          <group key={i} position={p}>
+            <Part
+              geometry={G.cyl}
+              color={0xf0e6c8}
+              position={[0, 0.17, 0]}
+              scale={[0.13, 0.34, 0.13]}
+            />
+            <Part
+              geometry={G.sphere}
+              color={0xffc860}
+              emissive={0xffa030}
+              position={[0, 0.42, 0]}
+              scale={[0.14, 0.2, 0.14]}
+            />
+          </group>
+        ))}
+        {/* The candles' glow on the ground, without a real light. */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.52, 0.85]}>
+          <circleGeometry args={[1.3, 20]} />
+          <meshBasicMaterial
+            color={0xffa040}
+            transparent
+            opacity={0.18}
+            depthWrite={false}
+          />
+        </mesh>
       </group>
     );
   }
@@ -816,31 +867,11 @@ type InstanceSpec = {
   jitter?: boolean;
 };
 
+/**
+ * Built tiles. Trees, rocks, water, roads and grass are drawn by
+ * `nature.tsx` in one pass over the map.
+ */
 const TILE_ART: Record<string, InstanceSpec[]> = {
-  "#": [
-    {
-      geometry: G.cyl,
-      color: 0x4a3220,
-      offset: [0, 0.5, 0],
-      scale: [0.25, 1, 0.25],
-    },
-    {
-      geometry: G.cone,
-      color: 0x1f3a24,
-      offset: [0, 1.9, 0],
-      scale: [1.5, 2.4, 1.5],
-      jitter: true,
-    },
-  ],
-  r: [
-    {
-      geometry: G.dodeca,
-      color: 0x6a665e,
-      offset: [0, 0.35, 0],
-      scale: [1.3, 0.9, 1.2],
-      jitter: true,
-    },
-  ],
   W: [
     { geometry: G.box, color: 0x5a4028, offset: [0, 1, 0], scale: [2, 2, 0.6] },
   ],
@@ -861,31 +892,6 @@ const TILE_ART: Record<string, InstanceSpec[]> = {
       emissive: 0xff4a00,
     },
   ],
-  "~": [
-    {
-      geometry: G.plane,
-      color: 0x1e3446,
-      offset: [0, 0.02, 0],
-      scale: [2, 2, 1],
-    },
-  ],
-  "=": [
-    {
-      geometry: G.plane,
-      color: 0x4e4130,
-      offset: [0, 0.015, 0],
-      scale: [2, 2, 1],
-    },
-  ],
-  ",": [
-    {
-      geometry: G.cone,
-      color: 0x3c5a2a,
-      offset: [0, 0.2, 0],
-      scale: [0.5, 0.4, 0.5],
-      jitter: true,
-    },
-  ],
 };
 
 function hash(x: number, z: number): number {
@@ -901,7 +907,6 @@ function TileInstances({
   cells: [number, number][];
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const flat = spec.geometry === G.plane;
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
@@ -910,7 +915,7 @@ function TileInstances({
     const e = new THREE.Euler();
     cells.forEach(([x, z], i) => {
       const r = spec.jitter ? hash(x, z) : 0;
-      e.set(flat ? -Math.PI / 2 : 0, r * Math.PI * 2, 0);
+      e.set(0, r * Math.PI * 2, 0);
       q.setFromEuler(e);
       const k = spec.jitter ? 0.8 + r * 0.45 : 1;
       m.compose(
@@ -929,7 +934,7 @@ function TileInstances({
       mesh.setMatrixAt(i, m);
     });
     mesh.instanceMatrix.needsUpdate = true;
-  }, [cells, spec, flat]);
+  }, [cells, spec]);
   return (
     <instancedMesh ref={ref} args={[spec.geometry, undefined, cells.length]}>
       <meshLambertMaterial
