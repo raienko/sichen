@@ -52,11 +52,26 @@ export function ActorPanel({
   compact?: boolean;
 }) {
   const { t, tr } = useT();
+  const type = useTypography();
   // Bars that print their numbers are as tall as that text, at any scale.
-  const textBar = useTypography().caption2.lineHeight + 2;
+  const textBar = type.caption2.lineHeight + 2;
+  // Both sides share one shape, so the two panels line up: a two-line name
+  // box, three bar rows (an empty row where a fighter has no such
+  // resource) and a status row.
+  const nameBox = type.subheadline.lineHeight * 2;
+  const statusRow = 14;
+  const bodyHeight =
+    (compact ? 0 : nameBox + 3) + 3 * textBar + 2 * 3 + 3 + statusRow;
   if (!actor) {
     return (
-      <View style={[styles.panel, styles.panelEmpty]}>
+      <View
+        style={[
+          styles.panel,
+          styles.panelEmpty,
+          { minHeight: bodyHeight + 16 },
+          align === "end" && styles.panelEnd,
+        ]}
+      >
         <Label
           value={t("battle.noTarget")}
           type="caption2"
@@ -67,6 +82,7 @@ export function ActorPanel({
     );
   }
   const foe = actor.side === 1;
+  const end = align === "end";
   const ring = foe ? (actor.boss ? "#b04ae8" : palette.bad) : palette.ivory;
   const portrait = (
     <View>
@@ -90,63 +106,48 @@ export function ActorPanel({
       />
     </View>
   );
+  const bar = (value: number, max: number, color: string) =>
+    max > 0 ? (
+      <Bar value={value} max={max} color={color} height={textBar} showText />
+    ) : (
+      <View style={{ height: textBar }} />
+    );
   return (
     <View
       style={[
         styles.panel,
         compact && styles.panelCompact,
-        align === "end" && styles.panelEnd,
+        end && styles.panelEnd,
       ]}
       accessibilityLabel={tr(actor.name)}
     >
       {portrait}
-      <View style={styles.panelBody}>
+      <View style={[styles.panelBody, { height: bodyHeight }]}>
         {compact ? null : (
-          <Label
-            value={tr(actor.name)}
-            type="subheadline"
-            display
-            color={palette.ivory}
-            numberOfLines={1}
-          />
+          <View style={[styles.panelName, { height: nameBox }]}>
+            <Label
+              value={tr(actor.name)}
+              type="subheadline"
+              display
+              color={palette.ivory}
+              numberOfLines={2}
+              style={end && styles.textEnd}
+            />
+          </View>
         )}
-        <Bar
-          value={actor.hp}
-          max={actor.base.maxHp}
-          color={palette.hp}
-          height={textBar}
-          showText
-        />
-        {actor.base.maxMana > 0 ? (
-          <Bar
-            value={actor.mana}
-            max={actor.base.maxMana}
-            color={palette.mana}
-            height={foe ? 6 : textBar}
-            showText={!foe}
-          />
-        ) : null}
-        {!foe ? (
-          <Bar
-            value={actor.stamina}
-            max={actor.base.maxStamina}
-            color={palette.stamina}
-            height={textBar}
-            showText
-          />
-        ) : null}
-        {actor.statuses.length > 0 ? (
-          <Row gap={4}>
-            {actor.statuses.map((s) => (
-              <GIcon
-                key={s.kind}
-                name={STATUS_ICON[s.kind]}
-                size={11}
-                color={palette.status[s.kind]}
-              />
-            ))}
-          </Row>
-        ) : null}
+        {bar(actor.hp, actor.base.maxHp, palette.hp)}
+        {bar(actor.mana, actor.base.maxMana, palette.mana)}
+        {bar(actor.stamina, actor.base.maxStamina, palette.stamina)}
+        <Row gap={4} style={[{ height: statusRow }, end && styles.rowEnd]}>
+          {actor.statuses.map((s) => (
+            <GIcon
+              key={s.kind}
+              name={STATUS_ICON[s.kind]}
+              size={11}
+              color={palette.status[s.kind]}
+            />
+          ))}
+        </Row>
       </View>
     </View>
   );
@@ -762,6 +763,9 @@ const styles = StyleSheet.create({
   },
   panelLevel: { position: "absolute", bottom: -5, end: -8 },
   panelBody: { flex: 1, gap: 3, minWidth: 0 },
+  panelName: { justifyContent: "flex-end" },
+  textEnd: { textAlign: "right" },
+  rowEnd: { justifyContent: "flex-end" },
   defense: {
     flexDirection: "row",
     alignItems: "center",
