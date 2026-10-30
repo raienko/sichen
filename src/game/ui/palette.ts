@@ -1,4 +1,4 @@
-import type { Rarity } from "../sim/types";
+import type { Danger, Rarity } from "../sim/types";
 
 /**
  * The game's own palette: dark parchment, ember gold and vyshyvanka red.
@@ -28,6 +28,11 @@ export const palette = {
   overlay: "rgba(8, 6, 4, 0.82)",
   shade: "rgba(0, 0, 0, 0.45)",
   white: "#ffffff",
+  /** The overlay language: thin ivory rings, bronze rests, amber focus. */
+  ivory: "#efe3c8",
+  bronze: "#a9824a",
+  amber: "#f0a040",
+  glass: "rgba(14, 11, 8, 0.62)",
   delivery: { melee: "#d0803a", ranged: "#5ea4d8", mental: "#b07ad8" },
   status: { burn: "#ff7a2f", freeze: "#8fd3ff", stun: "#f2d24b" },
 } as const;
@@ -63,3 +68,10 @@ export function levelTone(level: number, heroLevel: number): string {
   if (diff <= 4) return "#c0392b";
   return "#8e3cc8";
 }
+
+/** A zone's PvP danger, as the colour of its marks in the HUD. */
+export const dangerColor: Record<Danger, string> = {
+  green: "#5fae5a",
+  yellow: "#e0b83a",
+  red: "#d8513b",
+};

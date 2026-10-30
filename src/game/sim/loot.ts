@@ -1,4 +1,4 @@
-import { content, getAffix, getBase, getSet, getUnique } from "../data";
+import { content, getAffix, getBase, getSet, getUnique, RULES } from "../data";
 
 import type { Rng } from "./rng";
 import type {
@@ -217,7 +217,12 @@ const RARITY_VALUE: Record<Rarity, number> = {
 
 /** What a merchant pays. */
 export function sellValue(item: Item): number {
-  return Math.round((4 + item.ilvl * 2) * RARITY_VALUE[item.rarity]);
+  return Math.max(
+    1,
+    Math.round(
+      (4 + item.ilvl * 2) * RARITY_VALUE[item.rarity] * RULES.economy.sellShare,
+    ),
+  );
 }
 
 // ---------------------------------------------------------------- drops
@@ -242,8 +247,14 @@ export function rollDrops(
     relics: {},
     potions: { hp: 0, mana: 0 },
   };
-  for (const e of counted) drops.gold += rng.int(2, 5) * e.level;
-  const count = boss ? 3 : Math.min(3, rng.int(1, Math.max(1, counted.length)));
+  const { goldPerLevel, maxItems, noItemChance } = RULES.economy;
+  for (const e of counted)
+    drops.gold += rng.int(goldPerLevel[0], goldPerLevel[1]) * e.level;
+  const count = boss
+    ? 3
+    : rng.chance(noItemChance)
+      ? 0
+      : Math.min(maxItems, rng.int(1, Math.max(1, counted.length)));
   for (let i = 0; i < count; i++) {
     const rarity = rng.weighted(
       boss ? RARITY_WEIGHTS.boss : RARITY_WEIGHTS.normal,

@@ -76,6 +76,36 @@ export function onPackDefeated(log: QuestLog, packId: string) {
   );
 }
 
+/** Picks up a deliver quest's cargo: the quest is ready to hand in. */
+export function onPickup(log: QuestLog, interactableId: string) {
+  const next = { ...log };
+  const changed: string[] = [];
+  for (const [id, state] of Object.entries(log)) {
+    const quest = getQuest(id);
+    if (
+      state.status !== "active" ||
+      quest.objective.type !== "deliver" ||
+      quest.objective.pickupId !== interactableId
+    )
+      continue;
+    next[id] = { ...state, status: "ready", progress: 1, carrying: true };
+    changed.push(id);
+  }
+  return { log: next, changed };
+}
+
+/** On death: carried cargo is lost, and those quests need a new pickup. */
+export function dropCargo(log: QuestLog) {
+  const next = { ...log };
+  const changed: string[] = [];
+  for (const [id, state] of Object.entries(log)) {
+    if (!state.carrying || state.status !== "ready") continue;
+    next[id] = { status: "active", progress: 0 };
+    changed.push(id);
+  }
+  return { log: next, changed };
+}
+
 /** Records a branching choice; its own reward is paid by the caller. */
 export function choose(
   log: QuestLog,
@@ -92,7 +122,10 @@ export function choose(
 
 export function turnIn(log: QuestLog, questId: string): QuestLog {
   if (log[questId]?.status !== "ready") return log;
-  return { ...log, [questId]: { ...log[questId]!, status: "done" } };
+  return {
+    ...log,
+    [questId]: { ...log[questId]!, status: "done", carrying: false },
+  };
 }
 
 /** The quest a tracker should show first: ready ones, then main, then side. */

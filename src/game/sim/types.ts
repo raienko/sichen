@@ -291,10 +291,18 @@ export type InteractableDef = {
   name: Localized;
 };
 
+/**
+ * Who may attack whom in a zone (PvP, with the multiplayer server): green
+ * nobody, yellow only players with a high PvP rank, red anyone. Red zones
+ * pay the most gold and hold the most dangerous packs.
+ */
+export type Danger = "green" | "yellow" | "red";
+
 export type ZoneDef = {
   id: string;
   name: Localized;
   town?: boolean;
+  danger: Danger;
   /** Rows of tile codes; see data/zones.ts for the legend. */
   map: readonly string[];
   spawn: { x: number; z: number };
@@ -316,7 +324,12 @@ export type QuestObjective =
   | { type: "kill"; tag: string; count: number }
   | { type: "explore"; interactableId: string }
   | { type: "defeat"; packId: string }
-  | { type: "choice"; interactableId: string; options: readonly QuestChoice[] };
+  | { type: "choice"; interactableId: string; options: readonly QuestChoice[] }
+  /**
+   * Cargo: pick it up at an interactable, carry it to the giver. Carried
+   * cargo is lost when the hero dies, and must be picked up again.
+   */
+  | { type: "deliver"; pickupId: string };
 
 export type QuestChoice = {
   id: string;
@@ -379,4 +392,6 @@ export type QuestState = {
   status: "active" | "ready" | "done";
   progress: number;
   choice?: string;
+  /** A deliver quest's cargo is on the hero (its status is then "ready"). */
+  carrying?: boolean;
 };

@@ -44,12 +44,12 @@ try {
   const g0 = (await save()).gold,
     h0 = (await save()).hero.potions.hp;
   await p
-    .getByText(/^Buy 15$/)
+    .getByText(/^Buy 20$/)
     .first()
     .click();
   let s = await save();
   ok(
-    s.gold === g0 - 15 && s.hero.potions.hp === h0 + 1,
+    s.gold === g0 - 20 && s.hero.potions.hp === h0 + 1,
     `bought a potion (${g0}→${s.gold})`,
   );
 
@@ -74,18 +74,19 @@ try {
     globalThis.__game.actions.openPanel({ name: "inventory" }),
   );
   await p.waitForTimeout(400);
-  await p.getByText(/^Relics \d+$/).click();
+  await p.getByRole("tab", { name: "Relics" }).click();
   await p.getByLabel("Relic of Ascent").click();
   await shot("3-relics");
-  await p.getByLabel(/sabre/i).first().click();
+  // The sabre under "Use it on" (the worn one beside the hero comes first).
+  await p.getByLabel(/sabre/i).last().click();
   s = await save();
   ok(
     s.hero.equipment.weapon.rarity === "magic" && s.relics.ascent === 0,
     `ascent: weapon is ${s.hero.equipment.weapon.rarity}`,
   );
   await shot("3-relic");
-  await p.getByText("Items", { exact: true }).click();
-  await p.getByLabel(/sabre/i).first().click();
+  // The worn sabre, in the weapon circle beside the hero.
+  await p.getByRole("button", { name: /^Weapon: / }).click();
   // Unequip the weapon, then to the stash and back.
   await p.getByText("Take off").click();
   s = await save();

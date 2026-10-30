@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, type ComponentType } from "react";
 import * as THREE from "three";
 
 import type { Look } from "../sim/types";
@@ -64,7 +64,7 @@ const G = {
 };
 
 /** A unit gable roof: ridge along x at height 1, eaves at y 0, z ±0.5. */
-function gableGeometry(): THREE.BufferGeometry {
+export function gableGeometry(): THREE.BufferGeometry {
   const a = [-0.5, 0, -0.5];
   const b = [-0.5, 0, 0.5];
   const c = [-0.5, 1, 0];
@@ -723,6 +723,62 @@ export function MonsterFigure({
           </group>
         </group>
       );
+    case "protector":
+      // Oberih: a tall robed warden in white and gold, a glowing halo and
+      // a staff; its light should read as "do not touch" from any distance.
+      return (
+        <group ref={body} scale={1.5}>
+          {legs(0xe8e2d4, 0.2)}
+          <Part
+            geometry={G.cone}
+            color={0xf2eee2}
+            position={[0, 0.95, 0]}
+            scale={[0.95, 1.3, 0.95]}
+          />
+          <Part
+            geometry={G.box}
+            color={0xc9a24a}
+            emissive={0x3a2600}
+            position={[0, 0.95, 0]}
+            scale={[0.62, 0.1, 0.5]}
+          />
+          <Part
+            geometry={G.sphere}
+            color={0xe0b48f}
+            position={[0, 1.8, 0]}
+            scale={[0.38, 0.42, 0.38]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, 0]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.torus}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0, 2.1, -0.08]}
+            rotation={[0, 0, Math.PI]}
+            scale={[0.75, 0.75, 0.75]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={0x8a6a42}
+            position={[0.5, 1.1, 0.1]}
+            scale={[0.07, 2.2, 0.07]}
+          />
+          <Part
+            geometry={G.octa}
+            color={0xffd76a}
+            emissive={0xffb020}
+            position={[0.5, 2.3, 0.1]}
+            scale={[0.28, 0.4, 0.28]}
+          />
+        </group>
+      );
     default:
       return (
         <group ref={body}>
@@ -751,37 +807,156 @@ export function GroundRing({ color }: { color: number }) {
   );
 }
 
+/** A chumak ox-cart: plank bed, four wheels, sacks of salt under a hide. */
+function SaltCart() {
+  const WOOD = 0x7a5636;
+  const wheels: Vec3[] = [
+    [-0.9, 0.55, -0.85],
+    [0.9, 0.55, -0.85],
+    [-0.9, 0.55, 0.85],
+    [0.9, 0.55, 0.85],
+  ];
+  return (
+    <group rotation={[0, 0.4, 0]}>
+      <Part
+        geometry={G.box}
+        color={WOOD}
+        position={[0, 0.85, 0]}
+        scale={[1.5, 0.25, 2.4]}
+      />
+      {wheels.map((p, i) => (
+        <Part
+          key={i}
+          geometry={G.cyl}
+          color={0x5a3f2a}
+          position={p}
+          rotation={[0, 0, Math.PI / 2]}
+          scale={[1.1, 0.14, 1.1]}
+        />
+      ))}
+      {[-0.45, 0.45].flatMap((x) =>
+        [-0.75, 0, 0.75].map((z) => (
+          <Part
+            key={`${x}${z}`}
+            geometry={G.sphere}
+            color={0xf2eee2}
+            position={[x, 1.25, z]}
+            scale={[0.7, 0.55, 0.65]}
+          />
+        )),
+      )}
+      {/* The shaft, and a heap of salt spilt beside the cart. */}
+      <Part
+        geometry={G.box}
+        color={WOOD}
+        position={[0, 0.7, 1.9]}
+        rotation={[0.15, 0, 0]}
+        scale={[0.12, 0.12, 1.6]}
+      />
+      <Part
+        geometry={G.cone}
+        color={0xfaf6ea}
+        position={[1.5, 0.25, 0.4]}
+        scale={[0.9, 0.5, 0.9]}
+      />
+    </group>
+  );
+}
+
 export function InteractableFigure({ kind }: { kind: string }) {
+  if (kind === "salt_cart") {
+    return (
+      <group>
+        <group position={[-1.2, 0, 0]}>
+          <SaltCart />
+        </group>
+        <group position={[1.4, 0, -0.6]} rotation={[0, -0.8, 0]}>
+          <SaltCart />
+        </group>
+      </group>
+    );
+  }
   if (kind === "shrine") {
+    // A roadside shrine: stone plinth, timber body under a pitched roof, a
+    // red rushnyk over the icon and candles burning in front.
+    const candles: Vec3[] = [
+      [-0.8, 0.5, 0.75],
+      [0.85, 0.5, 0.7],
+      [-0.45, 0.5, 0.95],
+      [0.5, 0.5, 1.0],
+    ];
     return (
       <group>
         <Part
           geometry={G.box}
-          color={0x6a5a48}
-          position={[0, 0.8, 0]}
-          scale={[1.4, 1.6, 1.4]}
+          color={0x8a8794}
+          position={[0, 0.25, 0.2]}
+          scale={[2.4, 0.5, 2]}
+        />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 1.45, 0]}
+          scale={[1.2, 1.9, 0.9]}
         />
         <Part
           geometry={G.cone4}
-          color={0x3a2a1a}
-          position={[0, 2, 0]}
-          rotation={[0, Math.PI / 4, 0]}
-          scale={[1.4, 0.9, 1.4]}
-        />
-        <Part
-          geometry={G.box}
-          color={0xc9a24a}
-          emissive={0x6a4a00}
-          position={[0, 2.75, 0]}
-          scale={[0.06, 0.6, 0.06]}
-        />
-        <Part
-          geometry={G.box}
-          color={0xc9a24a}
-          emissive={0x6a4a00}
+          color={0x4d4f5a}
           position={[0, 2.85, 0]}
-          scale={[0.34, 0.06, 0.06]}
+          rotation={[0, Math.PI / 4, 0]}
+          scale={[1.5, 0.9, 1.2]}
         />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 3.6, 0]}
+          scale={[0.12, 0.8, 0.12]}
+        />
+        <Part
+          geometry={G.box}
+          color={0x6b4a30}
+          position={[0, 3.7, 0]}
+          scale={[0.5, 0.1, 0.1]}
+        />
+        <Part
+          geometry={G.box}
+          color={0xb8302a}
+          position={[0, 1.35, 0.47]}
+          scale={[0.8, 1.1, 0.04]}
+        />
+        <Part
+          geometry={G.box}
+          color={0xf2ead6}
+          position={[0, 1.5, 0.5]}
+          scale={[0.5, 0.5, 0.04]}
+        />
+        {candles.map((p, i) => (
+          <group key={i} position={p}>
+            <Part
+              geometry={G.cyl}
+              color={0xf0e6c8}
+              position={[0, 0.17, 0]}
+              scale={[0.13, 0.34, 0.13]}
+            />
+            <Part
+              geometry={G.sphere}
+              color={0xffc860}
+              emissive={0xffa030}
+              position={[0, 0.42, 0]}
+              scale={[0.14, 0.2, 0.14]}
+            />
+          </group>
+        ))}
+        {/* The candles' glow on the ground, without a real light. */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.52, 0.85]}>
+          <circleGeometry args={[1.3, 20]} />
+          <meshBasicMaterial
+            color={0xffa040}
+            transparent
+            opacity={0.18}
+            depthWrite={false}
+          />
+        </mesh>
       </group>
     );
   }
@@ -816,33 +991,61 @@ type InstanceSpec = {
   jitter?: boolean;
 };
 
+/**
+ * Built tiles. Trees, rocks, water, roads and grass are drawn by
+ * `nature.tsx` in one pass over the map.
+ */
 const TILE_ART: Record<string, InstanceSpec[]> = {
-  "#": [
+  // A palisade: four sharpened logs per tile, so it reads either way round.
+  W: [
     {
       geometry: G.cyl,
-      color: 0x4a3220,
-      offset: [0, 0.5, 0],
-      scale: [0.25, 1, 0.25],
+      color: 0x6b4a30,
+      offset: [-0.5, 1.25, -0.5],
+      scale: [0.95, 2.5, 0.95],
     },
     {
       geometry: G.cone,
-      color: 0x1f3a24,
-      offset: [0, 1.9, 0],
-      scale: [1.5, 2.4, 1.5],
-      jitter: true,
+      color: 0x5a3f2a,
+      offset: [-0.5, 2.8, -0.5],
+      scale: [0.95, 0.6, 0.95],
     },
-  ],
-  r: [
     {
-      geometry: G.dodeca,
-      color: 0x6a665e,
-      offset: [0, 0.35, 0],
-      scale: [1.3, 0.9, 1.2],
-      jitter: true,
+      geometry: G.cyl,
+      color: 0x6b4a30,
+      offset: [0.5, 1.4, -0.5],
+      scale: [0.95, 2.8, 0.95],
     },
-  ],
-  W: [
-    { geometry: G.box, color: 0x5a4028, offset: [0, 1, 0], scale: [2, 2, 0.6] },
+    {
+      geometry: G.cone,
+      color: 0x5a3f2a,
+      offset: [0.5, 3.0999999999999996, -0.5],
+      scale: [0.95, 0.6, 0.95],
+    },
+    {
+      geometry: G.cyl,
+      color: 0x6b4a30,
+      offset: [-0.5, 1.35, 0.5],
+      scale: [0.95, 2.7, 0.95],
+    },
+    {
+      geometry: G.cone,
+      color: 0x5a3f2a,
+      offset: [-0.5, 3.0, 0.5],
+      scale: [0.95, 0.6, 0.95],
+    },
+    {
+      geometry: G.cyl,
+      color: 0x6b4a30,
+      offset: [0.5, 1.2, 0.5],
+      scale: [0.95, 2.4, 0.95],
+    },
+    {
+      geometry: G.cone,
+      color: 0x5a3f2a,
+      offset: [0.5, 2.6999999999999997, 0.5],
+      scale: [0.95, 0.6, 0.95],
+    },
   ],
   t: [
     {
@@ -861,31 +1064,6 @@ const TILE_ART: Record<string, InstanceSpec[]> = {
       emissive: 0xff4a00,
     },
   ],
-  "~": [
-    {
-      geometry: G.plane,
-      color: 0x1e3446,
-      offset: [0, 0.02, 0],
-      scale: [2, 2, 1],
-    },
-  ],
-  "=": [
-    {
-      geometry: G.plane,
-      color: 0x4e4130,
-      offset: [0, 0.015, 0],
-      scale: [2, 2, 1],
-    },
-  ],
-  ",": [
-    {
-      geometry: G.cone,
-      color: 0x3c5a2a,
-      offset: [0, 0.2, 0],
-      scale: [0.5, 0.4, 0.5],
-      jitter: true,
-    },
-  ],
 };
 
 function hash(x: number, z: number): number {
@@ -901,7 +1079,6 @@ function TileInstances({
   cells: [number, number][];
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const flat = spec.geometry === G.plane;
   useLayoutEffect(() => {
     const mesh = ref.current;
     if (!mesh) return;
@@ -910,7 +1087,7 @@ function TileInstances({
     const e = new THREE.Euler();
     cells.forEach(([x, z], i) => {
       const r = spec.jitter ? hash(x, z) : 0;
-      e.set(flat ? -Math.PI / 2 : 0, r * Math.PI * 2, 0);
+      e.set(0, r * Math.PI * 2, 0);
       q.setFromEuler(e);
       const k = spec.jitter ? 0.8 + r * 0.45 : 1;
       m.compose(
@@ -929,7 +1106,7 @@ function TileInstances({
       mesh.setMatrixAt(i, m);
     });
     mesh.instanceMatrix.needsUpdate = true;
-  }, [cells, spec, flat]);
+  }, [cells, spec]);
   return (
     <instancedMesh ref={ref} args={[spec.geometry, undefined, cells.length]}>
       <meshLambertMaterial
@@ -944,6 +1121,11 @@ function TileInstances({
 
 /** Building tiles drawn as one building per connected block. */
 const BUILDINGS = new Set(["h", "c"]);
+/** Landmark tiles drawn one per tile (bell tower, stalls). */
+const SINGLES: Record<string, ComponentType> = {
+  b: BellTower,
+  m: Stall,
+};
 
 /** Connected blocks of one building tile, as tile bounding boxes. */
 function buildingBlocks(map: readonly string[]) {
@@ -1035,62 +1217,433 @@ function House({ w, d }: { w: number; d: number }) {
   );
 }
 
-/** St. Sophia's: a white body, a golden central dome and four cupolas. */
-function Church({ w, d }: { w: number; d: number }) {
-  const dome = (x: number, z: number, big: boolean) => (
-    <group key={`${x},${z}`} position={[x, 3, z]}>
-      <mesh
-        geometry={G.cyl}
-        position={[0, 0.5, 0]}
-        scale={big ? [1.8, 1, 1.8] : [0.9, 0.8, 0.9]}
-      >
-        <Mat color={0xe8e2d4} />
+const GOLD = 0xd9b04a;
+const GOLD_GLOW = 0x3a2600;
+const SOPHIA_WHITE = 0xf2eee2;
+const SOPHIA_GREEN = 0x4f8a72;
+
+/** An onion dome on a drum, with a cross: gold or the cathedral's green. */
+function Dome({ at, size, gold }: { at: Vec3; size: number; gold: boolean }) {
+  const color = gold ? GOLD : SOPHIA_GREEN;
+  return (
+    <group position={at} scale={size}>
+      <mesh geometry={G.cyl} position={[0, 0.5, 0]} scale={[0.9, 1, 0.9]}>
+        <Mat color={SOPHIA_WHITE} />
       </mesh>
       <mesh
         geometry={G.sphere}
-        position={[0, big ? 1.4 : 1.1, 0]}
-        scale={big ? [2.1, 2.3, 2.1] : [1.1, 1.2, 1.1]}
+        position={[0, 1.25, 0]}
+        scale={[1.05, 1.1, 1.05]}
       >
-        <Mat color={0xc9a24a} emissive={0x2a1a00} />
+        <Mat color={color} emissive={gold ? GOLD_GLOW : undefined} />
       </mesh>
-      <mesh
-        geometry={G.box}
-        position={[0, big ? 2.9 : 1.95, 0]}
-        scale={[0.08, big ? 0.7 : 0.45, 0.08]}
-      >
-        <Mat color={0xd9b860} />
+      <mesh geometry={G.cone} position={[0, 1.95, 0]} scale={[0.35, 0.5, 0.35]}>
+        <Mat color={color} emissive={gold ? GOLD_GLOW : undefined} />
+      </mesh>
+      <mesh geometry={G.box} position={[0, 2.45, 0]} scale={[0.06, 0.55, 0.06]}>
+        <Mat color={GOLD} emissive={GOLD_GLOW} />
+      </mesh>
+      <mesh geometry={G.box} position={[0, 2.5, 0]} scale={[0.3, 0.06, 0.06]}>
+        <Mat color={GOLD} emissive={GOLD_GLOW} />
       </mesh>
     </group>
   );
-  const cx = w / 2 - 1.1;
-  const cz = d / 2 - 1.1;
+}
+
+/**
+ * St. Sophia's Cathedral: a white stepped body under green roofs, a tall
+ * golden central dome, four golden domes round it and eight green cupolas
+ * on the outer corners and sides (thirteen in all, as in Kyiv).
+ */
+function Church({ w, d }: { w: number; d: number }) {
+  const outer: Vec3[] = [];
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1]) {
+      outer.push([sx * (w / 2 - 0.9), 2.6, sz * (d / 2 - 0.9)]);
+      outer.push([sx * (w / 2 - 0.9), 2.6, 0]);
+    }
+  // Two of the eight sit front and back on the middle line.
+  outer.splice(1, 1, [0, 2.6, -(d / 2 - 0.9)]);
+  outer.splice(3, 1, [0, 2.6, d / 2 - 0.9]);
   return (
     <group>
+      {/* Lower galleries, then the raised core. */}
       <mesh
         geometry={G.box}
-        position={[0, 1.5, 0]}
-        scale={[w - 0.4, 3, d - 0.4]}
+        position={[0, 1.3, 0]}
+        scale={[w - 0.3, 2.6, d - 0.3]}
       >
-        <Mat color={0xe8e2d4} />
+        <Mat color={SOPHIA_WHITE} />
       </mesh>
-      {dome(0, 0, true)}
-      {dome(-cx, -cz, false)}
-      {dome(cx, -cz, false)}
-      {dome(-cx, cz, false)}
-      {dome(cx, cz, false)}
       <mesh
         geometry={G.box}
-        position={[0, 0.9, d / 2 - 0.15]}
-        scale={[1, 1.8, 0.1]}
+        position={[0, 2.68, 0]}
+        scale={[w - 0.1, 0.16, d - 0.1]}
+      >
+        <Mat color={SOPHIA_GREEN} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[0, 3.6, 0]}
+        scale={[w * 0.55, 1.9, d * 0.55]}
+      >
+        <Mat color={SOPHIA_WHITE} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[0, 4.6, 0]}
+        scale={[w * 0.6, 0.16, d * 0.6]}
+      >
+        <Mat color={SOPHIA_GREEN} />
+      </mesh>
+      {/* Pilasters and windows on the front. */}
+      {[-0.36, -0.12, 0.12, 0.36].map((k) => (
+        <mesh
+          key={k}
+          geometry={G.box}
+          position={[k * w, 1.4, d / 2 - 0.12]}
+          scale={[0.5, 1.1, 0.06]}
+        >
+          <Mat color={0x2e3a44} emissive={0x0a0806} />
+        </mesh>
+      ))}
+      <mesh
+        geometry={G.box}
+        position={[0, 0.95, d / 2 - 0.1]}
+        scale={[1.1, 1.9, 0.1]}
       >
         <Mat color={0x4a3220} />
       </mesh>
+      <Dome at={[0, 4.6, 0]} size={1.6} gold />
+      {[
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ].map(([sx, sz]) => (
+        <Dome
+          key={`${sx}${sz}`}
+          at={[sx! * w * 0.2, 4.6, sz! * d * 0.2]}
+          size={0.85}
+          gold
+        />
+      ))}
+      {outer.map((p, i) => (
+        <Dome key={i} at={p} size={0.6} gold={false} />
+      ))}
+    </group>
+  );
+}
+
+/** St. Sophia's bell tower: white and green tiers under a golden dome. */
+function BellTower() {
+  const tiers: [number, number, number][] = [
+    // width, height, colour
+    [1.9, 3, SOPHIA_WHITE],
+    [1.6, 2.4, SOPHIA_GREEN],
+    [1.35, 2, SOPHIA_WHITE],
+    [1.1, 1.6, SOPHIA_GREEN],
+  ];
+  let y = 0;
+  return (
+    <group>
+      {tiers.map(([wd, h, c], i) => {
+        const at = y + h / 2;
+        y += h;
+        return (
+          <group key={i}>
+            <mesh geometry={G.box} position={[0, at, 0]} scale={[wd, h, wd]}>
+              <Mat color={c} />
+            </mesh>
+            {/* An arched opening on each face of the upper tiers. */}
+            {i > 0 ? (
+              <mesh
+                geometry={G.box}
+                position={[0, at, wd / 2 + 0.01]}
+                scale={[wd * 0.4, h * 0.55, 0.04]}
+              >
+                <Mat color={0x2a2620} />
+              </mesh>
+            ) : null}
+          </group>
+        );
+      })}
+      <Dome at={[0, y, 0]} size={0.9} gold />
+    </group>
+  );
+}
+
+/**
+ * The Golden Gates, after the reconstructed gate in Kyiv: a brick tower
+ * with the road through its arch, crenellated steps up to the gate church
+ * (three arched gables and a golden dome), and earth ramparts running off
+ * both sides, grassed on the slope, faced with stepped log walls and topped
+ * by timber blockhouses. `w` runs along the road, `d` across it.
+ */
+function GoldenGate({ w, d }: { w: number; d: number }) {
+  const BRICK = 0xc66a48;
+  const BRICK_DARK = 0xa8553a;
+  const WOOD = 0x8a5a32;
+  const WOOD_DARK = 0x6b4430;
+  const GRASS = 0x5a7a2e;
+  /** The tower's size: along the road, across it, and to its parapet. */
+  // The tower stands well proud of the ramparts on both faces, as in Kyiv.
+  const tx = w + 2.4;
+  const tz = 4.4;
+  const th = 6;
+  const passage = 2.2;
+  /** The rampart runs from the tower's side to the end of the block. */
+  const inner = tz / 2;
+  const outer = d / 2;
+  const run = outer - inner;
+  const rise = 4.7;
+  const slope = Math.atan2(rise, run);
+  /** The ramparts' thickness along the road: the town wall's. */
+  const ramp = w * 0.6;
+  const merlons = (len: number, n: number) =>
+    Array.from({ length: n }, (_, i) => -len / 2 + (len * (i + 0.5)) / n);
+  return (
+    <group>
+      {/* The tower, its parapet steps and merlons. */}
+      {/* Two piers either side of the passage, the vault over it. */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          geometry={G.box}
+          position={[0, th / 2, (s * (tz / 2 + passage / 2)) / 2]}
+          scale={[tx, th, tz / 2 - passage / 2]}
+        >
+          <Mat color={BRICK} />
+        </mesh>
+      ))}
+      <mesh
+        geometry={G.box}
+        position={[0, (th + 3.2) / 2, 0]}
+        scale={[tx, th - 3.2, passage]}
+      >
+        <Mat color={BRICK} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[0, th + 0.7, 0]}
+        scale={[tx * 0.8, 1.4, tz * 0.78]}
+      >
+        <Mat color={BRICK} />
+      </mesh>
+      {merlons(tz, 5).map((z) =>
+        [-1, 1].map((s) => (
+          <mesh
+            key={`x${z}${s}`}
+            geometry={G.box}
+            position={[(s * tx) / 2 - s * 0.2, th + 0.25, z]}
+            scale={[0.4, 0.5, 0.45]}
+          >
+            <Mat color={BRICK} />
+          </mesh>
+        )),
+      )}
+      {/* The arch through the tower, on both faces along the road. */}
+      {[-1, 1].map((s) => (
+        <group
+          key={s}
+          position={[s * (tx / 2 + 0.02), 0, 0]}
+          rotation={[0, (s * Math.PI) / 2, 0]}
+        >
+          <mesh position={[0, 3.2, 0]} scale={[1.3, 1.3, 1]}>
+            <circleGeometry args={[passage / 2 + 0.25, 18, 0, Math.PI]} />
+            <meshBasicMaterial color={BRICK_DARK} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[0, 3.2, 0.01]}>
+            <circleGeometry args={[passage / 2, 16, 0, Math.PI]} />
+            <meshBasicMaterial color={0x2a2420} side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+      {/* The gate church: a brick block, three arched gables a side. */}
+      <group position={[0, th + 1.4, 0]}>
+        <mesh geometry={G.box} position={[0, 0.9, 0]} scale={[2.6, 1.8, 2.6]}>
+          <Mat color={BRICK} />
+        </mesh>
+        {[-1, 1].flatMap((s) =>
+          [-0.85, 0, 0.85].map((k) => (
+            <group key={`${s}${k}`}>
+              <mesh
+                geometry={G.cyl}
+                position={[s * 1.05, 1.8, k]}
+                rotation={[0, 0, Math.PI / 2]}
+                scale={[0.86, 0.55, 0.86]}
+              >
+                <Mat color={BRICK} />
+              </mesh>
+              <mesh
+                geometry={G.cyl}
+                position={[k, 1.8, s * 1.05]}
+                rotation={[Math.PI / 2, 0, 0]}
+                scale={[0.86, 0.55, 0.86]}
+              >
+                <Mat color={BRICK} />
+              </mesh>
+            </group>
+          )),
+        )}
+        <Dome at={[0, 2.1, 0]} size={0.85} gold />
+      </group>
+      {/* The ramparts, one each side of the tower. */}
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          {/* The grassed slope. */}
+          <mesh
+            geometry={G.box}
+            position={[0, rise / 2 + 0.2, s * (inner + run / 2)]}
+            rotation={[s * slope, 0, 0]}
+            scale={[ramp, 0.3, Math.hypot(run, rise)]}
+          >
+            <Mat color={GRASS} />
+          </mesh>
+          {/* Stepped log walls on both ends, closing the earth. */}
+          {[-1, 1].map((e) =>
+            [0, 1, 2, 3].map((k) => {
+              const step = run / 4;
+              const h = rise + 0.4 - k * (rise / 4);
+              return (
+                <mesh
+                  key={`${e}${k}`}
+                  geometry={G.box}
+                  position={[
+                    e * (ramp / 2 - 0.25),
+                    h / 2,
+                    s * (inner + step * (k + 0.5)),
+                  ]}
+                  scale={[0.5, h, step + 0.02]}
+                >
+                  <Mat color={k % 2 ? WOOD : WOOD_DARK} />
+                </mesh>
+              );
+            }),
+          )}
+          {/* A timber blockhouse on top, its upper storey overhanging. */}
+          <group position={[0, rise, s * (inner + 1)]}>
+            <mesh
+              geometry={G.box}
+              position={[0, 0.8, 0]}
+              scale={[ramp - 0.2, 1.6, 1.8]}
+            >
+              <Mat color={WOOD} />
+            </mesh>
+            <mesh
+              geometry={G.box}
+              position={[0, 2.1, s * 0.15]}
+              scale={[ramp + 0.2, 1, 2.2]}
+            >
+              <Mat color={WOOD_DARK} />
+            </mesh>
+            {/* Loopholes. */}
+            {[-ramp / 4, 0, ramp / 4].map((x) => (
+              <mesh
+                key={x}
+                geometry={G.box}
+                position={[x, 2.1, s * 1.27]}
+                scale={[0.45, 0.14, 0.04]}
+              >
+                <Mat color={0x1a120c} />
+              </mesh>
+            ))}
+            <mesh
+              geometry={G.gable}
+              position={[0, 2.6, s * 0.15]}
+              scale={[ramp + 0.5, 0.8, 2.6]}
+            >
+              <Mat color={0x4a3424} />
+            </mesh>
+          </group>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/** A market stall: posts, a counter of goods, an embroidered awning. */
+function Stall() {
+  return (
+    <group>
+      {[
+        [-0.8, -0.7],
+        [0.8, -0.7],
+        [-0.8, 0.7],
+        [0.8, 0.7],
+      ].map(([x, z]) => (
+        <mesh
+          key={`${x}${z}`}
+          geometry={G.box}
+          position={[x!, 1.1, z!]}
+          scale={[0.12, 2.2, 0.12]}
+        >
+          <Mat color={0x5a3f2a} />
+        </mesh>
+      ))}
+      <mesh geometry={G.box} position={[0, 0.5, 0.3]} scale={[1.7, 1, 0.8]}>
+        <Mat color={0x7a5636} />
+      </mesh>
+      {[0x8a2a20, 0x3a5a8a, 0xc9a24a, 0x6a4a2a].map((c, i) => (
+        <mesh
+          key={c}
+          geometry={G.sphere}
+          position={[-0.6 + i * 0.4, 1.12, 0.3]}
+          scale={[0.3, 0.26, 0.3]}
+        >
+          <Mat color={c} />
+        </mesh>
+      ))}
+      {/* Linen awning with red embroidered bands. */}
+      <mesh
+        geometry={G.box}
+        position={[0, 2.25, 0]}
+        rotation={[0.18, 0, 0]}
+        scale={[2, 0.06, 1.8]}
+      >
+        <Mat color={0xf2ead6} />
+      </mesh>
+      {[-0.6, 0, 0.6].map((x) => (
+        <mesh
+          key={x}
+          geometry={G.box}
+          position={[x, 2.26, 0]}
+          rotation={[0.18, 0, 0]}
+          scale={[0.16, 0.07, 1.82]}
+        >
+          <Mat color={0xb8302a} />
+        </mesh>
+      ))}
     </group>
   );
 }
 
 function Buildings({ map }: { map: readonly string[] }) {
   const blocks = useMemo(() => buildingBlocks(map), [map]);
+  const { singles, gate } = useMemo(() => {
+    const singles: { ch: string; x: number; z: number }[] = [];
+    // The gate's two halves, either side of the road, are one landmark.
+    const gateTiles: [number, number][] = [];
+    map.forEach((row, z) => {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x]!;
+        if (SINGLES[ch]) singles.push({ ch, x, z });
+        if (ch === "g") gateTiles.push([x, z]);
+      }
+    });
+    const xs = gateTiles.map(([x]) => x);
+    const zs = gateTiles.map(([, z]) => z);
+    const gate =
+      gateTiles.length > 0
+        ? {
+            x0: Math.min(...xs),
+            x1: Math.max(...xs),
+            z0: Math.min(...zs),
+            z1: Math.max(...zs),
+          }
+        : null;
+    return { singles, gate };
+  }, [map]);
   return (
     <>
       {blocks.map((b) => {
@@ -1109,22 +1662,51 @@ function Buildings({ map }: { map: readonly string[] }) {
           </group>
         );
       })}
+      {singles.map(({ ch, x, z }) => {
+        const Single = SINGLES[ch]!;
+        return (
+          <group key={`${ch}${x},${z}`} position={[x * TILE, 0, z * TILE]}>
+            <Single />
+          </group>
+        );
+      })}
+      {gate ? (
+        <group
+          position={[
+            ((gate.x0 + gate.x1) / 2) * TILE,
+            0,
+            ((gate.z0 + gate.z1) / 2) * TILE,
+          ]}
+        >
+          <GoldenGate
+            w={(gate.x1 - gate.x0 + 1) * TILE}
+            d={(gate.z1 - gate.z0 + 1) * TILE}
+          />
+        </group>
+      ) : null}
     </>
   );
 }
 
-export function Tiles({ map }: { map: readonly string[] }) {
+export function Tiles({
+  map,
+  town,
+}: {
+  map: readonly string[];
+  /** Towns draw their wall tiles as timber fortress walls instead. */
+  town?: boolean;
+}) {
   const byKind = useMemo(() => {
     const out = new Map<string, [number, number][]>();
     map.forEach((row, z) => {
       for (let x = 0; x < row.length; x++) {
         const ch = row[x]!;
-        if (!TILE_ART[ch]) continue;
+        if (!TILE_ART[ch] || (town && ch === "W")) continue;
         out.set(ch, [...(out.get(ch) ?? []), [x, z]]);
       }
     });
     return out;
-  }, [map]);
+  }, [map, town]);
   return (
     <>
       {[...byKind.entries()].flatMap(([ch, cells]) =>

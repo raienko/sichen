@@ -9,8 +9,11 @@ import { planFor } from "./ai";
 import {
   createBattle,
   fitPlan,
+  enemyCombatant,
   fleeChance,
+  guardSides,
   hitChance,
+  joinBattle,
   living,
   resolveRound,
   sanitizePlan,
@@ -31,7 +34,14 @@ import {
   xpToNext,
 } from "./hero";
 import { canUseRelic, rollDrops, rollItem, applyRelicTo } from "./loot";
-import { accept, onKills, turnIn } from "./quests";
+import {
+  accept,
+  dropCargo,
+  offeredBy,
+  onKills,
+  onPickup,
+  turnIn,
+} from "./quests";
 import { packRank, respawnSeconds, respawning } from "./respawn";
 import { Rng } from "./rng";
 import { emptyStats, heroStats } from "./stats";
@@ -277,6 +287,81 @@ describe("battle", () => {
   });
 });
 
+/** A player's hero at a level, as a fighter with its own id. */
+function playerAt(level: number, id: string, classId = "lytsar") {
+  let hero = createHero(new Rng(level), "Ostap", LOOK, classId);
+  hero = gainXp(
+    hero,
+    Array.from({ length: level - 1 }, (_, i) => xpToNext(i + 1)).reduce(
+      (a, b) => a + b,
+      0,
+    ),
+  ).hero;
+  return { ...heroCombatant(restore(hero)), id };
+}
+
+describe("joining and the protector", () => {
+  it("lets players, not monsters, join a fight in progress", () => {
+    const state = createBattle(
+      1,
+      [playerAt(3, "a")],
+      [{ enemyId: "orc_grunt", level: 3 }],
+    );
+    const orc = enemyCombatant({ enemyId: "orc_grunt", level: 3 }, 1, 0, 0);
+    expect(joinBattle(state, orc, 1)).toBeNull();
+    const out = joinBattle(state, playerAt(4, "b"), 0)!;
+    const joiner = out.state.actors.find((a) => a.id === "b")!;
+    expect(joiner.side).toBe(0);
+    expect(joiner.joined).toBe(true);
+    // Not both in the same place.
+    const a = out.state.actors.find((x) => x.id === "a")!;
+    expect([joiner.row, joiner.slot]).not.toEqual([a.row, a.slot]);
+    // Monsters on the other side: no protector, whatever the levels.
+    expect(out.events.map((e) => e.t)).toEqual(["join"]);
+  });
+
+  it("sends a protector past twice the defenders' level sum", () => {
+    const warded = (low: number[], high: number[]) => {
+      let state = createBattle(
+        2,
+        low.map((l, i) => ({ ...playerAt(l, `low${i}`), slot: i })),
+        [],
+      );
+      high.forEach((l, i) => {
+        state = joinBattle(state, playerAt(l, `high${i}`), 1)!.state;
+      });
+      return state.actors.some((a) => a.protector);
+    };
+    expect(warded([2, 2], [8])).toBe(false);
+    expect(warded([2, 2], [9])).toBe(true);
+    expect(warded([2], [4])).toBe(false);
+    expect(warded([2], [5])).toBe(true);
+    // Attackers' levels add up too.
+    expect(warded([2, 2], [4, 4])).toBe(false);
+    expect(warded([2, 2], [4, 5])).toBe(true);
+  });
+
+  it("sends one protector to a far weaker side, and it wins", () => {
+    let state = createBattle(3, [playerAt(2, "low")], []);
+    state = joinBattle(state, playerAt(10, "high"), 1)!.state;
+    const wardens = state.actors.filter((a) => a.protector);
+    expect(wardens).toHaveLength(1);
+    expect(wardens[0]!.side).toBe(0);
+    expect(wardens[0]!.level).toBe(15);
+    // Guarding again adds nothing.
+    expect(guardSides(state).events).toHaveLength(0);
+    const rng = new Rng(3);
+    for (let round = 0; round < 3 && !state.result; round++) {
+      const plans: Record<string, Plan> = {};
+      for (const actor of living(state))
+        plans[actor.id] = planFor(state, actor, rng);
+      state = resolveRound(state, plans).state;
+    }
+    expect(state.result).toBe("won");
+    expect(state.actors.find((a) => a.id === "low")!.hp).toBeGreaterThan(0);
+  });
+});
+
 describe("hero", () => {
   it("levels up and never past the cap", () => {
     const hero = createHero(new Rng(1), "Ostap", LOOK, "plastun");
@@ -341,14 +426,20 @@ describe("hero", () => {
 });
 
 describe("loot", () => {
-  it("rolls 1-3 items and gold per battle", () => {
+  it("rolls 0-2 items and some gold per battle, 3 and more from a boss", () => {
     const rng = new Rng(3);
-    for (let i = 0; i < 50; i++) {
+    let empty = 0;
+    for (let i = 0; i < 200; i++) {
       const drops = rollDrops(rng, [{ level: 4 }, { level: 3 }]);
-      expect(drops.items.length).toBeGreaterThanOrEqual(1);
-      expect(drops.items.length).toBeLessThanOrEqual(3);
+      expect(drops.items.length).toBeLessThanOrEqual(2);
       expect(drops.gold).toBeGreaterThan(0);
+      if (drops.items.length === 0) empty += 1;
     }
+    // Item drops are scarce, not gone.
+    expect(empty).toBeGreaterThan(30);
+    expect(empty).toBeLessThan(120);
+    const boss = rollDrops(rng, [{ level: 10, boss: true }]);
+    expect(boss.items.length).toBe(4);
   });
 
   it("gives magic and rare items their affix counts", () => {
@@ -382,6 +473,22 @@ describe("quests and death", () => {
     log = turnIn(log, "q_smoke");
     expect(log.q_smoke?.status).toBe("done");
     expect(turnIn(log, "q_smoke")).toBe(log);
+  });
+
+  it("carries salt to the giver, and loses it on death", () => {
+    // Offered once the first main quest is done.
+    expect(offeredBy({}, "merchant").map((q) => q.id)).not.toContain("q_salt");
+    let log = accept({ q_smoke: { status: "done", progress: 6 } }, "q_salt");
+    expect(onPickup(log, "shrine").changed).toEqual([]);
+    log = onPickup(log, "salt_wagons").log;
+    expect(log.q_salt).toMatchObject({ status: "ready", carrying: true });
+    const lost = dropCargo(log);
+    expect(lost.changed).toEqual(["q_salt"]);
+    expect(lost.log.q_salt).toEqual({ status: "active", progress: 0 });
+    // Picked up again and delivered: done, nothing left to lose.
+    log = turnIn(onPickup(lost.log, "salt_wagons").log, "q_salt");
+    expect(log.q_salt?.status).toBe("done");
+    expect(dropCargo(log).changed).toEqual([]);
   });
 
   it("never takes a level or more gold than there is", () => {
