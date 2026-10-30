@@ -784,18 +784,19 @@ export function findActor(
 
 // ---------------------------------------------------------------- joining
 
-/** The highest level among one side's player heroes, or null if none. */
-function topPlayerLevel(state: BattleState, side: Side): number | null {
+/** One side's player heroes' levels, or null if it has none. */
+function playerLevels(state: BattleState, side: Side): number[] | null {
   const levels = living(state, side)
     .filter((a) => a.player)
     .map((a) => a.level);
-  return levels.length > 0 ? Math.max(...levels) : null;
+  return levels.length > 0 ? levels : null;
 }
 
 /**
- * Griefing protection. When one side's strongest player hero is
- * RULES.protector.levelGap or more levels above the other side's, a
- * protector joins the weaker side: an NPC far out of balance that ends the
+ * Griefing protection. When one side's strongest player hero is above
+ * RULES.protector.ratio times the sum of the other side's player levels
+ * (2: two level-2 heroes can be attacked up to level 8, from 9 the
+ * protector comes), a protector joins the weaker side: an NPC far out of balance that ends the
  * fight in a round or two. Only fights with players on both sides count
  * (monsters never call one), and a side gets at most one.
  */
@@ -807,15 +808,17 @@ export function guardSides(state: BattleState): {
   const events: BattleEvent[] = [];
   for (const side of [0, 1] as const) {
     const other: Side = side === 0 ? 1 : 0;
-    const mine = topPlayerLevel(next, side);
-    const theirs = topPlayerLevel(next, other);
+    const mine = playerLevels(next, side);
+    const theirs = playerLevels(next, other);
     if (mine === null || theirs === null) continue;
-    if (theirs - mine < RULES.protector.levelGap) continue;
+    const top = Math.max(...theirs);
+    const sum = mine.reduce((a, b) => a + b, 0);
+    if (top <= sum * RULES.protector.ratio) continue;
     if (living(next, side).some((a) => a.protector)) continue;
     const place = openSlot(next, side);
     if (!place) continue;
     const warden = enemyCombatant(
-      { enemyId: RULES.protector.enemyId, level: theirs + 5 },
+      { enemyId: RULES.protector.enemyId, level: top + 5 },
       side,
       place.row,
       place.slot,

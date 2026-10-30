@@ -313,10 +313,22 @@ describe("joining and the protector", () => {
     expect(out.events.map((e) => e.t)).toEqual(["join"]);
   });
 
-  it("sends no protector when the players are close in level", () => {
-    const state = createBattle(2, [playerAt(5, "low")], []);
-    const out = joinBattle(state, playerAt(10, "high"), 1)!;
-    expect(out.state.actors.some((a) => a.protector)).toBe(false);
+  it("sends a protector past twice the defenders' level sum", () => {
+    const warded = (low: number[], high: number) =>
+      joinBattle(
+        createBattle(
+          2,
+          low.map((l, i) => ({ ...playerAt(l, `low${i}`), slot: i })),
+          [],
+        ),
+        playerAt(high, "high"),
+        1,
+      )!.state.actors.some((a) => a.protector);
+    expect(warded([2, 2], 8)).toBe(false);
+    expect(warded([2, 2], 9)).toBe(true);
+    expect(warded([2], 4)).toBe(false);
+    expect(warded([2], 5)).toBe(true);
+    expect(warded([5], 10)).toBe(false);
   });
 
   it("sends one protector to a far weaker side, and it wins", () => {

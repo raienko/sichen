@@ -38,13 +38,13 @@ Attacking a player outside red zones, or attacking much weaker players, raises P
 
 ## The protector (griefing protection) — prepared
 
-When one side's strongest player hero is **8 or more levels** above the other side's (`RULES.protector.levelGap`), a **protector** joins the weaker side: **Oberih the Warden** (`oberih` in `data/enemies.ts`). It is deliberately out of balance: capped resistances, huge health and regeneration, near-certain hits and chaos strikes that one-shot or almost one-shot even high-level heroes. Attacking the weak never pays.
+When the attacking side's strongest player hero is **above twice the sum of the defending side's player levels** (`RULES.protector.ratio`), a **protector** joins the defending side. Two level-2 heroes (sum 4) can be attacked up to level 8; from level 9 the protector comes. A lone level-2 hero can be attacked up to level 4. The protector is **Oberih the Warden** (`oberih` in `data/enemies.ts`). It is deliberately out of balance: capped resistances, huge health and regeneration, near-certain hits and chaos strikes that one-shot or almost one-shot even high-level heroes. Attacking the weak never pays.
 
 - It applies whenever players stand on both sides: when a fight between players starts, and whenever someone joins (including a high-level player joining a fight against a weak player). A side gets at most one.
 - It never appears in fights against monsters.
 - It gives no experience and drops nothing.
 
-`guardSides(state)` applies the rule; tests in `sim/sim.test.ts` check that monsters can't join, that close levels bring no protector, and that a level-2 hero attacked by a level-10 hero wins within three rounds with the protector.
+`guardSides(state)` applies the rule; tests in `sim/sim.test.ts` check that monsters can't join, the threshold (2+2 vs 8 and 9, 2 vs 4 and 5), and that a level-2 hero attacked by a level-10 hero wins within three rounds with the protector.
 
 The battle screen plays a `join` event with a banner ("A warden stands with the weak") and the protector's own figure (a tall robed warden with a golden halo and staff). Until the server exists, `__game.actions.devJoinPlayer(level, side)` in a development build simulates another player joining the current fight.
 
