@@ -1,5 +1,5 @@
 import { RULES, getEnemy, getQuest, getSkill, getZone } from "../data";
-import type { StringKey, Vars } from "../i18n";
+import { translate, type StringKey, type Vars } from "../i18n";
 import { planFor } from "../sim/ai";
 import {
   apFor,
@@ -526,6 +526,17 @@ export function applyRelic(relic: Relic, uid: string) {
   if (!item) return;
   const changed = applyRelicTo(rng(), relic, item);
   if (!changed) return;
+  toast(
+    "gem",
+    "toast.relicUsed",
+    {
+      name: {
+        en: translate("en", `relic.${relic}`),
+        uk: translate("uk", `relic.${relic}`),
+      },
+    },
+    "loot",
+  );
   commit((s) => ({
     ...s,
     relics: { ...s.relics, [relic]: s.relics[relic] - 1 },

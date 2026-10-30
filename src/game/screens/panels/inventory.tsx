@@ -6,7 +6,7 @@ import { useT } from "../../i18n";
 import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
 import { meetsRequirement } from "../../sim/hero";
-import { canUseRelic, sellValue } from "../../sim/loot";
+import { sellValue } from "../../sim/loot";
 import {
   EQUIP_SLOTS,
   RELICS,
@@ -14,6 +14,8 @@ import {
   type Item,
 } from "../../sim/types";
 import { ItemCard, ItemTile } from "../../ui/items";
+
+import { RelicsTab } from "./relics";
 import { GButton, GIcon, Label, Row, Sheet } from "../../ui/kit";
 import { palette } from "../../ui/palette";
 
@@ -29,13 +31,6 @@ const SLOT_ICONS: Record<EquipSlot, string> = {
   ring1: "ring",
   ring2: "ring",
 };
-
-const RELIC_ICONS = {
-  change: "shuffle",
-  ascent: "arrow-up",
-  addition: "plus",
-  purge: "minus",
-} as const;
 
 type Selection = {
   from: "inventory" | "stash" | "equipped";
@@ -56,6 +51,7 @@ export function InventoryPanel({
   onClose: () => void;
 }) {
   const { t } = useT();
+  const [tab, setTab] = useState<"items" | "relics">("items");
   // Equipment, bag and details sit side by side from about this width.
   const docked = useWindowDimensions().width < 760;
   const [selected, setSelected] = useState<Selection | null>(null);
@@ -174,27 +170,8 @@ export function InventoryPanel({
               />
             ) : null}
           </Row>
-          {selected.from !== "stash" ? (
-            <Row gap={6} wrap>
-              {RELICS.map((relic) => (
-                <GButton
-                  key={relic}
-                  icon={RELIC_ICONS[relic]}
-                  label={String(save.relics[relic])}
-                  compact
-                  accessibilityLabel={t(`relic.${relic}`)}
-                  disabled={
-                    save.relics[relic] <= 0 || !canUseRelic(relic, item)
-                  }
-                  onPress={() => actions.applyRelic(relic, item.uid)}
-                />
-              ))}
-            </Row>
-          ) : null}
         </>
-      ) : (
-        <Label value={t("inv.relics")} type="caption1" color={palette.faint} />
-      )}
+      ) : null}
     </>
   );
 
@@ -210,115 +187,124 @@ export function InventoryPanel({
       }
       onClose={onClose}
       wide
-      footer={docked && item ? details : undefined}
+      footer={docked && item && tab === "items" ? details : undefined}
     >
-      <View style={styles.columns}>
-        <View style={styles.equipment}>
-          <Label
-            value={t("inv.equipped")}
-            type="caption1"
-            color={palette.muted}
-          />
-          <View style={styles.grid}>
-            {EQUIP_SLOTS.map((slot) => {
-              const it = hero.equipment[slot];
-              return (
-                <View key={slot} style={styles.slotCell}>
-                  {it ? (
-                    <ItemTile
-                      item={it}
-                      size={44}
-                      selected={selected?.slot === slot}
-                      onPress={() =>
-                        setSelected({ from: "equipped", uid: it.uid, slot })
-                      }
-                    />
-                  ) : (
-                    <View style={styles.emptySlot}>
-                      <GIcon
-                        name={SLOT_ICONS[slot]}
-                        size={16}
-                        color={palette.faint}
+      {mode === "inventory" ? (
+        <Row gap={6}>
+          {(["items", "relics"] as const).map((id) => (
+            <GButton
+              key={id}
+              label={
+                id === "relics"
+                  ? `${t("inv.tab.relics")} ${RELICS.reduce((n, r) => n + save.relics[r], 0)}`
+                  : t("inv.tab.items")
+              }
+              icon={id === "relics" ? "gem" : "box-open"}
+              compact
+              tone={tab === id ? "primary" : "default"}
+              onPress={() => setTab(id)}
+            />
+          ))}
+        </Row>
+      ) : null}
+      {tab === "relics" ? <RelicsTab save={save} /> : null}
+      {tab === "items" ? (
+        <View style={styles.columns}>
+          <View style={styles.equipment}>
+            <Label
+              value={t("inv.equipped")}
+              type="caption1"
+              color={palette.muted}
+            />
+            <View style={styles.grid}>
+              {EQUIP_SLOTS.map((slot) => {
+                const it = hero.equipment[slot];
+                return (
+                  <View key={slot} style={styles.slotCell}>
+                    {it ? (
+                      <ItemTile
+                        item={it}
+                        size={44}
+                        selected={selected?.slot === slot}
+                        onPress={() =>
+                          setSelected({ from: "equipped", uid: it.uid, slot })
+                        }
                       />
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-          <Row gap={10} wrap>
-            <Row gap={4}>
-              <GIcon name="coins" size={14} color={palette.gold} />
-              <Label
-                value={String(save.gold)}
-                type="headline"
-                color={palette.gold}
-              />
-            </Row>
-            <Row gap={4}>
-              <GIcon name="flask" size={14} color={palette.hp} />
-              <Label value={String(hero.potions.hp)} type="footnote" />
-              <GIcon name="vial" size={14} color={palette.mana} />
-              <Label value={String(hero.potions.mana)} type="footnote" />
-            </Row>
-          </Row>
-          <Row gap={6} wrap>
-            {RELICS.map((relic) => (
-              <Row key={relic} gap={3}>
-                <GIcon
-                  name={RELIC_ICONS[relic]}
-                  size={12}
-                  color={palette.ember}
-                />
-                <Label value={String(save.relics[relic])} type="caption1" />
-              </Row>
-            ))}
-          </Row>
-          {mode === "vendor" ? (
-            <View style={styles.vendor}>
-              <GButton
-                icon="flask"
-                label={`${t("npc.buy")} ${RULES.potionPrice.hp}`}
-                compact
-                disabled={
-                  save.gold < RULES.potionPrice.hp ||
-                  hero.potions.hp >= RULES.potionCap
-                }
-                onPress={() => actions.buyPotion("hp")}
-              />
-              <GButton
-                icon="vial"
-                label={`${t("npc.buy")} ${RULES.potionPrice.mana}`}
-                compact
-                disabled={
-                  save.gold < RULES.potionPrice.mana ||
-                  hero.potions.mana >= RULES.potionCap
-                }
-                onPress={() => actions.buyPotion("mana")}
-              />
+                    ) : (
+                      <View style={styles.emptySlot}>
+                        <GIcon
+                          name={SLOT_ICONS[slot]}
+                          size={16}
+                          color={palette.faint}
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
             </View>
-          ) : null}
+            <Row gap={10} wrap>
+              <Row gap={4}>
+                <GIcon name="coins" size={14} color={palette.gold} />
+                <Label
+                  value={String(save.gold)}
+                  type="headline"
+                  color={palette.gold}
+                />
+              </Row>
+              <Row gap={4}>
+                <GIcon name="flask" size={14} color={palette.hp} />
+                <Label value={String(hero.potions.hp)} type="footnote" />
+                <GIcon name="vial" size={14} color={palette.mana} />
+                <Label value={String(hero.potions.mana)} type="footnote" />
+              </Row>
+            </Row>
+            {mode === "vendor" ? (
+              <View style={styles.vendor}>
+                <GButton
+                  icon="flask"
+                  label={`${t("npc.buy")} ${RULES.potionPrice.hp}`}
+                  compact
+                  disabled={
+                    save.gold < RULES.potionPrice.hp ||
+                    hero.potions.hp >= RULES.potionCap
+                  }
+                  onPress={() => actions.buyPotion("hp")}
+                />
+                <GButton
+                  icon="vial"
+                  label={`${t("npc.buy")} ${RULES.potionPrice.mana}`}
+                  compact
+                  disabled={
+                    save.gold < RULES.potionPrice.mana ||
+                    hero.potions.mana >= RULES.potionCap
+                  }
+                  onPress={() => actions.buyPotion("mana")}
+                />
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.bag}>
+            <Label
+              value={`${t("menu.inventory")} ${save.inventory.length}/${RULES.inventorySize}`}
+              type="caption1"
+              color={palette.muted}
+            />
+            {grid(save.inventory, "inventory", RULES.inventorySize)}
+            {mode === "stash" ? (
+              <>
+                <Label
+                  value={`${t("npc.stash")} ${save.stash.length}/${RULES.stashSize}`}
+                  type="caption1"
+                  color={palette.muted}
+                />
+                {grid(save.stash, "stash", RULES.stashSize)}
+              </>
+            ) : null}
+          </View>
+          {docked ? null : <View style={styles.details}>{details}</View>}
         </View>
-        <View style={styles.bag}>
-          <Label
-            value={`${t("menu.inventory")} ${save.inventory.length}/${RULES.inventorySize}`}
-            type="caption1"
-            color={palette.muted}
-          />
-          {grid(save.inventory, "inventory", RULES.inventorySize)}
-          {mode === "stash" ? (
-            <>
-              <Label
-                value={`${t("npc.stash")} ${save.stash.length}/${RULES.stashSize}`}
-                type="caption1"
-                color={palette.muted}
-              />
-              {grid(save.stash, "stash", RULES.stashSize)}
-            </>
-          ) : null}
-        </View>
-        {docked ? null : <View style={styles.details}>{details}</View>}
-      </View>
+      ) : null}
     </Sheet>
   );
 }
