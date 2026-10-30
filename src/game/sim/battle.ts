@@ -793,10 +793,10 @@ function playerLevels(state: BattleState, side: Side): number[] | null {
 }
 
 /**
- * Griefing protection. When one side's strongest player hero is above
- * RULES.protector.ratio times the sum of the other side's player levels
- * (2: two level-2 heroes can be attacked up to level 8, from 9 the
- * protector comes), a protector joins the weaker side: an NPC far out of balance that ends the
+ * Griefing protection. When the sum of one side's player levels is above
+ * RULES.protector.ratio times the other side's sum (2: two level-2 heroes,
+ * sum 4, can be attacked by levels summing up to 8; from 9 the protector
+ * comes), a protector joins the weaker side: an NPC far out of balance that ends the
  * fight in a round or two. Only fights with players on both sides count
  * (monsters never call one), and a side gets at most one.
  */
@@ -811,14 +811,13 @@ export function guardSides(state: BattleState): {
     const mine = playerLevels(next, side);
     const theirs = playerLevels(next, other);
     if (mine === null || theirs === null) continue;
-    const top = Math.max(...theirs);
-    const sum = mine.reduce((a, b) => a + b, 0);
-    if (top <= sum * RULES.protector.ratio) continue;
+    const sum = (levels: number[]) => levels.reduce((a, b) => a + b, 0);
+    if (sum(theirs) <= sum(mine) * RULES.protector.ratio) continue;
     if (living(next, side).some((a) => a.protector)) continue;
     const place = openSlot(next, side);
     if (!place) continue;
     const warden = enemyCombatant(
-      { enemyId: RULES.protector.enemyId, level: top + 5 },
+      { enemyId: RULES.protector.enemyId, level: Math.max(...theirs) + 5 },
       side,
       place.row,
       place.slot,

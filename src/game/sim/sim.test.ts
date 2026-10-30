@@ -314,21 +314,24 @@ describe("joining and the protector", () => {
   });
 
   it("sends a protector past twice the defenders' level sum", () => {
-    const warded = (low: number[], high: number) =>
-      joinBattle(
-        createBattle(
-          2,
-          low.map((l, i) => ({ ...playerAt(l, `low${i}`), slot: i })),
-          [],
-        ),
-        playerAt(high, "high"),
-        1,
-      )!.state.actors.some((a) => a.protector);
-    expect(warded([2, 2], 8)).toBe(false);
-    expect(warded([2, 2], 9)).toBe(true);
-    expect(warded([2], 4)).toBe(false);
-    expect(warded([2], 5)).toBe(true);
-    expect(warded([5], 10)).toBe(false);
+    const warded = (low: number[], high: number[]) => {
+      let state = createBattle(
+        2,
+        low.map((l, i) => ({ ...playerAt(l, `low${i}`), slot: i })),
+        [],
+      );
+      high.forEach((l, i) => {
+        state = joinBattle(state, playerAt(l, `high${i}`), 1)!.state;
+      });
+      return state.actors.some((a) => a.protector);
+    };
+    expect(warded([2, 2], [8])).toBe(false);
+    expect(warded([2, 2], [9])).toBe(true);
+    expect(warded([2], [4])).toBe(false);
+    expect(warded([2], [5])).toBe(true);
+    // Attackers' levels add up too.
+    expect(warded([2, 2], [4, 4])).toBe(false);
+    expect(warded([2, 2], [4, 5])).toBe(true);
   });
 
   it("sends one protector to a far weaker side, and it wins", () => {

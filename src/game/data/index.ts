@@ -36,10 +36,10 @@ export const RULES = {
   roundSeconds: 15,
   maxSummons: 4,
   /**
-   * Griefing protection: a protector joins a side when the other side's
-   * strongest player hero is above `ratio` times the sum of this side's
-   * player levels (two level-2 heroes can be attacked up to level 8, from
-   * 9 the protector comes; see guardSides).
+   * Griefing protection: a protector joins a side when the sum of the
+   * other side's player levels is above `ratio` times the sum of this
+   * side's (two level-2 heroes can be attacked by a level-8 hero, or by
+   * two level-4 ones, but not more; see guardSides).
    */
   protector: { ratio: 2, enemyId: "oberih" },
   potionPrice: { hp: 15, mana: 15 },
