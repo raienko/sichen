@@ -34,7 +34,14 @@ import {
   xpToNext,
 } from "./hero";
 import { canUseRelic, rollDrops, rollItem, applyRelicTo } from "./loot";
-import { accept, onKills, turnIn } from "./quests";
+import {
+  accept,
+  dropCargo,
+  offeredBy,
+  onKills,
+  onPickup,
+  turnIn,
+} from "./quests";
 import { packRank, respawnSeconds, respawning } from "./respawn";
 import { Rng } from "./rng";
 import { emptyStats, heroStats } from "./stats";
@@ -419,14 +426,20 @@ describe("hero", () => {
 });
 
 describe("loot", () => {
-  it("rolls 1-3 items and gold per battle", () => {
+  it("rolls 0-2 items and some gold per battle, 3 and more from a boss", () => {
     const rng = new Rng(3);
-    for (let i = 0; i < 50; i++) {
+    let empty = 0;
+    for (let i = 0; i < 200; i++) {
       const drops = rollDrops(rng, [{ level: 4 }, { level: 3 }]);
-      expect(drops.items.length).toBeGreaterThanOrEqual(1);
-      expect(drops.items.length).toBeLessThanOrEqual(3);
+      expect(drops.items.length).toBeLessThanOrEqual(2);
       expect(drops.gold).toBeGreaterThan(0);
+      if (drops.items.length === 0) empty += 1;
     }
+    // Item drops are scarce, not gone.
+    expect(empty).toBeGreaterThan(30);
+    expect(empty).toBeLessThan(120);
+    const boss = rollDrops(rng, [{ level: 10, boss: true }]);
+    expect(boss.items.length).toBe(4);
   });
 
   it("gives magic and rare items their affix counts", () => {
@@ -460,6 +473,22 @@ describe("quests and death", () => {
     log = turnIn(log, "q_smoke");
     expect(log.q_smoke?.status).toBe("done");
     expect(turnIn(log, "q_smoke")).toBe(log);
+  });
+
+  it("carries salt to the giver, and loses it on death", () => {
+    // Offered once the first main quest is done.
+    expect(offeredBy({}, "merchant").map((q) => q.id)).not.toContain("q_salt");
+    let log = accept({ q_smoke: { status: "done", progress: 6 } }, "q_salt");
+    expect(onPickup(log, "shrine").changed).toEqual([]);
+    log = onPickup(log, "salt_wagons").log;
+    expect(log.q_salt).toMatchObject({ status: "ready", carrying: true });
+    const lost = dropCargo(log);
+    expect(lost.changed).toEqual(["q_salt"]);
+    expect(lost.log.q_salt).toEqual({ status: "active", progress: 0 });
+    // Picked up again and delivered: done, nothing left to lose.
+    log = turnIn(onPickup(lost.log, "salt_wagons").log, "q_salt");
+    expect(log.q_salt?.status).toBe("done");
+    expect(dropCargo(log).changed).toEqual([]);
   });
 
   it("never takes a level or more gold than there is", () => {

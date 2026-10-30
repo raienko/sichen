@@ -42,9 +42,24 @@ export const RULES = {
    * two level-4 ones, but not more; see guardSides).
    */
   protector: { ratio: 2, enemyId: "oberih" },
-  potionPrice: { hp: 15, mana: 15 },
+  /**
+   * Gold is scarce: monsters pay little and drop few items, and vendors
+   * pay little; the real money is in red-zone quests (docs/game/
+   * risk-zones-pvp.md).
+   */
+  economy: {
+    /** Gold per monster, times its level. */
+    goldPerLevel: [1, 3] as const,
+    /** Items from an ordinary fight: 0 up to this many (bosses: 3). */
+    maxItems: 2,
+    /** Chance in percent that an ordinary fight drops no item at all. */
+    noItemChance: 35,
+    /** A vendor pays this share of an item's value. */
+    sellShare: 0.6,
+  },
+  potionPrice: { hp: 20, mana: 20 },
   potionCap: 10,
-  respecPrice: 20,
+  respecPrice: 60,
   saveSlots: 3,
   /** Saved attack/defence presets on the battle planner. */
   tactics: 3,

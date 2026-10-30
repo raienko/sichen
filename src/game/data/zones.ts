@@ -196,6 +196,38 @@ function vyshhorodMap(): string[] {
     m.clear(x, z, r);
   m.rect(27, 17, 41, 17, "=").rect(19, 17, 27, 18, "=");
   m.rect(35, 11, 38, 11, "."); // camp gate
+  // A track north from the shrine-side clearing to the Salt Road.
+  m.rect(17, 0, 17, 5, "=");
+  return m.build();
+}
+
+/**
+ * The Salt Road: open steppe on the chumaks' salt route, a red zone. The
+ * road runs north from the Vyshhorod track to the salt wagons, crossing a
+ * stream; raiders and worse wait close to it.
+ */
+function saltRoadMap(): string[] {
+  const m = new MapBuilder(44, 30).border("#", 2);
+  m.scatter("#", 90, 31, { x0: 2, z0: 2, x1: 41, z1: 27 });
+  m.scatter("r", 45, 32, { x0: 2, z0: 2, x1: 41, z1: 27 });
+  m.scatter(",", 160, 33, { x0: 2, z0: 2, x1: 41, z1: 27 });
+  // A stream across the steppe, with a ford where the road crosses.
+  for (let x = 2; x < 42; x++) {
+    const z = 17 + Math.round(Math.sin(x / 5) * 1.5);
+    m.set(x, z, "~");
+  }
+  m.rect(20, 0, 22, 29, ".");
+  m.rect(21, 2, 21, 29, "=");
+  for (const [x, z, r] of [
+    [21, 5, 3],
+    [21, 25, 2],
+    [14, 20, 2],
+    [27, 15, 2],
+    [16, 10, 2],
+    [27, 6, 2],
+  ] as const)
+    m.clear(x, z, r);
+  m.rect(21, 2, 21, 29, "=");
   return m.build();
 }
 
@@ -362,7 +394,72 @@ export const ZONES: readonly ZoneDef[] = [
         name: { en: "Kurgan stone", uk: "Курганний камінь" },
       },
     ],
-    exits: [{ x: 0, z: 17, to: "kyiv", spawn: { x: 26, z: 11 } }],
+    exits: [
+      { x: 0, z: 17, to: "kyiv", spawn: { x: 26, z: 11 } },
+      { x: 17, z: 0, to: "salt_road", spawn: { x: 21, z: 26 } },
+    ],
     palette: { ground: 0x6c7a3c, fog: 0x24301e, sky: 0x1f2a1a },
+  },
+  {
+    id: "salt_road",
+    name: { en: "The Salt Road", uk: "Чумацький шлях" },
+    // Lawless steppe: the gold is here, and so is everyone after it.
+    danger: "red",
+    map: saltRoadMap(),
+    spawn: { x: 21, z: 26 },
+    npcs: [],
+    packs: [
+      {
+        id: "p_steppe_wolves",
+        x: 14,
+        z: 20,
+        aggressive: true,
+        enemies: [
+          { enemyId: "vovkulaka", level: 9 },
+          { enemyId: "vovkulaka", level: 9 },
+        ],
+      },
+      {
+        id: "p_road_raiders",
+        x: 27,
+        z: 15,
+        aggressive: true,
+        rank: "elite",
+        enemies: [
+          { enemyId: "orc_brute", level: 10 },
+          { enemyId: "orc_grunt", level: 10 },
+          { enemyId: "orc_shaman", level: 9 },
+        ],
+      },
+      {
+        id: "p_road_chort",
+        x: 16,
+        z: 10,
+        aggressive: true,
+        enemies: [{ enemyId: "chort", level: 11 }],
+      },
+      {
+        id: "p_salt_guard",
+        x: 27,
+        z: 6,
+        aggressive: true,
+        rank: "elite",
+        enemies: [
+          { enemyId: "orc_brute", level: 12 },
+          { enemyId: "orc_brute", level: 11 },
+        ],
+      },
+    ],
+    interactables: [
+      {
+        id: "salt_wagons",
+        kind: "salt_cart",
+        x: 21,
+        z: 5,
+        name: { en: "Chumak salt wagons", uk: "Чумацькі вози з сіллю" },
+      },
+    ],
+    exits: [{ x: 21, z: 29, to: "vyshhorod", spawn: { x: 17, z: 2 } }],
+    palette: { ground: 0x8a8a48, fog: 0x3a3020, sky: 0x2a2418 },
   },
 ];

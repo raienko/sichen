@@ -287,16 +287,21 @@ export function examine(interactableId: string) {
       q.objective.interactableId === interactableId
     );
   });
-  const { log, changed } = quests.onExplore(data.quests, interactableId);
+  const explored = quests.onExplore(data.quests, interactableId);
+  const picked = quests.onPickup(explored.log, interactableId);
+  const { log } = picked;
+  const changed = [...explored.changed, ...picked.changed];
   if (changed.length > 0) {
     commit((s) => ({ ...s, quests: log }));
-    for (const id of changed)
+    for (const id of explored.changed)
       toast(
         "circle-check",
         "toast.questReady",
         { name: getQuest(id).name },
         "good",
       );
+    for (const id of picked.changed)
+      toast("box", "toast.cargo", { name: getQuest(id).name }, "good");
   }
   set({
     panel:
@@ -797,10 +802,15 @@ export function finishPlayback() {
   } else if (state.result === "fled") {
     set({ battle: { ...battle, phase: "over", rewards: null } });
   } else {
+    // Cargo carried into the fight is lost with it.
+    const lost = quests.dropCargo(save().quests);
     commit((s) => ({
       ...s,
+      quests: lost.log,
       stats: { ...s.stats, deaths: s.stats.deaths + 1 },
     }));
+    for (const id of lost.changed)
+      toast("box", "toast.cargoLost", { name: getQuest(id).name }, "bad");
     set({
       scene: { name: "death", cards: drawCards(rng()), picked: null },
       battle: null,

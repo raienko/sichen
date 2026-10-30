@@ -324,7 +324,12 @@ export type QuestObjective =
   | { type: "kill"; tag: string; count: number }
   | { type: "explore"; interactableId: string }
   | { type: "defeat"; packId: string }
-  | { type: "choice"; interactableId: string; options: readonly QuestChoice[] };
+  | { type: "choice"; interactableId: string; options: readonly QuestChoice[] }
+  /**
+   * Cargo: pick it up at an interactable, carry it to the giver. Carried
+   * cargo is lost when the hero dies, and must be picked up again.
+   */
+  | { type: "deliver"; pickupId: string };
 
 export type QuestChoice = {
   id: string;
@@ -387,4 +392,6 @@ export type QuestState = {
   status: "active" | "ready" | "done";
   progress: number;
   choice?: string;
+  /** A deliver quest's cargo is on the hero (its status is then "ready"). */
+  carrying?: boolean;
 };

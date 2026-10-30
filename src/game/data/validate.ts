@@ -126,6 +126,16 @@ export function validateContent(): string[] {
   for (const q of QUESTS) {
     check(npcIds.has(q.giver), `quest ${q.id}: giver`);
     if (q.requires) check(questIds.has(q.requires), `quest ${q.id}: requires`);
+    if (q.objective.type === "deliver")
+      check(
+        ZONES.some((zn) =>
+          zn.interactables.some(
+            (i) =>
+              q.objective.type === "deliver" && i.id === q.objective.pickupId,
+          ),
+        ),
+        `quest ${q.id}: pickup`,
+      );
   }
 
   for (const zn of ZONES) {

@@ -16,14 +16,14 @@ Gold is scarce and valuable. Item drops and gold drops are lower; prices are hig
 
 Every zone has `danger` (`ZoneDef`, `data/zones.ts`). The world HUD colours the minimap frame and marks the zone name (a shield in green, a skull in yellow/red), and the zone label's accessible name explains the rule. Kyiv and Vyshhorod's outskirts are green: the starting band stays out of PvP.
 
-## Red-zone quests — planned
+## Red-zone quests — first one built
 
-Gold mostly comes from quests whose objective sits in a red zone, for example:
+Gold mostly comes from quests whose objective sits in a red zone.
 
-- **Bring salt** (cargo): pick up a load and carry it to a town. The cargo is an item that can be lost, so other players have a reason to attack, not only to kill.
-- **Secure the caravan** (escort): keep a slow cart alive to its destination; the natural first co-op activity.
+- **Bring salt** (`q_salt`, built). Merchant Hordii in Kyiv offers it once "Smoke over Vyshhorod" is done; he now talks first when he has quest business, with a Trade button for the shop. Load salt at the chumak wagons at the north end of **the Salt Road** (`salt_road`, a red zone reached by the track north of Vyshhorod), then carry it back. Pays 450 gold and 320 XP. The salt is cargo: a `deliver` objective is "ready" while it is carried, and **dying loses it** (`dropCargo`), so the quest goes back to the pickup.
+- **Secure the caravan** (escort, planned): keep a slow cart alive to its destination; the natural first co-op activity.
 
-These zones hold higher-level aggressive packs as well as the danger from players.
+The Salt Road is open steppe with a stream and a ford across the road, and four aggressive packs close to the route: vovkulaky (9), a horde war band (10, 10, 9), a chort (11) and the wagons' horde guard (12, 11). The game's current content tops out at level 10, so this is a deliberately hard detour. Cargo does not slow the hero yet.
 
 ## PvP rank — planned
 
@@ -48,13 +48,24 @@ When the **sum of the attacking side's player levels is above twice the sum of t
 
 The battle screen plays a `join` event with a banner ("A warden stands with the weak") and the protector's own figure (a tall robed warden with a golden halo and staff). Until the server exists, `__game.actions.devJoinPlayer(level, side)` in a development build simulates another player joining the current fight.
 
-## Losing in PvP — to decide
+## Losing in PvP — decided
 
-Recommended: the loser drops quest cargo and part of the gold being carried, never equipment or levels (the game's existing rule: no de-levelling, no gold debt). Gold is safe once stored in a green town.
+The loser drops any quest cargo (already true for every death) and part of the gold being carried, never equipment or levels (the game's rule: no de-levelling, no gold debt). Gold is safe once stored in a green town. The gold part needs the server and town banking.
 
-## Economy — planned
+## Economy — first pass built
 
-Lower item and gold drop rates; higher prices; more gold sinks (repairs, travel, respecs, fees). A player who stays in green zones must still afford the basics. Red-zone quests pay most of the gold.
+All in `RULES` (`data/index.ts`), easy to retune:
+
+|                              | Before           | Now                                                                              |
+| ---------------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| Monster gold                 | 2-5 × level each | 1-3 × level each (`economy.goldPerLevel`)                                        |
+| Items from an ordinary fight | 1-3              | 0-2, none 35% of the time (`economy.maxItems`, `noItemChance`); bosses unchanged |
+| Vendor pays                  | full item value  | 60% (`economy.sellShare`)                                                        |
+| Potion                       | 15               | 20                                                                               |
+| Passive tree respec          | 20               | 60                                                                               |
+| Bring salt                   | —                | 450 gold                                                                         |
+
+Still planned: more gold sinks (repairs, travel, fees) and checking that a green-zone player can afford the basics.
 
 ## Server requirements — planned
 

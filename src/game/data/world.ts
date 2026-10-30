@@ -46,7 +46,7 @@ export const NPCS: readonly NpcDef[] = [
     id: "merchant",
     name: { en: "Merchant Hordii", uk: "Купець Гордій" },
     title: { en: "Merchant", uk: "Купець" },
-    roles: ["merchant"],
+    roles: ["merchant", "quest"],
     kind: "merchant",
     bark: {
       en: "Coin first, questions never.",
@@ -75,6 +75,21 @@ export const NPCS: readonly NpcDef[] = [
 ];
 
 export const QUESTS: readonly QuestDef[] = [
+  {
+    // The first red-zone quest: the pay is worth the road.
+    id: "q_salt",
+    kind: "side",
+    giver: "merchant",
+    icon: "box",
+    requires: "q_smoke",
+    name: { en: "Bring salt", uk: "Привези сіль" },
+    goal: {
+      en: "Load salt at the chumak wagons on the Salt Road, north of Vyshhorod, and bring it to Hordii. A lawless road: die, and the salt is lost.",
+      uk: "Візьми сіль на чумацьких возах на Чумацькому шляху, на північ від Вишгорода, і привези Гордієві. Беззаконний шлях: загинеш — сіль пропаде.",
+    },
+    objective: { type: "deliver", pickupId: "salt_wagons" },
+    reward: { xp: 320, gold: 450 },
+  },
   {
     id: "q_smoke",
     kind: "main",
