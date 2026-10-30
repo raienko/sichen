@@ -8,6 +8,7 @@
     "yarn": ">=1.22.22 <2"
   },
   "dependencies": {
+    "@expo-google-fonts/alegreya": "0.4.2",
     "@expo/ui": "57.0.25",
     "@hookform/resolvers": "5.9.1",
     "@legendapp/list": "3.3.10",

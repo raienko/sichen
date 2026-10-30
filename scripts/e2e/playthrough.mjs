@@ -78,7 +78,7 @@ async function fight(packId, { manualFirst = false } = {}) {
         plan.defense.melee === 1,
       "manual plan built through the slot popup",
     );
-    await click("Ready");
+    await page.getByRole("button", { name: /^Ready,/ }).click();
     await page
       .getByText("Round 2")
       .or(page.getByText("Victory"))
@@ -87,7 +87,8 @@ async function fight(packId, { manualFirst = false } = {}) {
       .waitFor({ timeout: 60000 });
   }
   const auto = (await save()).settings.autoBattle;
-  if (!auto && (await scene()) === "battle") await click("Auto");
+  if (!auto && (await scene()) === "battle")
+    await page.getByRole("button", { name: "Auto", exact: true }).click();
   const deadline = Date.now() + 240000;
   while (Date.now() < deadline) {
     const s = await game(() => {

@@ -1,12 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -41,7 +34,8 @@ import {
   ActionPicker,
   ActionSlots,
   ActorPanel,
-  TacticsBar,
+  arcLayout,
+  ReadyArc,
 } from "./battle-hud";
 import { Toasts } from "./world";
 
@@ -405,92 +399,20 @@ function Results({ battle }: { battle: BattleSession }) {
   );
 }
 
-/** The clock turns red for the last seconds of planning. */
-const URGENT_SECONDS = 5;
-const URGENT_BG = "#3a1410";
-
-/**
- * Ready, the round number and the planning clock in one button: its fill
- * drains as time runs out and turns red near the end, and pressing it ends
- * planning early.
- */
-function ReadyButton({
-  round,
-  planning,
-  msLeft,
-  secondsLeft,
-  onPress,
-  style,
-}: {
-  round: number;
-  planning: boolean;
-  msLeft: number;
-  secondsLeft: number;
-  onPress: () => void;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const { t } = useT();
-  const urgent = planning && secondsLeft <= URGENT_SECONDS;
-  const share = planning
-    ? Math.max(0, Math.min(1, msLeft / (RULES.roundSeconds * 1000)))
-    : 0;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${t("battle.ready")}, ${t("battle.round", { round })}`}
-      disabled={!planning}
-      onPress={() => {
-        haptics.tap();
-        onPress();
-      }}
-      style={({ pressed }) => [
-        styles.readyButton,
-        {
-          borderColor: urgent ? palette.bad : palette.gold,
-          backgroundColor: urgent ? URGENT_BG : palette.panelHi,
-          opacity: !planning ? 0.6 : pressed ? 0.75 : 1,
-        },
-        style,
-      ]}
-    >
-      <View
-        style={[
-          styles.readyFill,
-          {
-            width: `${share * 100}%`,
-            backgroundColor: urgent ? palette.bad : palette.line,
-          },
-        ]}
-      />
-      <Label
-        value={t("battle.round", { round })}
-        type="caption2"
-        color={palette.muted}
-      />
-      <Label value={t("battle.ready")} type="subheadline" />
-      <Label
-        value={planning ? `${secondsLeft}s` : "…"}
-        type="headline"
-        color={urgent ? palette.white : palette.gold}
-      />
-    </Pressable>
-  );
-}
-
 export default function BattleScreen() {
-  const { t } = useT();
   const battle = useGame((s) => s.battle);
   const auto = useGame((s) => s.save?.settings.autoBattle ?? false);
   const zoneId = useGame((s) => s.save?.world.zoneId ?? "kyiv");
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const portrait = height > width;
   const [now, setNow] = useState(() => Date.now());
   // The slot whose action picker is open, and the foe actions aim at.
   const [picking, setPicking] = useState<number | null>(null);
   const [chosenFoe, setChosenFoe] = useState<string | null>(null);
   // Where the 3D scene drew each fighter, for the overlay.
   const [spots, setSpots] = useState<Record<string, UnitSpot>>({});
+  // The middle band's top and height in the page, measured.
+  const [band, setBand] = useState<{ y: number; h: number } | null>(null);
   const heroSave = useGame((s) => s.save?.hero);
   const heroLook = useMemo(() => {
     const weapon = heroSave?.equipment.weapon;
@@ -565,15 +487,17 @@ export default function BattleScreen() {
     foes.find((f) => f.row === 0) ??
     foes[0];
   const planning = battle.phase === "planning";
-  // Portrait: five slots and the Ready button share one row.
-  const slotSize = portrait
-    ? Math.min(
-        58,
-        Math.floor((width - 16 - insets.left - insets.right - 92) / 5.6),
-      )
-    : height < 420
-      ? 50
-      : 58;
+  // The five slots, Auto and Ready share the bottom row: the largest slot
+  // (40-54 points; Ready half as large again, at least 68) whose two groups
+  // still fit side by side.
+  const room = width - insets.left - insets.right - 16 - 8;
+  let slotSize = 54;
+  const readySize = (s: number) => Math.max(68, Math.round(s * 1.5));
+  while (
+    slotSize > 40 &&
+    5 * slotSize + 16 + arcLayout(slotSize, readySize(slotSize)).width > room
+  )
+    slotSize -= 1;
 
   // The hero's shadow glows gold, the selected foe's white (while planning).
   const highlights: Record<string, number> = { hero: 0xd4a94e };
@@ -589,41 +513,67 @@ export default function BattleScreen() {
       compact={short}
     />
   );
+  // Where the fighters must stand on screen. Portrait: between the panels
+  // and the controls, which span the width. Landscape: down to the bottom
+  // edge too, since the controls keep to the corners and the hero stands in
+  // the open middle.
+  const fightBand = band
+    ? {
+        top: band.y,
+        height: width > height ? height - band.y - insets.bottom : band.h,
+      }
+    : null;
   const slots = (
-    <ActionSlots
-      battle={battle}
-      size={slotSize}
-      onOpen={setPicking}
-      align="start"
-    />
-  );
-  const autoButton = (
-    <GButton
-      label={t("battle.auto")}
-      icon="robot"
-      compact
-      tone={auto ? "primary" : "default"}
-      onPress={actions.toggleAuto}
-      style={styles.auto}
-    />
+    <ActionSlots battle={battle} size={slotSize} onOpen={setPicking} />
   );
   const ready = (
-    <ReadyButton
-      round={battle.state.round}
-      planning={planning}
+    <ReadyArc
+      battle={battle}
+      slot={slotSize}
+      ready={readySize(slotSize)}
       msLeft={battle.deadline - now}
       secondsLeft={secondsLeft}
-      onPress={() => {
+      auto={auto}
+      onReady={() => {
         setPicking(null);
         actions.ready();
       }}
-      style={[styles.ready, { minHeight: slotSize + 8 }]}
     />
   );
 
   return (
     <View style={styles.page}>
       <BattleBackdrop zone={getZone(zoneId)} />
+      {/* The scene fills the screen behind the HUD, as in the world. */}
+      <View style={StyleSheet.absoluteFill}>
+        <BattleStage
+          actors={shown.actors}
+          hero={heroLook}
+          motion={playback}
+          highlights={highlights}
+          band={fightBand}
+          onProject={setSpots}
+        />
+      </View>
+      {/* Tags, rings and tap areas over the 3D fighters. */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        {shown.actors.map((a) => {
+          const spot = spots[a.id];
+          if (!spot) return null;
+          const isFoe = a.side === 1;
+          return (
+            <UnitTag
+              key={a.id}
+              actor={a}
+              spot={spot}
+              floaters={playback.floaters.filter((f) => f.actor === a.id)}
+              marked={planning ? (marks[a.id] ?? 0) : 0}
+              heroLevel={hero?.level ?? 1}
+              onPress={isFoe && a.hp > 0 ? () => setChosenFoe(a.id) : undefined}
+            />
+          );
+        })}
+      </View>
       {/* The HUD: what you read at the top, what you press at the bottom
           corners (thumbs; the middle stays clear for foldables). */}
       <View
@@ -642,68 +592,27 @@ export default function BattleScreen() {
           <View style={styles.panelSide}>{ally}</View>
           <View style={styles.panelSide}>{enemy}</View>
         </View>
-        {/* The fighters get the band between the panels and the controls,
-            so the scene never sits under the HUD. */}
-        <View pointerEvents="box-none" style={styles.middle}>
-          <View style={StyleSheet.absoluteFill}>
-            <BattleStage
-              actors={shown.actors}
-              hero={heroLook}
-              motion={playback}
-              highlights={highlights}
-              onProject={setSpots}
-            />
-          </View>
-          {/* Tags, rings and tap areas over the 3D fighters. */}
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            {shown.actors.map((a) => {
-              const spot = spots[a.id];
-              if (!spot) return null;
-              const isFoe = a.side === 1;
-              return (
-                <UnitTag
-                  key={a.id}
-                  actor={a}
-                  spot={spot}
-                  floaters={playback.floaters.filter((f) => f.actor === a.id)}
-                  marked={planning ? (marks[a.id] ?? 0) : 0}
-                  heroLevel={hero?.level ?? 1}
-                  onPress={
-                    isFoe && a.hp > 0 ? () => setChosenFoe(a.id) : undefined
-                  }
-                />
-              );
-            })}
-          </View>
+        {/* The free band between the panels and the controls: the camera
+            frames the fighters into it. */}
+        <View
+          pointerEvents="box-none"
+          style={styles.middle}
+          onLayout={(e) => {
+            const { y, height: h } = e.nativeEvent.layout;
+            setBand((b) => (b?.y === y && b.h === h ? b : { y, h }));
+          }}
+        >
           {playback.banner ? (
             <View style={styles.banner} pointerEvents="none">
               <Label value={playback.banner} type="title2" color="#d9a0ff" />
             </View>
           ) : null}
         </View>
-        {portrait ? (
-          <View pointerEvents="box-none" style={styles.hudPortrait}>
-            <View pointerEvents="box-none" style={styles.hudRow}>
-              <TacticsBar battle={battle} />
-              {autoButton}
-            </View>
-            <View pointerEvents="box-none" style={styles.hudRowEnd}>
-              {slots}
-              {ready}
-            </View>
-          </View>
-        ) : (
-          <View pointerEvents="box-none" style={styles.hudRowEnd}>
-            {slots}
-            <View style={styles.commit}>
-              <TacticsBar battle={battle} />
-              <Row gap={6} style={styles.commitButtons}>
-                {autoButton}
-                {ready}
-              </Row>
-            </View>
-          </View>
-        )}
+        {/* Two outer thumb groups, bottoms level; the middle stays open. */}
+        <View pointerEvents="box-none" style={styles.hudRowEnd}>
+          {slots}
+          {ready}
+        </View>
       </View>
       {picking !== null && planning ? (
         <ActionPicker
@@ -734,21 +643,12 @@ const styles = StyleSheet.create({
   },
   panelSide: { flex: 1, maxWidth: 260 },
   middle: { flex: 1, justifyContent: "center" },
-  hudPortrait: { gap: 6 },
-  hudRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
   hudRowEnd: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
     gap: 8,
   },
-  commit: { alignItems: "flex-end", gap: 6 },
-  commitButtons: { alignItems: "stretch" },
-  ready: { minWidth: 84 },
   hitArea: { position: "absolute", width: 76 },
   tag: { position: "absolute", width: 80, alignItems: "center", gap: 2 },
   tagBar: { width: 56 },
@@ -775,20 +675,6 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: palette.overlay,
   },
-  readyButton: {
-    minHeight: 62,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    overflow: "hidden",
-    backgroundColor: palette.panelHi,
-  },
-  readyFill: { position: "absolute", top: 0, bottom: 0, start: 0 },
-  auto: { minHeight: 62 },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
     backgroundColor: palette.shade,

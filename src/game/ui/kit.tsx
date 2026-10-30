@@ -15,6 +15,7 @@ import type { IconNameByType } from "@/components/icon";
 import type { TypographyToken } from "@/features/responsive";
 import { haptics } from "@/features/haptics";
 
+import { DISPLAY_FONT } from "./fonts";
 import { palette } from "./palette";
 
 export type GameIconName = IconNameByType["FontAwesome6"];
@@ -45,20 +46,83 @@ export function Label({
   color = palette.text,
   style,
   numberOfLines,
+  display,
 }: {
   value: string;
   type?: TypographyToken;
   color?: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
+  /** Names and headings: the display serif (not numbers, see fonts.ts). */
+  display?: boolean;
 }) {
   return (
     <Text
       value={value}
       type={type}
       numberOfLines={numberOfLines}
-      style={[{ color }, style]}
+      style={[{ color }, display && styles.display, style]}
     />
+  );
+}
+
+/** The smallest effective touch target, in points. */
+export const TOUCH = 44;
+
+/**
+ * A circular HUD control: a thin ivory ring over dark glass, an amber ring
+ * and glow when selected. Below 44 points it pads its hit area out to 44,
+ * so neighbours need at least that much room between their centres.
+ */
+export function RoundButton({
+  size = TOUCH,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+  selected,
+  disabled,
+  dim,
+  children,
+  style,
+}: {
+  size?: number;
+  onPress: () => void;
+  onLongPress?: () => void;
+  accessibilityLabel: string;
+  selected?: boolean;
+  disabled?: boolean;
+  /** Shown faded but still pressable, e.g. an empty preset. */
+  dim?: boolean;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const slop = Math.max(0, Math.ceil((TOUCH - size) / 2));
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: !!selected, disabled: !!disabled }}
+      disabled={disabled}
+      hitSlop={slop}
+      onPress={() => {
+        haptics.tap();
+        onPress();
+      }}
+      onLongPress={onLongPress}
+      style={({ pressed }) => [
+        styles.round,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          opacity: disabled ? 0.4 : pressed ? 0.7 : dim ? 0.7 : 1,
+        },
+        selected && styles.roundOn,
+        style,
+      ]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
@@ -249,6 +313,20 @@ export function Divider() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  // The font file is one weight; a synthetic bold on top would smear it.
+  display: { fontFamily: DISPLAY_FONT, fontWeight: "normal" },
+  round: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: palette.ivory,
+    backgroundColor: palette.glass,
+  },
+  roundOn: {
+    borderWidth: 2.5,
+    borderColor: palette.amber,
+    boxShadow: `0 0 12px 1px ${palette.amber}`,
+  },
   button: {
     flexDirection: "row",
     alignItems: "center",

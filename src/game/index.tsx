@@ -10,6 +10,7 @@ import DeathScreen from "./screens/death";
 import TitleScreen from "./screens/title";
 import WorldScreen from "./screens/world";
 import { anonymousAuth } from "./state/platform";
+import { useGameFonts } from "./ui/fonts";
 import { fullscreenOnFirstTap } from "./ui/fullscreen";
 import * as actions from "./state/actions";
 import { runtime } from "./state/runtime";
@@ -27,6 +28,7 @@ if (__DEV__) {
 export default function Game() {
   const scene = useGame((s) => s.scene);
   const hasBattle = useGame((s) => s.battle !== null);
+  useGameFonts();
   useEffect(() => {
     void anonymousAuth.signIn();
   }, []);
