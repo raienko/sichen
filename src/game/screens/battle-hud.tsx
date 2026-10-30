@@ -60,6 +60,9 @@ export function ActorPanel({
   // resource) and a status row.
   const nameBox = type.subheadline.lineHeight * 2;
   const statusRow = 14;
+  // Bars only need room for the longest value, "9999/9999"; the body is
+  // that wide and the name wraps within it.
+  const barWidth = Math.ceil(type.caption2.fontSize * 0.62 * 9) + 14;
   const bodyHeight =
     (compact ? 0 : nameBox + 3) + 3 * textBar + 2 * 3 + 3 + statusRow;
   if (!actor) {
@@ -68,7 +71,8 @@ export function ActorPanel({
         style={[
           styles.panel,
           styles.panelEmpty,
-          { minHeight: bodyHeight + 16 },
+          { minHeight: bodyHeight + 16, width: barWidth + 70 },
+          { alignSelf: align === "end" ? "flex-end" : "flex-start" },
           align === "end" && styles.panelEnd,
         ]}
       >
@@ -118,11 +122,13 @@ export function ActorPanel({
         styles.panel,
         compact && styles.panelCompact,
         end && styles.panelEnd,
+        // Hug the content at the outer edge rather than stretch.
+        { alignSelf: end ? "flex-end" : "flex-start" },
       ]}
       accessibilityLabel={tr(actor.name)}
     >
       {portrait}
-      <View style={[styles.panelBody, { height: bodyHeight }]}>
+      <View style={[styles.panelBody, { height: bodyHeight, width: barWidth }]}>
         {compact ? null : (
           <View style={[styles.panelName, { height: nameBox }]}>
             <Label
@@ -762,7 +768,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.night,
   },
   panelLevel: { position: "absolute", bottom: -5, end: -8 },
-  panelBody: { flex: 1, gap: 3, minWidth: 0 },
+  panelBody: { gap: 3 },
   panelName: { justifyContent: "flex-end" },
   textEnd: { textAlign: "right" },
   rowEnd: { justifyContent: "flex-end" },

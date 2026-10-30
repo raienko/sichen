@@ -644,7 +644,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-  panelSide: { flex: 1, maxWidth: 260 },
+  // Each panel hugs its content at its own edge.
+  panelSide: { flexShrink: 1 },
   middle: { flex: 1, justifyContent: "center" },
   hudRowEnd: {
     flexDirection: "row",
