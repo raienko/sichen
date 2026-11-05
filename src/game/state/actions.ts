@@ -53,7 +53,7 @@ import {
 
 import { slotStorage } from "./platform";
 import { resetRuntime, runtime } from "./runtime";
-import { loadSlots, serialize, type SaveData } from "./save";
+import { loadSlots, SAVE_VERSION, serialize, type SaveData } from "./save";
 import { store, type Panel, type Rewards } from "./store";
 
 const { get, set } = store;
@@ -133,7 +133,7 @@ export function createGame(
   const hero = createHero(r, name, look, classId);
   const kyiv = getZone("kyiv");
   const data: SaveData = {
-    version: 1,
+    version: SAVE_VERSION,
     id: `${Date.now().toString(36)}${r.int(0, 1e6)}`,
     createdAt: Date.now(),
     updatedAt: Date.now(),
