@@ -166,7 +166,9 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   spear: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.12] },
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
-  bow: { arm: [-0.15, 0, -0.2], aim: [0, 1, 0] },
+  // At rest the bow is slung on the back and the hand hangs empty; this
+  // holds it upright when it is drawn for a shot.
+  bow: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
   /** Empty hands: the arm hangs like the other one. */
   none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
@@ -585,6 +587,24 @@ function Weapon({ kind }: { kind: string }) {
   }
 }
 
+/**
+ * The bow at rest: slung across the lower back above the sash, string to
+ * the body, belly out behind, its tips past the hips on either side.
+ */
+function SlungBow() {
+  return (
+    <group position={[0, 0.88, -0.23]} rotation={[0, 0, 0.12]}>
+      <Part
+        geometry={G.torus}
+        color={0x6b4423}
+        rotation={[-Math.PI / 2, 0, 0]}
+        scale={[1.6, 0.7, 1.2]}
+      />
+      <Part geometry={G.box} color={0xe8dcc0} scale={[1.28, 0.018, 0.018]} />
+    </group>
+  );
+}
+
 /** A loose-sleeved shirt arm from the shoulder down, with a stitched cuff. */
 function Arm({
   skin,
@@ -883,6 +903,7 @@ export function HeroFigure({
   const upper = useRef<THREE.Group>(null);
   const freeAcross = useRef<THREE.Group>(null);
   const held = useRef<THREE.Group>(null);
+  const slung = useRef<THREE.Group>(null);
   const flask = useRef<THREE.Group>(null);
   const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
   const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
@@ -904,6 +925,12 @@ export function HeroFigure({
       upper.current.rotation.set(at(pose?.lean), at(pose?.twist), 0);
     if (held.current)
       held.current.rotation.x = pose?.upright ? -at(pose.weapon) : 0;
+    // The bow leaves the back only for a shot.
+    if (kind === "bow") {
+      const drawn = pose === POSES.bow;
+      if (held.current) held.current.visible = drawn;
+      if (slung.current) slung.current.visible = !drawn;
+    }
     if (flask.current)
       flask.current.visible = !!pose?.flask && (c?.t ?? 1) < 0.85;
   });
@@ -961,6 +988,11 @@ export function HeroFigure({
         {/* The upper body twists and leans from the waist in a move */}
         <group ref={upper} position={[0, 0.78, 0]}>
           <group position={[0, -0.78, 0]}>
+            {kind === "bow" ? (
+              <group ref={slung}>
+                <SlungBow />
+              </group>
+            ) : null}
             {/* A wide kushak sash under the belt, its ends at the left hip */}
             <Part
               geometry={G.box}
@@ -1267,7 +1299,7 @@ export function HeroFigure({
             <group position={[-0.32, 1.2, 0]} rotation={grip.arm}>
               <group ref={weaponArm}>
                 <Arm skin={skin} sleeve={sleeve} />
-                <group ref={held} position={HAND}>
+                <group ref={held} position={HAND} visible={kind !== "bow"}>
                   <group rotation={GRIP_ROTATION[kind]}>
                     <Weapon kind={kind} />
                   </group>
