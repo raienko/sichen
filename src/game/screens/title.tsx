@@ -15,7 +15,6 @@ import { useT } from "../i18n";
 import * as actions from "../state/actions";
 import { useGame } from "../state/store";
 import { GButton, GIcon, Label } from "../ui/kit";
-import { StitchMark } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
 /** Three live character places around the fire; the forest art has no UI baked in. */
@@ -58,7 +57,6 @@ export default function TitleScreen() {
           color={palette.ivory}
           style={styles.title}
         />
-        <StitchMark size={21} color={palette.bronze} />
       </View>
       {slots.map((slot, i) => {
         const spot = positions[i]!;
@@ -130,7 +128,6 @@ export default function TitleScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <StitchMark size={20} color={palette.ivory} />
                 <Label
                   value="+"
                   type="largeTitle"

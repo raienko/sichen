@@ -14,7 +14,8 @@ import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
 import { skillAvailability } from "../../sim/hero";
 import { offeredBy, readyFor } from "../../sim/quests";
-import { Divider, GButton, GIcon, Label, Row, Sheet } from "../../ui/kit";
+import { DialogueFrame } from "../../ui/dialogue";
+import { Divider, GButton, GIcon, Label, Row } from "../../ui/kit";
 import { palette } from "../../ui/palette";
 
 import { InventoryPanel } from "./inventory";
@@ -31,11 +32,9 @@ export function NpcPanel({
 }) {
   const { t, tr } = useT();
   const npc = getNpc(npcId);
-  // A merchant with quest business talks first; Trade opens the shop.
+  // Trade is a deliberate transition; quest updates keep this frame stable.
   const [trading, setTrading] = useState(false);
-  const business =
-    offeredBy(save.quests, npcId).length + readyFor(save.quests, npcId).length;
-  if (npc.roles.includes("merchant") && (trading || business === 0))
+  if (npc.roles.includes("merchant") && trading)
     return (
       <InventoryPanel
         save={save}
@@ -53,8 +52,13 @@ export function NpcPanel({
   const mine = teaches?.id === save.hero.classId;
 
   return (
-    <Sheet title={tr(npc.name)} icon="comment" onClose={onClose}>
-      <Label value={tr(npc.title)} type="caption1" color={palette.muted} />
+    <DialogueFrame
+      name={tr(npc.name)}
+      title={tr(npc.title)}
+      kind={npc.kind}
+      line={tr(npc.bark)}
+      onClose={onClose}
+    >
       {npc.roles.includes("merchant") ? (
         <GButton
           icon="coins"
@@ -62,14 +66,6 @@ export function NpcPanel({
           onPress={() => setTrading(true)}
         />
       ) : null}
-      {npc.bark.en ? (
-        <Label
-          value={`“${tr(npc.bark)}”`}
-          type="callout"
-          color={palette.text}
-        />
-      ) : null}
-
       {ready.map((q) => (
         <View key={q.id} style={styles.quest}>
           <Row gap={8}>
@@ -194,7 +190,7 @@ export function NpcPanel({
       !npc.roles.includes("healer") ? (
         <Label value={t("npc.nothing")} type="footnote" color={palette.faint} />
       ) : null}
-    </Sheet>
+    </DialogueFrame>
   );
 }
 
@@ -221,10 +217,17 @@ export function InteractPanel({
         q.objective.interactableId === interactableId,
     );
   return (
-    <Sheet title={thing ? tr(thing.name) : ""} icon="eye" onClose={onClose}>
+    <DialogueFrame
+      name={thing ? tr(thing.name) : ""}
+      line={
+        choiceQuest && choiceQuest.objective.type === "choice"
+          ? tr(choiceQuest.goal)
+          : undefined
+      }
+      onClose={onClose}
+    >
       {choiceQuest && choiceQuest.objective.type === "choice" ? (
         <>
-          <Label value={tr(choiceQuest.goal)} type="callout" />
           {choiceQuest.objective.options.map((o) => (
             <GButton
               key={o.id}
@@ -238,7 +241,7 @@ export function InteractPanel({
       ) : (
         <GIcon name="feather" size={28} color={palette.faint} />
       )}
-    </Sheet>
+    </DialogueFrame>
   );
 }
 

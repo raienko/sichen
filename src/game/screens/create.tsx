@@ -249,11 +249,8 @@ export default function CreateScreen({ slot }: { slot: number }) {
         </ScrollView>
         <GButton
           icon={step === "name" ? "check" : "chevron-right"}
-          ornament="edge"
+          label={step === "name" ? t("create.start") : t("create.next")}
           tone="primary"
-          accessibilityLabel={
-            step === "name" ? t("create.start") : t("battle.continue")
-          }
           disabled={step === "name" && !valid}
           onPress={next}
           style={styles.next}

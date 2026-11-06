@@ -16,7 +16,7 @@ import type { TypographyToken } from "@/features/responsive";
 import { haptics } from "@/features/haptics";
 
 import { DISPLAY_FONT } from "./fonts";
-import { OrnamentRule, StitchMark, WovenFill } from "./ornaments";
+import { OrnamentRule } from "./ornaments";
 import { palette } from "./palette";
 
 export type GameIconName = IconNameByType["FontAwesome6"];
@@ -135,7 +135,6 @@ export function GButton({
   compact,
   style,
   accessibilityLabel,
-  ornament,
 }: {
   label?: string;
   icon?: string;
@@ -145,18 +144,7 @@ export function GButton({
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
-  /** Reusable ornament treatment. Defaults follow the action tone. */
-  ornament?: "edge" | "woven" | "none";
 }) {
-  const treatment =
-    ornament ??
-    (tone === "ghost" || !label
-      ? "none"
-      : tone === "danger"
-        ? "woven"
-        : tone === "primary" || !compact
-          ? "edge"
-          : "none");
   const colors = {
     default: { bg: "#2a221b", border: palette.line, text: palette.ivory },
     primary: {
@@ -187,13 +175,7 @@ export function GButton({
         style,
       ]}
     >
-      {treatment === "woven" ? (
-        <WovenFill color={tone === "danger" ? "#d38c79" : palette.bronze} />
-      ) : null}
-      {treatment === "edge" ? (
-        <StitchMark size={compact ? 17 : 23} color={palette.bronze} />
-      ) : null}
-      {icon && treatment === "none" ? (
+      {icon ? (
         <GIcon name={icon} size={compact ? 14 : 18} color={colors.text} />
       ) : null}
       {label ? (
@@ -203,9 +185,6 @@ export function GButton({
           color={colors.text}
           style={compact ? styles.compactLabel : styles.buttonLabel}
         />
-      ) : null}
-      {icon && treatment !== "none" ? (
-        <GIcon name={icon} size={compact ? 14 : 18} color={colors.text} />
       ) : null}
     </Pressable>
   );
