@@ -29,7 +29,10 @@ import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { OrnamentRule } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
-import BattleStage, { type UnitSpot } from "../render/battle-scene";
+import BattleStage, {
+  type Acting,
+  type UnitSpot,
+} from "../render/battle-scene";
 import { arcLayout } from "../ui/arc";
 
 import { ActionPicker, ActionSlots, ActorPanel, ReadyArc } from "./battle-hud";
@@ -105,7 +108,7 @@ function usePlayback(battle: BattleSession) {
   const { t, tr } = useT();
   const [shown, setShown] = useState<BattleState>(battle.state);
   const [floaters, setFloaters] = useState<Floater[]>([]);
-  const [acting, setActing] = useState<string | null>(null);
+  const [acting, setActing] = useState<Acting | null>(null);
   const [hitAt, setHitAt] = useState<Record<string, number>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const floaterId = useRef(0);
@@ -128,7 +131,9 @@ function usePlayback(battle: BattleSession) {
         setShown(current);
         switch (e.t) {
           case "action":
-            setActing(e.actor);
+            // A fresh object each time, so the same unit acting twice in a
+            // row still plays its move twice.
+            setActing({ actor: e.actor, skill: e.skill, at: Date.now() });
             break;
           case "hit":
             float(

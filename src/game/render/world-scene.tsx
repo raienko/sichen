@@ -416,7 +416,6 @@ function Scene({ save }: { save: SaveData }) {
           <group
             key={n.npcId}
             position={[n.x * TILE, 0, n.z * TILE]}
-            rotation={[0, Math.PI, 0]}
             scale={ACTOR_SCALE}
             userData={INTERACTIVE}
             onPointerDown={(event) => {
