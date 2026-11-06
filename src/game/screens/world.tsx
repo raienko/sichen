@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { useTypography } from "@/features/responsive";
 
 import { getClass, getEnemy, getNpc, getZone } from "../data";
 import { useT } from "../i18n";
@@ -11,17 +9,14 @@ import * as actions from "../state/actions";
 import { runtime } from "../state/runtime";
 import type { SaveData } from "../state/save";
 import { store, useGame, useSave, type Panel } from "../state/store";
-import { xpToNext } from "../sim/hero";
-import { questTarget, trackedQuests } from "../sim/quests";
 import { heroStats } from "../sim/stats";
 import { useKeyboardMovement } from "../ui/input";
 import { HintCard } from "../ui/hint";
-import { arcLayout } from "../ui/arc";
 import { Glyph } from "../ui/glyphs";
 import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { LevelBadge } from "../ui/level-badge";
 import { Minimap } from "../ui/minimap";
-import { dangerColor, palette } from "../ui/palette";
+import { palette } from "../ui/palette";
 
 import { CharacterScreen } from "./panels/character";
 import { InspectPanel, MenuPanel, QuestsPanel } from "./panels/misc";
@@ -48,9 +43,6 @@ const MENU: {
   { panel: "quests", icon: "scroll", key: "menu.quests", hotkey: "KeyJ" },
   { panel: "menu", icon: "bars", key: "menu.menu", hotkey: "Escape" },
 ];
-/** The arc around the context action: everything but the system menu. */
-const ARC = MENU.filter((m) => m.panel !== "menu");
-
 /** How near, in tiles, a person, a thing or a pack offers the context action. */
 const TALK_RANGE = 2.5;
 const INSPECT_RANGE = 5;
@@ -121,24 +113,10 @@ function useNearby(save: SaveData): Nearby | null {
   return near;
 }
 
-/** Diameters of the context action and the buttons around it. */
-const CONTEXT = 68;
-const SMALL = 46;
-
-/**
- * Lower right: the context action, Inspect near a pack or Talk/Examine near
- * a person or shrine, with the panels on an arc around it, in thumb reach.
- */
+/** Lower right: the context action and one entry to the remaining panels. */
 function ActionArc({ save }: { save: SaveData }) {
   const { t } = useT();
-  const typography = useTypography();
   const near = useNearby(save);
-  const layout = useMemo(() => arcLayout(SMALL, CONTEXT, ARC.length, 290), []);
-  const at = (p: { x: number; y: number }, size: number) => ({
-    position: "absolute" as const,
-    left: layout.centre.x + p.x - size / 2,
-    top: layout.centre.y + p.y - size / 2,
-  });
   const act = () => {
     if (!near) return;
     if (near.kind === "npc") actions.openPanel({ name: "npc", npcId: near.id });
@@ -153,61 +131,34 @@ function ActionArc({ save }: { save: SaveData }) {
         ? t("hud.examine", { name: near.name })
         : t("hud.inspect", { name: near.name });
   return (
-    <View style={styles.arcWrap} pointerEvents="box-none">
-      <View
-        pointerEvents="box-none"
-        style={{ width: layout.width, height: layout.height }}
+    <Row gap={14} style={styles.footerActions}>
+      <RoundButton
+        size={52}
+        accessibilityLabel={label}
+        disabled={!near}
+        onPress={act}
+        style={styles.footerButton}
       >
-        {ARC.map((m, i) => (
-          <RoundButton
-            key={m.panel}
-            size={SMALL}
-            accessibilityLabel={t(m.key)}
-            onPress={() => actions.openPanel({ name: m.panel } as Panel)}
-            style={at(layout.points[i]!, SMALL)}
-          >
-            <GIcon name={m.icon} size={18} color={palette.ivory} />
-          </RoundButton>
-        ))}
-        <RoundButton
-          size={CONTEXT}
-          accessibilityLabel={label}
-          selected={!!near}
-          disabled={!near}
-          onPress={act}
-          style={at({ x: 0, y: 0 }, CONTEXT)}
-        >
-          {near?.kind === "pack" ? (
-            <Glyph name="eye" size={30} color={palette.ivory} />
-          ) : (
-            <GIcon name="hand" size={26} color={palette.ivory} />
-          )}
-        </RoundButton>
-      </View>
-      {/* Reserve the name row even when nothing is nearby. */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.contextNameSlot,
-          { height: typography.subheadline.lineHeight },
-        ]}
+        {near?.kind === "pack" ? (
+          <Glyph name="eye" size={31} color={palette.ivory} />
+        ) : (
+          <GIcon name="hand" size={25} color={palette.ivory} />
+        )}
+      </RoundButton>
+      <View style={styles.footerDivider} />
+      <RoundButton
+        size={52}
+        accessibilityLabel={t("menu.menu")}
+        onPress={() => actions.openPanel({ name: "menu" })}
+        style={styles.footerButton}
       >
-        {near ? (
-          <Label
-            value={near.name}
-            type="subheadline"
-            display
-            color={palette.ivory}
-            numberOfLines={1}
-            style={styles.contextName}
-          />
-        ) : null}
-      </View>
-    </View>
+        <Glyph name="menu" size={31} color={palette.ivory} weight={1.5} />
+      </RoundButton>
+    </Row>
   );
 }
 
-/** Upper left: portrait ring and level, thin bars, purse and potions. */
+/** Upper left: diamond portrait and only the three resources. */
 function HeroStatus({ save }: { save: SaveData }) {
   const { hero } = save;
   const stats = heroStats(hero);
@@ -215,57 +166,61 @@ function HeroStatus({ save }: { save: SaveData }) {
     <Row gap={10} style={styles.status}>
       <View>
         <View style={styles.portrait}>
-          <GIcon
-            name={getClass(hero.classId).icon}
-            size={24}
-            color={palette.ivory}
-          />
+          <View style={styles.portraitInner}>
+            <GIcon
+              name={getClass(hero.classId).icon}
+              size={23}
+              color={palette.ivory}
+            />
+          </View>
         </View>
         <LevelBadge level={hero.level} style={styles.portraitLevel} />
       </View>
       <View style={styles.bars}>
-        <Bar
-          value={hero.hp}
-          max={stats.maxHp}
-          color={palette.hp}
-          height={14}
-          showText
-        />
-        <Bar
-          value={hero.mana}
-          max={stats.maxMana}
-          color={palette.mana}
-          height={6}
-        />
-        <Bar
-          value={hero.stamina}
-          max={stats.maxStamina}
-          color={palette.stamina}
-          height={6}
-        />
-        <Bar
-          value={hero.xp}
-          max={xpToNext(hero.level)}
-          color={palette.xp}
-          height={3}
-        />
-        <Row gap={10}>
-          <Row gap={4}>
-            <GIcon name="coins" size={12} color={palette.gold} />
-            <Label
-              value={String(save.gold)}
-              type="caption1"
-              color={palette.gold}
-            />
-          </Row>
-          <Row gap={4}>
-            <GIcon name="flask" size={12} color={palette.hp} />
-            <Label value={String(hero.potions.hp)} type="caption1" />
-          </Row>
-          <Row gap={4}>
-            <GIcon name="vial" size={12} color={palette.mana} />
-            <Label value={String(hero.potions.mana)} type="caption1" />
-          </Row>
+        <Row gap={7}>
+          <Bar
+            value={hero.hp}
+            max={stats.maxHp}
+            color={palette.hp}
+            height={4}
+            style={styles.barTrack}
+          />
+          <Label
+            value={String(Math.round(hero.hp))}
+            type="caption2"
+            color={palette.hp}
+            style={styles.barNumber}
+          />
+        </Row>
+        <Row gap={7}>
+          <Bar
+            value={hero.mana}
+            max={stats.maxMana}
+            color={palette.mana}
+            height={4}
+            style={styles.barTrack}
+          />
+          <Label
+            value={String(Math.round(hero.mana))}
+            type="caption2"
+            color={palette.mana}
+            style={styles.barNumber}
+          />
+        </Row>
+        <Row gap={7}>
+          <Bar
+            value={hero.stamina}
+            max={stats.maxStamina}
+            color={palette.stamina}
+            height={4}
+            style={styles.barTrack}
+          />
+          <Label
+            value={String(Math.round(hero.stamina))}
+            type="caption2"
+            color={palette.stamina}
+            style={styles.barNumber}
+          />
         </Row>
       </View>
     </Row>
@@ -278,10 +233,6 @@ function Hud() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const portrait = height > width;
-  // At most one tracked objective: its glyph and count; the journal has
-  // the words.
-  const quest = trackedQuests(save.quests)[0];
-  const qs = quest ? save.quests[quest.id]! : null;
   const zone = getZone(save.world.zoneId);
   return (
     <View
@@ -300,58 +251,12 @@ function Hud() {
         <HeroStatus save={save} />
         <View pointerEvents="box-none" style={styles.topRight}>
           <View
-            style={[styles.minimap, { borderColor: dangerColor[zone.danger] }]}
-          >
-            <Minimap save={save} size={portrait ? 104 : 120} />
-          </View>
-          <View
+            style={styles.minimap}
             accessible
             accessibilityLabel={`${tr(zone.name)}. ${t(`danger.${zone.danger}`)}`}
           >
-            <Row gap={6}>
-              <GIcon
-                name={zone.danger === "green" ? "shield-halved" : "skull"}
-                size={12}
-                color={dangerColor[zone.danger]}
-              />
-              <Label
-                value={tr(zone.name)}
-                type="subheadline"
-                display
-                color={palette.ivory}
-                numberOfLines={1}
-              />
-            </Row>
+            <Minimap save={save} size={portrait ? 104 : 120} />
           </View>
-          <Row gap={8}>
-            {quest && qs ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={tr(quest.name)}
-                onPress={() => actions.openPanel({ name: "quests" })}
-                style={styles.tracker}
-              >
-                <GIcon
-                  name={qs.status === "ready" ? "check" : quest.icon}
-                  size={13}
-                  color={qs.status === "ready" ? palette.good : palette.gold}
-                />
-                {quest.objective.type === "kill" && qs.status !== "ready" ? (
-                  <Label
-                    value={`${qs.progress}/${questTarget(quest)}`}
-                    type="footnote"
-                    color={palette.ivory}
-                  />
-                ) : null}
-              </Pressable>
-            ) : null}
-            <RoundButton
-              accessibilityLabel={t("menu.menu")}
-              onPress={() => actions.openPanel({ name: "menu" })}
-            >
-              <GIcon name="bars" size={16} color={palette.ivory} />
-            </RoundButton>
-          </Row>
         </View>
       </View>
       <View pointerEvents="box-none" style={styles.bottom}>
@@ -465,38 +370,31 @@ const styles = StyleSheet.create({
   status: {
     flexShrink: 1,
     alignItems: "flex-start",
-    padding: 6,
-    paddingEnd: 12,
-    borderRadius: 36,
-    backgroundColor: "rgba(10, 8, 6, 0.4)",
+    padding: 7,
+    paddingEnd: 10,
+    backgroundColor: "rgba(8, 12, 13, 0.4)",
   },
   portrait: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: palette.ivory,
+    width: 49,
+    height: 49,
+    borderWidth: 1.5,
+    borderColor: palette.bronze,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: palette.glass,
+    transform: [{ rotate: "45deg" }],
   },
+  portraitInner: { transform: [{ rotate: "-45deg" }] },
   portraitLevel: { position: "absolute", bottom: -4, end: -6 },
-  bars: { width: 150, gap: 4, paddingTop: 2 },
+  bars: { width: 128, gap: 5 },
+  barTrack: { flex: 1 },
+  barNumber: { width: 26, textAlign: "right" },
   topRight: { alignItems: "flex-end", gap: 4 },
   minimap: {
-    borderRadius: 10,
+    borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: palette.ivory,
+    borderColor: palette.bronze,
     overflow: "hidden",
-  },
-  tracker: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 32,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    backgroundColor: palette.glass,
   },
   bottom: {
     flex: 1,
@@ -504,9 +402,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "flex-end",
   },
-  arcWrap: { alignItems: "flex-end" },
-  contextNameSlot: { width: 200, marginTop: 4, alignItems: "flex-end" },
-  contextName: { maxWidth: 200, textAlign: "center" },
+  footerActions: { alignItems: "center", padding: 3 },
+  footerButton: { borderWidth: 0, backgroundColor: "transparent" },
+  footerDivider: { width: 1, height: 30, backgroundColor: palette.bronze },
   toasts: {
     position: "absolute",
     top: 12,
@@ -522,10 +420,10 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: palette.overlay,
-    borderWidth: 1,
-    borderColor: palette.line,
+    borderRadius: 4,
+    backgroundColor: "rgba(12, 17, 19, 0.9)",
+    borderStartWidth: 2,
+    borderColor: palette.bronze,
   },
   toastGood: { borderColor: palette.good },
   toastBad: { borderColor: palette.bad },

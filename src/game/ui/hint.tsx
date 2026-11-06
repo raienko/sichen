@@ -7,6 +7,7 @@ import { useGame } from "../state/store";
 import { nextHint, type HintWhere } from "../state/tutorial";
 
 import { GButton, GIcon, Label, Row } from "./kit";
+import { OrnamentRule } from "./ornaments";
 import { palette } from "./palette";
 
 /** The current tutorial hint, in Ivan Sirko's voice, if one is due. */
@@ -39,6 +40,7 @@ export function HintCard({
       ]}
     >
       <View style={styles.card}>
+        <OrnamentRule />
         <Row gap={8}>
           <GIcon name={hint.icon} size={16} color={palette.gold} />
           <Label
@@ -77,12 +79,13 @@ const styles = StyleSheet.create({
   card: {
     maxWidth: 360,
     marginHorizontal: 16,
-    gap: 6,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: palette.gold,
-    backgroundColor: "rgba(20, 15, 10, 0.94)",
+    gap: 9,
+    padding: 16,
+    borderRadius: 6,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: palette.bronze,
+    backgroundColor: "rgba(17, 22, 23, 0.96)",
   },
   buttons: { justifyContent: "flex-end" },
 });

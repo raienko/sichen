@@ -9,7 +9,6 @@ import { useT } from "../../i18n";
 import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
 import { xpToNext } from "../../sim/hero";
-import { heroStats } from "../../sim/stats";
 import { Bar, GIcon, Label, RoundButton, Row } from "../../ui/kit";
 import { LevelBadge } from "../../ui/level-badge";
 import { palette } from "../../ui/palette";
@@ -35,13 +34,6 @@ const TABS: {
   { id: "tree", icon: "code-branch", key: "menu.tree" },
 ];
 
-/** Strength, dexterity and intellect, each with its glyph. */
-const ATTRS = [
-  { key: "str", icon: "hand-fist" },
-  { key: "dex", icon: "feather" },
-  { key: "int", icon: "book" },
-] as const;
-
 export function Workspace({
   save,
   tab,
@@ -59,24 +51,25 @@ export function Workspace({
   const { t, tr } = useT();
   const insets = useSafeAreaInsets();
   const { hero } = save;
-  const stats = heroStats(hero);
   const cls = getClass(hero.classId);
   return (
     <View
       style={[
         styles.page,
         {
-          paddingTop: insets.top + 8,
+          paddingTop: insets.top + 18,
           paddingBottom: insets.bottom + 8,
-          paddingStart: insets.left + 10,
-          paddingEnd: insets.right + 10,
+          paddingStart: insets.left + 18,
+          paddingEnd: insets.right + 18,
         },
       ]}
     >
       <Row gap={10} style={styles.header}>
         <View>
           <View style={styles.portrait}>
-            <GIcon name={cls.icon} size={22} color={palette.ivory} />
+            <View style={styles.portraitInner}>
+              <GIcon name={cls.icon} size={22} color={palette.ivory} />
+            </View>
           </View>
           <LevelBadge level={hero.level} style={styles.portraitLevel} />
         </View>
@@ -103,32 +96,7 @@ export function Workspace({
             />
           </Row>
         </View>
-        {right ?? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("menu.character")}
-            onPress={() => actions.openPanel({ name: "character" })}
-            style={styles.attrs}
-          >
-            {ATTRS.map((a) => (
-              <View key={a.key} style={styles.attr}>
-                <Row gap={3}>
-                  <GIcon name={a.icon} size={11} color={palette.muted} />
-                  <Label
-                    value={t(`attr.${a.key}`)}
-                    type="caption2"
-                    color={palette.muted}
-                  />
-                </Row>
-                <Label
-                  value={String(Math.round(stats[a.key]))}
-                  type="headline"
-                  color={palette.ivory}
-                />
-              </View>
-            ))}
-          </Pressable>
-        )}
+        {right}
       </Row>
       <View style={styles.body}>{children}</View>
       <Row gap={8} style={styles.nav}>
@@ -140,6 +108,7 @@ export function Workspace({
               accessibilityLabel={t(tb.key)}
               selected={tab === tb.id}
               onPress={() => actions.openPanel({ name: tb.id })}
+              style={styles.navButton}
             >
               <GIcon
                 name={tb.icon}
@@ -154,6 +123,7 @@ export function Workspace({
           size={54}
           accessibilityLabel={t("menu.close")}
           onPress={onClose}
+          style={styles.navButton}
         >
           <GIcon name="reply" size={20} color={palette.ivory} />
         </RoundButton>
@@ -215,28 +185,31 @@ const styles = StyleSheet.create({
   portrait: {
     width: 52,
     height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    borderColor: palette.ivory,
+    borderWidth: 1.5,
+    borderColor: palette.bronze,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: palette.glass,
+    transform: [{ rotate: "45deg" }],
   },
+  portraitInner: { transform: [{ rotate: "-45deg" }] },
   portraitLevel: { position: "absolute", bottom: -4, end: -6 },
   title: { flex: 1, gap: 4, minWidth: 0 },
-  attrs: { flexDirection: "row", gap: 10 },
-  attr: { alignItems: "center" },
   body: { flex: 1 },
   nav: { alignItems: "center" },
+  navButton: {
+    borderWidth: 0,
+    backgroundColor: "transparent",
+    boxShadow: "none",
+  },
   divider: { width: 1, height: 26, backgroundColor: palette.bronze },
   corner: { alignItems: "center", gap: 2, minWidth: 56 },
   cornerRing: {
     width: 52,
     height: 52,
-    borderRadius: 26,
-    borderWidth: 1.5,
+    borderWidth: 0,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: palette.glass,
+    backgroundColor: "transparent",
   },
 });

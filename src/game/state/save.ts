@@ -64,15 +64,15 @@ const MIGRATIONS: Record<number, Migration> = {
   }),
   // 3: packs respawn on a timer, so cleared packs carry when they fell.
   2: (old) => {
-    const world = old.world as { cleared?: string[] };
+    const world = old.world as { cleared?: string[] | ClearedPacks };
     const now = Date.now();
     return {
       ...old,
       world: {
         ...world,
-        cleared: Object.fromEntries(
-          (world.cleared ?? []).map((id) => [id, now]),
-        ),
+        cleared: Array.isArray(world.cleared)
+          ? Object.fromEntries(world.cleared.map((id) => [id, now]))
+          : (world.cleared ?? {}),
       },
     };
   },

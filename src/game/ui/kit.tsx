@@ -16,6 +16,7 @@ import type { TypographyToken } from "@/features/responsive";
 import { haptics } from "@/features/haptics";
 
 import { DISPLAY_FONT } from "./fonts";
+import { OrnamentRule, StitchMark, WovenFill } from "./ornaments";
 import { palette } from "./palette";
 
 export type GameIconName = IconNameByType["FontAwesome6"];
@@ -46,14 +47,13 @@ export function Label({
   color = palette.text,
   style,
   numberOfLines,
-  display,
 }: {
   value: string;
   type?: TypographyToken;
   color?: string;
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
-  /** Names and headings: the display serif (not numbers, see fonts.ts). */
+  /** Kept for existing callers; all game labels now use the same face. */
   display?: boolean;
 }) {
   return (
@@ -61,7 +61,7 @@ export function Label({
       value={value}
       type={type}
       numberOfLines={numberOfLines}
-      style={[{ color }, display && styles.display, style]}
+      style={[{ color }, style, styles.display]}
     />
   );
 }
@@ -135,6 +135,7 @@ export function GButton({
   compact,
   style,
   accessibilityLabel,
+  ornament,
 }: {
   label?: string;
   icon?: string;
@@ -144,16 +145,27 @@ export function GButton({
   compact?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
+  /** Reusable ornament treatment. Defaults follow the action tone. */
+  ornament?: "edge" | "woven" | "none";
 }) {
+  const treatment =
+    ornament ??
+    (tone === "ghost" || !label
+      ? "none"
+      : tone === "danger"
+        ? "woven"
+        : tone === "primary" || !compact
+          ? "edge"
+          : "none");
   const colors = {
-    default: { bg: palette.panelHi, border: palette.line, text: palette.text },
+    default: { bg: "#2a221b", border: palette.line, text: palette.ivory },
     primary: {
-      bg: palette.embroidery,
-      border: palette.gold,
-      text: palette.text,
+      bg: "#30251d",
+      border: palette.bronze,
+      text: palette.ivory,
     },
-    danger: { bg: "#3a1410", border: palette.bad, text: palette.text },
-    ghost: { bg: "transparent", border: palette.lineSoft, text: palette.muted },
+    danger: { bg: "#321a18", border: "#8b4c42", text: palette.ivory },
+    ghost: { bg: "transparent", border: "transparent", text: palette.ivory },
   }[tone];
   return (
     <Pressable
@@ -175,15 +187,25 @@ export function GButton({
         style,
       ]}
     >
-      {icon ? (
-        <GIcon name={icon} size={compact ? 13 : 15} color={colors.text} />
+      {treatment === "woven" ? (
+        <WovenFill color={tone === "danger" ? "#d38c79" : palette.bronze} />
+      ) : null}
+      {treatment === "edge" ? (
+        <StitchMark size={compact ? 17 : 23} color={palette.bronze} />
+      ) : null}
+      {icon && treatment === "none" ? (
+        <GIcon name={icon} size={compact ? 14 : 18} color={colors.text} />
       ) : null}
       {label ? (
         <Label
           value={label}
           type={compact ? "caption1" : "callout"}
           color={colors.text}
+          style={compact ? styles.compactLabel : styles.buttonLabel}
         />
+      ) : null}
+      {icon && treatment !== "none" ? (
+        <GIcon name={icon} size={compact ? 14 : 18} color={colors.text} />
       ) : null}
     </Pressable>
   );
@@ -225,7 +247,7 @@ export function Bar({
   );
 }
 
-/** A framed sheet over the world: title row, close button, scrollable body. */
+/** A dark, lightly carved popup over the world. */
 export function Sheet({
   title,
   icon,
@@ -257,8 +279,8 @@ export function Sheet({
           <Label
             value={title}
             type="headline"
-            color={palette.gold}
-            style={styles.flex}
+            color={palette.ivory}
+            style={styles.sheetTitle}
           />
           <GButton
             icon="xmark"
@@ -268,7 +290,7 @@ export function Sheet({
             accessibilityLabel="Close"
           />
         </View>
-        <View style={styles.ornament} />
+        <OrnamentRule />
         {scroll ? (
           <ScrollView contentContainerStyle={styles.sheetBody}>
             {children}
@@ -313,8 +335,10 @@ export function Divider() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  // The font file is one weight; a synthetic bold on top would smear it.
+  // The font file is one weight; synthetic bold would smear its details.
   display: { fontFamily: DISPLAY_FONT, fontWeight: "normal" },
+  buttonLabel: { fontSize: 20, lineHeight: 25 },
+  compactLabel: { fontSize: 16, lineHeight: 21 },
   round: {
     alignItems: "center",
     justifyContent: "center",
@@ -332,12 +356,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    minHeight: 40,
-    paddingHorizontal: 14,
+    minHeight: TOUCH,
+    paddingHorizontal: 16,
     borderRadius: 6,
     borderWidth: 1,
   },
-  compact: { minHeight: 30, paddingHorizontal: 9, gap: 5 },
+  compact: { minHeight: TOUCH, paddingHorizontal: 10, gap: 6 },
   bar: {
     backgroundColor: palette.night,
     borderRadius: 3,
@@ -350,7 +374,7 @@ const styles = StyleSheet.create({
   barText: { alignItems: "center" },
   sheetBackdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: palette.shade,
+    backgroundColor: "rgba(4, 7, 8, 0.72)",
     alignItems: "center",
     justifyContent: "center",
     padding: 12,
@@ -359,10 +383,10 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 560,
     maxHeight: "100%",
-    backgroundColor: palette.panel,
-    borderColor: palette.line,
+    backgroundColor: "#171a1a",
+    borderColor: palette.lineSoft,
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: "hidden",
   },
   sheetWide: { maxWidth: 900, flex: 1 },
@@ -370,27 +394,20 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     maxHeight: "45%",
     borderTopWidth: 1,
-    borderColor: palette.line,
-    backgroundColor: palette.panelHi,
+    borderColor: palette.lineSoft,
+    backgroundColor: "#1b1b19",
   },
   sheetFooterBody: { padding: 12, gap: 8 },
   sheetHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: palette.panelHi,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    backgroundColor: "transparent",
   },
-  ornament: {
-    height: 3,
-    backgroundColor: palette.embroidery,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: palette.gold,
-    opacity: 0.8,
-  },
-  sheetBody: { padding: 14, gap: 12 },
+  sheetTitle: { flex: 1, fontSize: 24, lineHeight: 29 },
+  sheetBody: { padding: 18, gap: 14 },
   row: { flexDirection: "row", alignItems: "center" },
   wrap: { flexWrap: "wrap" },
   divider: { height: 1, backgroundColor: palette.lineSoft },

@@ -111,12 +111,15 @@ function WornSlot({
       selected={selected}
       dim={!item}
       onPress={onPress}
+      style={styles.wornSlot}
     >
-      <GIcon
-        name={item ? getBase(item.baseId).icon : SLOT_ICONS[slot]}
-        size={20}
-        color={item ? palette.ivory : palette.faint}
-      />
+      <View style={styles.wornIcon}>
+        <GIcon
+          name={item ? getBase(item.baseId).icon : SLOT_ICONS[slot]}
+          size={20}
+          color={item ? palette.ivory : palette.faint}
+        />
+      </View>
       {item && item.rarity !== "normal" ? (
         <View style={[styles.rarity, { backgroundColor: color }]} />
       ) : null}
@@ -384,6 +387,14 @@ const styles = StyleSheet.create({
   top: { height: "46%" },
   half: { flex: 1 },
   equipment: { flex: 1, flexDirection: "row", gap: 8 },
+  wornSlot: {
+    borderRadius: 0,
+    borderWidth: 1,
+    borderColor: palette.lineSoft,
+    backgroundColor: "rgba(8, 12, 13, 0.48)",
+    transform: [{ rotate: "45deg" }],
+  },
+  wornIcon: { transform: [{ rotate: "-45deg" }] },
   column: { justifyContent: "space-between", paddingVertical: 2 },
   stage: { flex: 1, overflow: "hidden", borderRadius: 12 },
   details: {
@@ -411,11 +422,10 @@ const styles = StyleSheet.create({
   railItem: {
     width: 44,
     minHeight: 44,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
-  railOn: { borderWidth: 1.5, borderColor: palette.amber },
+  railOn: { borderStartWidth: 2, borderColor: palette.amber },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
   actions: { alignSelf: "flex-end" },
 });

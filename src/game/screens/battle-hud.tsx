@@ -21,6 +21,7 @@ import { arcLayout } from "../ui/arc";
 import { Glyph } from "../ui/glyphs";
 import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { LevelBadge } from "../ui/level-badge";
+import { OrnamentRule } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
 /**
@@ -416,6 +417,7 @@ export function ActionPicker({
             <GIcon name="xmark" size={16} color={palette.muted} />
           </Pressable>
         </Row>
+        <OrnamentRule />
         <View style={styles.pickerBody}>
           <View style={styles.flex}>
             <View style={styles.options}>
@@ -840,18 +842,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
-    backgroundColor: palette.shade,
+    backgroundColor: "rgba(4, 7, 8, 0.72)",
   },
   picker: {
     width: "100%",
     maxWidth: 440,
     maxHeight: "100%",
-    gap: 10,
-    padding: 14,
-    borderRadius: 12,
+    gap: 12,
+    padding: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: palette.gold,
-    backgroundColor: palette.panel,
+    borderColor: palette.lineSoft,
+    backgroundColor: "#171a1a",
   },
   pickerClose: {
     width: 30,
@@ -863,11 +865,11 @@ const styles = StyleSheet.create({
   optionIcon: {
     width: 52,
     height: 52,
-    borderRadius: 26,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: palette.line,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: palette.panelHi,
+    backgroundColor: "rgba(8, 12, 12, 0.54)",
   },
 });

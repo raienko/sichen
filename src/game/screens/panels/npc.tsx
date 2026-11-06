@@ -245,12 +245,13 @@ export function InteractPanel({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   quest: {
-    gap: 6,
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
+    gap: 9,
+    paddingHorizontal: 11,
+    paddingVertical: 12,
+    borderStartWidth: 2,
+    borderStartColor: palette.bronze,
+    borderBottomWidth: 1,
     borderColor: palette.lineSoft,
-    backgroundColor: palette.panelHi,
   },
   skillRow: {
     flexDirection: "row",

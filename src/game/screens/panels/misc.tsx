@@ -146,7 +146,11 @@ export function QuestsPanel({
             {list.map(({ quest, st }) => (
               <View
                 key={quest.id}
-                style={[styles.quest, st.status === "done" && styles.done]}
+                style={[
+                  styles.quest,
+                  st.status === "ready" && styles.questReady,
+                  st.status === "done" && styles.done,
+                ]}
               >
                 <Row gap={8}>
                   <GIcon
@@ -195,6 +199,26 @@ export function MenuPanel({
   const { locale, setPreference } = useLocale();
   return (
     <Sheet title={t("menu.menu")} icon="bars" onClose={onClose}>
+      <Row gap={8} wrap>
+        {(
+          [
+            ["inventory", "bag-shopping", "menu.inventory"],
+            ["character", "user", "menu.character"],
+            ["skills", "book-open", "menu.skills"],
+            ["tree", "sitemap", "menu.tree"],
+            ["quests", "scroll", "menu.quests"],
+          ] as const
+        ).map(([name, icon, key]) => (
+          <GButton
+            key={name}
+            icon={icon}
+            label={t(key)}
+            compact
+            onPress={() => actions.openPanel({ name })}
+          />
+        ))}
+      </Row>
+      <Divider />
       <Label value={t("menu.language")} type="caption1" color={palette.muted} />
       <Row gap={8}>
         {(["uk", "en"] as const).map((code) => (
@@ -338,12 +362,14 @@ const styles = StyleSheet.create({
   statRow: { justifyContent: "space-between" },
   group: { gap: 6 },
   quest: {
-    gap: 4,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: palette.panelHi,
-    borderWidth: 1,
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 11,
+    borderStartWidth: 2,
+    borderStartColor: palette.bronze,
+    borderBottomWidth: 1,
     borderColor: palette.lineSoft,
   },
-  done: { opacity: 0.5 },
+  questReady: { borderStartColor: palette.good },
+  done: { opacity: 0.55, borderStartColor: palette.lineSoft },
 });

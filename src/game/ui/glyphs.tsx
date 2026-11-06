@@ -7,7 +7,7 @@ import { palette } from "./palette";
  * so they read as one family next to the round buttons. Font icons cover
  * the rest until the full set is drawn.
  */
-export type GlyphName = "sabre" | "bow" | "eye" | "check";
+export type GlyphName = "sabre" | "bow" | "eye" | "check" | "menu";
 
 const PATHS: Record<GlyphName, readonly string[]> = {
   // A curved blade, a crossguard and a grip.
@@ -26,6 +26,12 @@ const PATHS: Record<GlyphName, readonly string[]> = {
   // An almond eye; the pupil is a circle below.
   eye: ["M2 12 C6 5.5 18 5.5 22 12 C18 18.5 6 18.5 2 12 Z"],
   check: ["M4 12.5 L9.5 18 L20 6.5"],
+  menu: [
+    "M12 1 L16 5 L12 9 L8 5 Z",
+    "M5 8 L9 12 L5 16 L1 12 Z",
+    "M19 8 L23 12 L19 16 L15 12 Z",
+    "M12 15 L16 19 L12 23 L8 19 Z",
+  ],
 };
 
 export function Glyph({

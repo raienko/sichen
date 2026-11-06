@@ -26,6 +26,7 @@ import { HintCard } from "../ui/hint";
 import { LevelBadge } from "../ui/level-badge";
 import { ItemRow } from "../ui/items";
 import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
+import { OrnamentRule } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
 import BattleStage, { type UnitSpot } from "../render/battle-scene";
@@ -345,6 +346,7 @@ function Results({ battle }: { battle: BattleSession }) {
           type="title2"
           color={palette.gold}
         />
+        <OrnamentRule />
         {r ? (
           <>
             <Row gap={14}>
@@ -693,19 +695,19 @@ const styles = StyleSheet.create({
   },
   resultsBackdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: palette.shade,
+    backgroundColor: "rgba(4, 7, 8, 0.72)",
     alignItems: "center",
     justifyContent: "center",
   },
   results: {
     minWidth: 280,
     maxWidth: 420,
-    gap: 8,
-    padding: 18,
+    gap: 12,
+    padding: 22,
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: palette.gold,
-    backgroundColor: palette.panel,
+    borderColor: palette.lineSoft,
+    backgroundColor: "#171a1a",
   },
 });
