@@ -6,6 +6,7 @@
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | [Vertical slice](vertical-slice.md)                         | Current MVP scope, gameplay and technical plan                                          |
 | [Design guidelines](design-guidelines.md)                   | Approved 3D art, immersive HUD and mobile/foldable interaction rules                    |
+| [Classes and ascendancies](class-ascendancies/README.md)    | Selected names, roles and illustrated character lineages                                |
 | [Seven approved illustrations](redesign-concepts/README.md) | Canonical references; battle and character/inventory use the updated low-poly style     |
 | [Battle design](combined-design.md)                         | Five action slots, tactics and curved Ready controls                                    |
 | [Character, inventory and skills](other-scenes-design.md)   | Preview overlay, bag, active loadout and passive tree                                   |
