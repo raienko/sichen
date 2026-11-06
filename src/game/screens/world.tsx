@@ -284,9 +284,28 @@ function Panels() {
   }
 }
 
-export default function WorldScreen() {
+/**
+ * The world. During a battle it stays mounted under the battle screen,
+ * hidden and not drawing (`active` false), so its 3D scene, WebGL context
+ * and compiled shaders are still there when the hero comes back.
+ */
+export default function WorldScreen({ active = true }: { active?: boolean }) {
   const save = useSave();
   const version = useGame((s) => s.worldVersion);
+  return (
+    <View
+      style={[styles.page, !active && styles.away]}
+      pointerEvents={active ? "auto" : "none"}
+      aria-hidden={!active}
+    >
+      <WorldScene save={save} version={version} paused={!active} />
+      {active ? <WorldControls /> : null}
+    </View>
+  );
+}
+
+/** The HUD, panels and keys, only while the world is on screen. */
+function WorldControls() {
   const workspace = useGame(
     (s) =>
       s.panel !== null &&
@@ -304,19 +323,19 @@ export default function WorldScreen() {
   }, []);
   useKeyboardMovement(onKey);
   return (
-    <View style={styles.page}>
-      <WorldScene save={save} version={version} />
+    <>
       {/* The workspace screens bring their own header and navigation. */}
       {workspace ? null : <Hud />}
       <HintCard where="world" />
       <Panels />
       <Toasts />
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: palette.night },
+  away: { opacity: 0 },
   flex: { flex: 1 },
   top: {
     flexDirection: "row",

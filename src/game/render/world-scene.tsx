@@ -5,7 +5,7 @@ import {
   type RootState,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import * as THREE from "three";
 
@@ -29,7 +29,15 @@ import {
 import { distance, step, walkable } from "./movement";
 import { heroOnScreen, Nature } from "./nature";
 import { TownEdge, Walls } from "./walls";
-import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
+import {
+  AdaptiveDpr,
+  ANTIALIAS,
+  sceneDpr,
+  GLFrame,
+  paceFrames,
+  useShaderWarmup,
+  WarmFade,
+} from "./native-gl";
 
 const HERO_SPEED = 4.2;
 const CHASE_SPEED = 3.3;
@@ -62,7 +70,12 @@ function cameraDistance(aspect: number): number {
   return Math.max(4.5 / (half * aspect), 5.5 / half);
 }
 
-type Props = { save: SaveData; version: number };
+type Props = {
+  save: SaveData;
+  version: number;
+  /** Kept but not drawn while a battle is on, so coming back is quick. */
+  paused?: boolean;
+};
 
 /** Reads gamepad sticks on the web; native gamepads come later. */
 function readGamepad(): { x: number; z: number } | null {
@@ -307,6 +320,10 @@ function Ground({
       rotation={[-Math.PI / 2, 0, 0]}
       // Below the sunken riverbed, so it never covers the water.
       position={[((width - 1) * TILE) / 2, -0.6, ((height - 1) * TILE) / 2]}
+      // Drawn after the faceted ground and everything else solid, so the
+      // depth test skips it wherever they already cover the screen: only
+      // the margin past the map's edge is shaded, not the whole screen twice.
+      renderOrder={1}
     >
       <planeGeometry args={[width * TILE + 40, height * TILE + 40]} />
       <meshLambertMaterial color={color} />
@@ -371,15 +388,16 @@ function walkToTap(
   if (point) runtime.moveTarget = { x: point.x / TILE, z: point.z / TILE };
 }
 
-function Scene({ save }: { save: SaveData }) {
+/**
+ * One zone. Its land, trees and buildings are built once per zone; the
+ * people, foes and hero (under `version`) start afresh after each battle.
+ */
+function Scene({ save, version }: { save: SaveData; version: number }) {
   const zone = getZone(save.world.zoneId);
   const size = useThree((s) => s.size);
   const reach = cameraDistance(size.width / Math.max(1, size.height));
   const width = zone.map[0]?.length ?? 0;
   const height = zone.map.length;
-  const packs = zone.packs.filter(
-    (p) => !p.quest && !(p.id in save.world.cleared),
-  );
   return (
     <>
       <color attach="background" args={[zone.palette.sky]} />
@@ -408,6 +426,22 @@ function Scene({ save }: { save: SaveData }) {
           />
         ) : null,
       )}
+      <Fragment key={version}>
+        <Actors save={save} />
+      </Fragment>
+      <SceneHandle />
+    </>
+  );
+}
+
+/** The zone's NPCs, quest objects, exits, packs and the hero. */
+function Actors({ save }: { save: SaveData }) {
+  const zone = getZone(save.world.zoneId);
+  const packs = zone.packs.filter(
+    (p) => !p.quest && !(p.id in save.world.cleared),
+  );
+  return (
+    <>
       {zone.npcs.map((n) => {
         const npc = getNpc(n.npcId);
         const ready = readyFor(save.quests, npc.id).length > 0;
@@ -466,7 +500,6 @@ function Scene({ save }: { save: SaveData }) {
         />
       ))}
       <Hero save={save} />
-      <SceneHandle />
     </>
   );
 }
@@ -475,12 +508,10 @@ export function startPackAttack(packId: string, x: number, z: number) {
   walkThen(x, z, () => actions.startBattle(packId));
 }
 
-export default function WorldScene({ save, version }: Props) {
-  // A new zone or a finished battle remounts the scene with fresh state.
-  const key = useMemo(
-    () => `${save.world.zoneId}:${version}`,
-    [save.world.zoneId, version],
-  );
+export default function WorldScene({ save, version, paused }: Props) {
+  // One canvas (one WebGL context, its shaders compiled once) serves every
+  // zone; a new zone remounts the scene inside it.
+  const { ready, frameloop, warmup } = useShaderWarmup();
   return (
     <View style={styles.fill}>
       <FloatingStick
@@ -488,20 +519,24 @@ export default function WorldScene({ save, version }: Props) {
         onTap={(at, frame) => walkToTap(at, frame.width, frame.height)}
       >
         <GLFrame>
-          <Canvas
-            key={key}
-            camera={{
-              fov: FOV,
-              near: 0.5,
-              far: 120,
-              position: [runtime.x * TILE, 15.5, runtime.z * TILE + 8.5],
-            }}
-            dpr={[1, 1.75]}
-            gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
-            onCreated={paceFrames}
-          >
-            <Scene save={save} />
-          </Canvas>
+          <WarmFade ready={ready}>
+            <Canvas
+              frameloop={paused ? "never" : frameloop}
+              camera={{
+                fov: FOV,
+                near: 0.5,
+                far: 120,
+                position: [runtime.x * TILE, 15.5, runtime.z * TILE + 8.5],
+              }}
+              dpr={sceneDpr()}
+              gl={{ antialias: ANTIALIAS, powerPreference: "high-performance" }}
+              onCreated={paceFrames}
+            >
+              <Scene key={save.world.zoneId} save={save} version={version} />
+              <AdaptiveDpr />
+              {warmup}
+            </Canvas>
+          </WarmFade>
         </GLFrame>
       </FloatingStick>
     </View>

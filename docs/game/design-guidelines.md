@@ -86,6 +86,8 @@ Current merchant support is selling owned loot and buying HP/mana potions. Equip
 
 ## Character, skills and passives
 
+The [class and ascendancy guide](class-ascendancies/README.md) records the selected names, roles and illustrated silhouettes for the three base classes and their six future paths.
+
 The management workspace uses three lower navigation symbols:
 
 | Symbol    | Screen                | Existing system to retain                                                        |

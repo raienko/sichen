@@ -5,7 +5,13 @@ import * as THREE from "three";
 import type { Look } from "../sim/types";
 
 import { HeroFigure, MonsterFigure } from "./art-kit";
-import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
+import {
+  ANTIALIAS,
+  GLFrame,
+  paceFrames,
+  useShaderWarmup,
+  WarmFade,
+} from "./native-gl";
 
 export type FaceSubject =
   | { hero: { look: Look; classId: string; helmet?: boolean } }
@@ -94,41 +100,45 @@ function FacePortrait({
 }) {
   const head = "hero" in subject ? HERO_HEAD : MONSTER_HEADS[subject.monster];
   const turn = 0.45 * facing;
+  const { ready, frameloop, warmup } = useShaderWarmup("demand");
   return (
     <GLFrame>
-      <Canvas
-        frameloop="demand"
-        camera={{ fov: 24, position: [0, 1.6, 3] }}
-        onCreated={(state) => {
-          paceFrames(state);
-          state.gl.setClearColor(0x000000, 0);
-        }}
-        dpr={[1, 2]}
-        gl={{ antialias: ANTIALIAS, alpha: true }}
-      >
-        <ambientLight intensity={0.95} />
-        <directionalLight position={[2 * facing, 4, 3]} intensity={2.2} />
-        <pointLight
-          position={[-1.5 * facing, 1.8, -1]}
-          intensity={4}
-          color={0xffb070}
-        />
-        <Framed head={head} turn={turn}>
-          <group rotation={[0, turn, 0]}>
-            {"hero" in subject ? (
-              <HeroFigure
-                look={subject.hero.look}
-                classId={subject.hero.classId}
-                helmet={subject.hero.helmet}
-                weapon="none"
-                speed={still}
-              />
-            ) : (
-              <MonsterFigure kind={subject.monster} speed={still} />
-            )}
-          </group>
-        </Framed>
-      </Canvas>
+      <WarmFade ready={ready}>
+        <Canvas
+          frameloop={frameloop}
+          camera={{ fov: 24, position: [0, 1.6, 3] }}
+          onCreated={(state) => {
+            paceFrames(state);
+            state.gl.setClearColor(0x000000, 0);
+          }}
+          dpr={[1, 2]}
+          gl={{ antialias: ANTIALIAS, alpha: true }}
+        >
+          <ambientLight intensity={0.95} />
+          <directionalLight position={[2 * facing, 4, 3]} intensity={2.2} />
+          <pointLight
+            position={[-1.5 * facing, 1.8, -1]}
+            intensity={4}
+            color={0xffb070}
+          />
+          <Framed head={head} turn={turn}>
+            <group rotation={[0, turn, 0]}>
+              {"hero" in subject ? (
+                <HeroFigure
+                  look={subject.hero.look}
+                  classId={subject.hero.classId}
+                  helmet={subject.hero.helmet}
+                  weapon="none"
+                  speed={still}
+                />
+              ) : (
+                <MonsterFigure kind={subject.monster} speed={still} />
+              )}
+            </group>
+          </Framed>
+          {warmup}
+        </Canvas>
+      </WarmFade>
     </GLFrame>
   );
 }

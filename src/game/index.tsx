@@ -45,7 +45,12 @@ export default function Game() {
     <View style={styles.root}>
       {scene.name === "title" ? <TitleScreen /> : null}
       {scene.name === "create" ? <CreateScreen slot={scene.slot} /> : null}
-      {scene.name === "world" ? <WorldScreen /> : null}
+      {/* The world stays mounted, hidden, under a battle (see WorldScreen). */}
+      {scene.name === "world" || (scene.name === "battle" && hasBattle) ? (
+        <View style={StyleSheet.absoluteFill}>
+          <WorldScreen active={scene.name === "world"} />
+        </View>
+      ) : null}
       {scene.name === "battle" && hasBattle ? <BattleScreen /> : null}
       {scene.name === "death" ? (
         <DeathScreen cards={scene.cards} picked={scene.picked} />

@@ -5,6 +5,7 @@ import * as THREE from "three";
 import type { Look } from "../sim/types";
 import { HAIR_COLORS, SKIN_TONES } from "../ui/palette";
 
+import { baked, useMarkMoving } from "./bake";
 import { CY, FACE, HEADS } from "./head-mesh";
 
 /**
@@ -113,6 +114,7 @@ function useWalk(
   const freeArm = useRef<THREE.Group>(null);
   const weaponArm = useRef<THREE.Group>(null);
   const phase = useRef(0);
+  useMarkMoving(body, left, right, freeArm, weaponArm);
   useFrame(({ clock }, dt) => {
     const s = speed();
     const moving = s > 0.05;
@@ -1512,7 +1514,7 @@ export type Outfit = {
  * colour, a black belt with a red sash and dark boots, the oseledets lock on
  * a shaved head; or a kozachka in a skirt, red boots and a vinok.
  */
-export function HeroFigure({
+function HeroFigureModel({
   look,
   classId,
   weapon,
@@ -1548,6 +1550,7 @@ export function HeroFigure({
   const freeAcross = useRef<THREE.Group>(null);
   const held = useRef<THREE.Group>(null);
   const flask = useRef<THREE.Group>(null);
+  useMarkMoving(upper, freeAcross, held, flask);
   const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
   const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
   const woman = look.body === "kozachka";
@@ -2733,7 +2736,7 @@ export function QuestMarker({ ready }: { ready: boolean }) {
 
 // ---------------------------------------------------------------- monsters
 
-export function MonsterFigure({
+function MonsterFigureModel({
   kind,
   speed,
 }: {
@@ -3194,7 +3197,7 @@ function SaltCart() {
   );
 }
 
-export function InteractableFigure({ kind }: { kind: string }) {
+function InteractableFigureModel({ kind }: { kind: string }) {
   if (kind === "salt_cart") {
     return (
       <group>
@@ -3949,7 +3952,7 @@ function Stall() {
   );
 }
 
-function Buildings({ map }: { map: readonly string[] }) {
+function BuildingsModel({ map }: { map: readonly string[] }) {
   const blocks = useMemo(() => buildingBlocks(map), [map]);
   const { singles, gate } = useMemo(() => {
     const singles: { ch: string; x: number; z: number }[] = [];
@@ -4049,3 +4052,14 @@ export function Tiles({
     </>
   );
 }
+
+// ---------------------------------------------------------------- batching
+
+/**
+ * The figures and buildings, each drawn as a few batched meshes rather than
+ * one per primitive (see bake.tsx). Rebuilt when a prop changes.
+ */
+export const HeroFigure = baked(HeroFigureModel);
+export const MonsterFigure = baked(MonsterFigureModel);
+export const InteractableFigure = baked(InteractableFigureModel);
+const Buildings = baked(BuildingsModel);

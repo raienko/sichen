@@ -15,7 +15,16 @@ import {
   type HeroMove,
 } from "./art-kit";
 import { heroOnScreen } from "./nature";
-import { ANTIALIAS, GL_SCALE, GLFrame, paceFrames } from "./native-gl";
+import {
+  AdaptiveDpr,
+  ANTIALIAS,
+  sceneDpr,
+  GL_SCALE,
+  GLFrame,
+  paceFrames,
+  useShaderWarmup,
+  WarmFade,
+} from "./native-gl";
 
 /**
  * The battle in 3D: the world's own figures on two rows of three a side,
@@ -329,49 +338,57 @@ export default function BattleStage({
   useEffect(() => {
     heroOnScreen.uHero.value.set(-1e4, -1e4, 0);
   }, []);
+  // The painted backdrop shows at once; the fighters fade in over it once
+  // their shaders are ready, rather than the first frame stalling.
+  const { ready, frameloop, warmup } = useShaderWarmup();
   return (
     <GLFrame>
-      <Canvas
-        camera={{ fov: 38, near: 0.5, far: 90, position: [3, 7, 14] }}
-        dpr={[1, 1.75]}
-        gl={{ antialias: ANTIALIAS, alpha: true }}
-        onCreated={(state) => {
-          paceFrames(state);
-          state.gl.setClearColor(0x000000, 0);
-        }}
-      >
-        {/* The world's light: a warm low sun and a cool sky fill. */}
-        <ambientLight intensity={0.45} color={0xffe8c8} />
-        <hemisphereLight args={[0xbcd2ff, 0x3a3020, 1.2]} />
-        <directionalLight
-          position={[-20, 30, 10]}
-          intensity={2.4}
-          color={0xffd9a0}
-        />
-        <fog
-          attach="fog"
-          args={[zone.palette.fog, distance + 6, distance + 34]}
-        />
-        <Arena zone={zone} seed={arenaSeed} centreX={SLOT_WIDTH} />
-        {actors.map((a) => (
-          <Fighter
-            key={a.id}
-            actor={a}
-            hero={hero}
-            motion={{
-              acting: motion.acting?.actor === a.id ? motion.acting : null,
-              hitAt: motion.hitAt[a.id],
-            }}
-            highlight={highlights[a.id]}
+      <WarmFade ready={ready}>
+        <Canvas
+          frameloop={frameloop}
+          camera={{ fov: 38, near: 0.5, far: 90, position: [3, 7, 14] }}
+          dpr={sceneDpr()}
+          gl={{ antialias: ANTIALIAS, alpha: true }}
+          onCreated={(state) => {
+            paceFrames(state);
+            state.gl.setClearColor(0x000000, 0);
+          }}
+        >
+          {/* The world's light: a warm low sun and a cool sky fill. */}
+          <ambientLight intensity={0.45} color={0xffe8c8} />
+          <hemisphereLight args={[0xbcd2ff, 0x3a3020, 1.2]} />
+          <directionalLight
+            position={[-20, 30, 10]}
+            intensity={2.4}
+            color={0xffd9a0}
           />
-        ))}
-        <Rig
-          actors={actors}
-          band={band}
-          onProject={onProject}
-          onDistance={setDistance}
-        />
-      </Canvas>
+          <fog
+            attach="fog"
+            args={[zone.palette.fog, distance + 6, distance + 34]}
+          />
+          <Arena zone={zone} seed={arenaSeed} centreX={SLOT_WIDTH} />
+          {actors.map((a) => (
+            <Fighter
+              key={a.id}
+              actor={a}
+              hero={hero}
+              motion={{
+                acting: motion.acting?.actor === a.id ? motion.acting : null,
+                hitAt: motion.hitAt[a.id],
+              }}
+              highlight={highlights[a.id]}
+            />
+          ))}
+          <AdaptiveDpr />
+          <Rig
+            actors={actors}
+            band={band}
+            onProject={onProject}
+            onDistance={setDistance}
+          />
+          {warmup}
+        </Canvas>
+      </WarmFade>
     </GLFrame>
   );
 }
