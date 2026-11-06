@@ -1033,61 +1033,62 @@ function Weapon({ kind }: { kind: string }) {
         </group>
       );
     case "pistol":
-      // A flintlock: the barrel along +y over a wooden fore-stock, the lock
-      // and cock on the side, the butt bending down into the fist with a
-      // brass cap.
+      // A flintlock gripped like a pistol: the butt runs down and a little
+      // back through the fist (+z is down when it is aimed), the barrel over
+      // the fist on its wooden stock, the lock and cock on the side above
+      // the grip, a brass cap at the butt and a guard over the trigger.
       return (
         <group>
           <Part
-            geometry={G.cyl}
-            color={0x3a3a40}
-            position={[0, 0.22, 0.035]}
-            scale={[0.04, 0.38, 0.04]}
-          />
-          <Part
-            geometry={G.cyl}
-            color={HERO.brass}
-            position={[0, 0.41, 0.035]}
-            scale={[0.048, 0.025, 0.048]}
-          />
-          <Part
             geometry={G.box}
             color={0x4a2c18}
-            position={[0, 0.16, 0.0]}
-            scale={[0.04, 0.3, 0.035]}
-          />
-          <Part
-            geometry={G.box}
-            color={0x8a8a92}
-            position={[0.025, 0.04, 0.02]}
-            scale={[0.012, 0.08, 0.04]}
-          />
-          <Part
-            geometry={G.box}
-            color={0x5a5a62}
-            position={[0.03, 0.08, 0.05]}
-            rotation={[0.5, 0, 0]}
-            scale={[0.01, 0.04, 0.015]}
-          />
-          <Part
-            geometry={G.box}
-            color={0x4a2c18}
-            position={[0, -0.03, -0.035]}
-            rotation={[0.55, 0, 0]}
-            scale={[0.045, 0.16, 0.055]}
+            position={[0, -0.03, 0.04]}
+            rotation={[-0.38, 0, 0]}
+            scale={[0.042, 0.06, 0.17]}
           />
           <Part
             geometry={G.sphere}
             color={HERO.brass}
-            position={[0, -0.1, -0.075]}
-            scale={[0.06, 0.06, 0.07]}
+            position={[0, -0.065, 0.125]}
+            scale={[0.055, 0.06, 0.05]}
+          />
+          <Part
+            geometry={G.box}
+            color={0x4a2c18}
+            position={[0, 0.13, -0.05]}
+            scale={[0.042, 0.3, 0.036]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={0x3a3a40}
+            position={[0, 0.19, -0.075]}
+            scale={[0.036, 0.38, 0.036]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={HERO.brass}
+            position={[0, 0.375, -0.075]}
+            scale={[0.044, 0.025, 0.044]}
+          />
+          <Part
+            geometry={G.box}
+            color={0x8a8a92}
+            position={[0.024, 0.02, -0.055]}
+            scale={[0.012, 0.08, 0.035]}
+          />
+          <Part
+            geometry={G.box}
+            color={0x5a5a62}
+            position={[0.03, -0.02, -0.085]}
+            rotation={[-0.5, 0, 0]}
+            scale={[0.01, 0.04, 0.015]}
           />
           <Part
             geometry={G.torus}
             color={HERO.brass}
-            position={[0, 0.015, 0.0]}
-            rotation={[0, Math.PI / 2, Math.PI]}
-            scale={[0.08, 0.08, 0.3]}
+            position={[0, 0.06, -0.035]}
+            rotation={[Math.PI / 2, Math.PI / 2, 0]}
+            scale={[0.06, 0.06, 0.3]}
           />
         </group>
       );

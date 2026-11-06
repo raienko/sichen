@@ -647,7 +647,9 @@ export function ReadyArc({
         onPress={onReady}
         style={[at({ x: 0, y: 0 }, ready), styles.ready]}
       >
-        <Svg width={ready} height={ready} style={StyleSheet.absoluteFill}>
+        {/* Absolute children sit inside the button's border, so the ring
+        is pulled back out by its width to share the button's centre. */}
+        <Svg width={ready} height={ready} style={styles.readyRing}>
           <Circle
             cx={ready / 2}
             cy={ready / 2}
@@ -673,6 +675,8 @@ export function ReadyArc({
 }
 
 const GLASS = "rgba(18, 14, 10, 0.82)";
+/** The ready button's ivory border, in points. */
+const READY_BORDER = 2;
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
@@ -738,7 +742,12 @@ const styles = StyleSheet.create({
     borderColor: palette.bronze,
   },
   pipOn: { backgroundColor: palette.amber, borderColor: palette.amber },
-  ready: { borderWidth: 2, gap: 0 },
+  ready: { borderWidth: READY_BORDER, gap: 0 },
+  readyRing: {
+    position: "absolute",
+    top: -READY_BORDER,
+    left: -READY_BORDER,
+  },
   slotCost: {
     position: "absolute",
     top: -3,
