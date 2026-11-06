@@ -166,9 +166,9 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   spear: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.12] },
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
-  // The bow arm hangs a little forward of the body. This is the bow as it
-  // is drawn, upright; at rest it lies level in the fist (see BOW_IDLE).
-  bow: { arm: [-0.45, 0, -0.15], aim: [0, 1, 0] },
+  // The bow arm hangs at the side. This is the bow as it is drawn,
+  // upright; at rest it is tilted low in the fist (see BOW_IDLE).
+  bow: { arm: [-0.1, 0, -0.18], aim: [0, 1, 0] },
   /** Empty hands: the arm hangs like the other one. */
   none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
@@ -321,8 +321,8 @@ const POSES = {
   bow: {
     weapon: [
       [0, 0],
-      [0.3, -1.05],
-      [0.75, -1.05],
+      [0.3, -1.35],
+      [0.75, -1.35],
       [1, 0],
     ],
     free: [
@@ -432,18 +432,20 @@ const POSES = {
 } satisfies Record<string, Pose>;
 
 /**
- * The bow at rest, as a turn of the hand's frame: level across the front
- * of the thighs, limbs left and right, the string forward and the belly
- * to the body, so neither limb crosses it. Built from the bow's world
- * turn (Rz -90° lays the limbs along x, Rx 180° turns the belly back),
- * moved into the resting arm's frame and taken back off the drawn grip.
+ * The bow at rest, as a turn of the hand's frame: low at the side in the
+ * hanging hand, tilted about 50° from upright (upper limb forward and up,
+ * lower limb back past the leg, belly forward and down, string behind
+ * the arm) and turned outwards so the lower limb passes behind the legs,
+ * clear of the arm and the body, and the bow reads from the front.
+ * Built from the bow's world turn, moved into the resting arm's frame
+ * and taken back off the drawn grip.
  */
 const BOW_IDLE = (() => {
   const arm = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(...GRIPS.bow!.arm),
   );
   const world = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(Math.PI, 0, -Math.PI / 2),
+    new THREE.Euler(0.87, -0.55, 0, "YXZ"),
   );
   const drawn = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(...GRIP_ROTATION.bow!),
