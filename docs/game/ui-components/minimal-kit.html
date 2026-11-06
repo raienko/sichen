@@ -5,7 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sichen · Minimal UI study</title>
     <style>
-      @font-face { font-family: Zakon; src: url("../../../src/game/assets/Zakon-Regular.ttf") format("truetype"); font-style: normal; font-weight: 400; font-display: swap; }
+      @font-face {
+        font-family: Zakon;
+        src: url("../../../src/game/assets/Zakon-Regular.ttf")
+          format("truetype");
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+      }
       :root {
         color-scheme: dark;
         --night: #0d0b09;
@@ -23,294 +30,1570 @@
         --mana: #4f7f9b;
         --stamina: #b39556;
       }
-      * { box-sizing: border-box; }
-      body { margin: 0; background: #090d0e; color: var(--text); font-family: system-ui, -apple-system, Segoe UI, sans-serif; }
-      button, input { font: inherit; }
-      button { cursor: pointer; }
-      button:focus-visible, input:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
-      .icon { width: 22px; height: 22px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-      .icon.sm { width: 17px; height: 17px; }
-      .icon.lg { width: 29px; height: 29px; }
-      .hidden { display: none !important; }
-      .workspace { max-width: 1540px; margin: 0 auto; padding: 24px 28px 30px; }
-      .workbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 0 2px 20px; }
-      .brand { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
-      .brand strong { font-family: Zakon, Georgia, serif; font-size: 31px; letter-spacing: .08em; font-weight: 400; }
-      .brand span { color: #9b9c92; font-size: 13px; letter-spacing: .08em; white-space: nowrap; }
-      .view-switch { display: flex; align-items: center; gap: 4px; }
-      .view-switch button { min-height: 42px; padding: 8px 14px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #999a90; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
-      .view-switch button.active { color: var(--ivory); border-color: var(--bronze); }
-      .view-switch button:hover { color: var(--ivory); }
-      .stage { position: relative; min-height: 790px; overflow: hidden; isolation: isolate; background: radial-gradient(ellipse at 50% 35%, #253039 0%, #141d21 40%, #0c1215 72%, #090d0f 100%); }
-      .stage::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .65; background: linear-gradient(90deg, #080c0f 0%, transparent 25%, transparent 75%, #080c0f 100%); }
-      .stage::after { content: ""; position: absolute; inset: auto -10% -70px; height: 36%; z-index: -1; background: radial-gradient(ellipse at 50% 35%, rgba(127,68,38,.22), transparent 52%), linear-gradient(to bottom, transparent, #090d0f 88%); }
-      .forest { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .44; pointer-events: none; z-index: -1; }
-      .tiny-label { font-size: 11px; letter-spacing: .17em; text-transform: uppercase; color: #9b9b8c; }
-      .screen { display: none; position: absolute; inset: 0; }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #090d0e;
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          sans-serif;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 4px;
+      }
+      .icon {
+        width: 22px;
+        height: 22px;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .icon.sm {
+        width: 17px;
+        height: 17px;
+      }
+      .icon.lg {
+        width: 29px;
+        height: 29px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .workspace {
+        max-width: 1540px;
+        margin: 0 auto;
+        padding: 24px 28px 30px;
+      }
+      .workbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 0 2px 20px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        min-width: 0;
+      }
+      .brand strong {
+        font-family: Zakon, Georgia, serif;
+        font-size: 31px;
+        letter-spacing: 0.08em;
+        font-weight: 400;
+      }
+      .brand span {
+        color: #9b9c92;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+      }
+      .view-switch {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .view-switch button {
+        min-height: 42px;
+        padding: 8px 14px;
+        border: 0;
+        border-bottom: 1px solid transparent;
+        background: transparent;
+        color: #999a90;
+        font-size: 13px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .view-switch button.active {
+        color: var(--ivory);
+        border-color: var(--bronze);
+      }
+      .view-switch button:hover {
+        color: var(--ivory);
+      }
+      .stage {
+        position: relative;
+        min-height: 790px;
+        overflow: hidden;
+        isolation: isolate;
+        background: radial-gradient(
+          ellipse at 50% 35%,
+          #253039 0%,
+          #141d21 40%,
+          #0c1215 72%,
+          #090d0f 100%
+        );
+      }
+      .stage::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        opacity: 0.65;
+        background: linear-gradient(
+          90deg,
+          #080c0f 0%,
+          transparent 25%,
+          transparent 75%,
+          #080c0f 100%
+        );
+      }
+      .stage::after {
+        content: "";
+        position: absolute;
+        inset: auto -10% -70px;
+        height: 36%;
+        z-index: -1;
+        background:
+          radial-gradient(
+            ellipse at 50% 35%,
+            rgba(127, 68, 38, 0.22),
+            transparent 52%
+          ),
+          linear-gradient(to bottom, transparent, #090d0f 88%);
+      }
+      .forest {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.44;
+        pointer-events: none;
+        z-index: -1;
+      }
+      .tiny-label {
+        font-size: 11px;
+        letter-spacing: 0.17em;
+        text-transform: uppercase;
+        color: #9b9b8c;
+      }
+      .screen {
+        display: none;
+        position: absolute;
+        inset: 0;
+      }
       .stage[data-view="components"] .screen-components,
       .stage[data-view="creation"] .screen-creation,
-      .stage[data-view="inventory"] .screen-inventory { display: block; }
-      .scene-title { position: absolute; top: 38px; left: 48px; z-index: 2; }
-      .scene-title h1 { margin: 8px 0 0; font: 400 clamp(28px, 3vw, 45px)/1.06 Zakon, Georgia, serif; letter-spacing: .015em; }
-      .scene-title p { margin: 11px 0 0; font-size: 13px; color: #aaafa8; }
-      .ui-button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 10px 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-hi); color: var(--ivory); transition: background .18s, border-color .18s, transform .18s; white-space: nowrap; }
-      .ui-button:hover { border-color: var(--bronze); background: #30271f; }
-      .ui-button:active { transform: translateY(1px); }
-      .ui-button.primary { border-color: var(--bronze); background: #30251d; }
-      .ui-button.ghost { border-color: transparent; background: transparent; }
-      .ui-button.danger { border-color: #8b4c42; background: #321a18; }
-      .ui-button:disabled { opacity: .42; cursor: default; }
-      .ui-button.icon-only { width: 44px; padding: 0; }
-      .ui-button.ornamented { position: relative; overflow: hidden; isolation: isolate; font-family: Zakon, Georgia, serif; font-size: 18px; letter-spacing: .025em; }
-      .ui-button.ornamented > :not(.button-pattern) { position: relative; z-index: 1; }
-      .button-ornament { width: 23px; height: 23px; flex: none; color: #caa16a; fill: none; stroke: currentColor; stroke-width: 1.25; stroke-linecap: square; stroke-linejoin: miter; }
-      .button-ornament.mirror { transform: scaleX(-1); }
-      .ui-button.danger .button-ornament { color: #bd7d68; }
-      .button-pattern { position: absolute; inset: 0; width: 100%; height: 100%; color: #c8a775; opacity: .16; pointer-events: none; }
-      .ui-button.danger .button-pattern { color: #d38c79; opacity: .12; }
-      .ui-button.ornament-fill { padding-inline: 23px; }
-      .ui-button.ornament-fill .button-label { padding-inline: 8px; background: linear-gradient(90deg, transparent, rgba(33,24,19,.8) 20%, rgba(33,24,19,.8) 80%, transparent); }
-      .ui-button.ornamented.icon-only .button-pattern { opacity: .3; }
-      .name-field { display: flex; align-items: center; gap: 6px; min-height: 46px; }
-      .name-field .field-core { display: flex; align-items: center; min-height: 46px; border: 1px solid var(--line); border-radius: 6px; background: rgba(31,25,20,.86); }
-      .name-field .field-core::before { content: ""; width: 7px; height: 7px; margin-left: 15px; border: 1px solid var(--bronze); transform: rotate(45deg); }
-      .name-field input { width: 100%; min-width: 0; height: 44px; padding: 0 16px; border: 0; outline: none; background: transparent; color: var(--ivory); font: 25px Georgia, serif; text-align: center; }
-      .name-field .field-core:focus-within { border-color: var(--amber); }
-      .name-field .field-core:focus-within::before { border-color: var(--amber); }
-      .choice-row { display: flex; align-items: center; gap: 26px; }
-      .choice { position: relative; display: grid; place-items: center; width: 56px; height: 56px; border: 0; background: transparent; color: #a7a8a0; }
-      .choice::before { content: ""; position: absolute; inset: 9px; border: 1px solid #7f796b; transform: rotate(45deg); }
-      .choice[aria-pressed="true"] { color: var(--ivory); }
-      .choice[aria-pressed="true"]::before { border-color: var(--amber); box-shadow: 0 0 12px rgba(240,160,64,.18); }
-      .choice:hover::before { border-color: var(--bronze); }
-      .choice svg { position: relative; z-index: 1; }
-      .meter-group { display: flex; align-items: center; gap: 16px; }
-      .avatar { display: grid; place-items: center; width: 69px; height: 69px; border: 1px solid var(--bronze); transform: rotate(45deg); background: rgba(31,25,20,.6); }
-      .avatar svg { width: 34px; height: 34px; transform: rotate(-45deg); color: var(--ivory); }
-      .meters { display: grid; gap: 10px; width: 270px; }
-      .meter { display: grid; grid-template-columns: 1fr 33px; align-items: center; gap: 9px; font: 17px Georgia, serif; }
-      .track { position: relative; display: block; height: 4px; background: rgba(173,169,145,.27); }
-      .fill { display: block; height: 100%; }
-      .meter.hp .fill { width: 78%; background: var(--hp); }
-      .meter.mana .fill { width: 49%; background: var(--mana); }
-      .meter.stamina .fill { width: 66%; background: var(--stamina); }
-      .meter .number { text-align: right; color: var(--ivory); }
-      .item-row { display: flex; gap: 12px; }
-      .item-tile { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid #77634d; border-radius: 6px; background: rgba(13,11,9,.64); color: var(--ivory); }
-      .item-tile.selected { border: 2px solid var(--amber); }
-      .item-tile.empty { border-color: var(--line-soft); color: #786d60; }
-      .item-tile:hover { border-color: var(--bronze); }
-      .item-tile .icon { width: 25px; height: 25px; }
-      .footer-actions { display: flex; align-items: center; gap: 22px; }
-      .footer-actions::before { content: ""; display: none; }
-      .footer-actions .separator { width: 1px; height: 31px; background: var(--bronze); opacity: .7; }
-      .footer-actions button { display: grid; place-items: center; width: 48px; height: 48px; border: 0; background: transparent; color: var(--ivory); }
-      .footer-actions button:hover { color: var(--amber); }
-      .footer-actions .icon { width: 30px; height: 30px; }
-      .library-grid { position: absolute; inset: 154px 58px 70px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 160px 180px 150px; column-gap: 80px; row-gap: 17px; align-items: start; }
-      .library-sample { min-width: 0; padding: 0 0 0 4px; }
-      .library-sample .tiny-label { display: block; margin-bottom: 20px; }
-      .library-sample .sample-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .library-sample .sample-line .name-field { width: min(100%, 390px); }
-      .library-sample .sample-line .field-core { flex: 1; }
-      .library-sample .item-row { margin-top: 3px; }
-      .library-note { position: absolute; right: 58px; bottom: 35px; color: #8f978f; font-size: 12px; letter-spacing: .04em; }
-      .hero-art { position: absolute; left: 50%; bottom: -21px; width: clamp(245px, 30vw, 400px); height: auto; transform: translateX(-50%); filter: brightness(.74) saturate(.75) drop-shadow(0 24px 30px rgba(0,0,0,.45)); pointer-events: none; }
-      .stage[data-view="creation"] .hero-art { width: clamp(250px, 29vw, 385px); }
-      .stage[data-view="inventory"] .hero-art { width: clamp(240px, 27vw, 365px); }
-      .creation-top { position: absolute; top: 40px; right: 46px; display: flex; align-items: center; gap: 11px; color: #aaa99b; }
-      .creation-top .step-count { font: 17px Georgia, serif; color: var(--ivory); }
-      .creation-nav { position: absolute; left: 50%; bottom: 26px; z-index: 4; display: flex; gap: 14px; transform: translateX(-50%); }
-      .creation-nav button { display: grid; place-items: center; width: 48px; height: 48px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: #a49b89; }
-      .creation-nav button.active { color: var(--amber); border-color: var(--amber); }
-      .creation-nav .icon { width: 25px; height: 25px; }
-      .creation-controls { position: absolute; left: 50%; bottom: 88px; z-index: 3; min-width: 310px; display: grid; justify-items: center; gap: 15px; transform: translateX(-50%); }
-      .creation-controls .name-field { width: min(365px, 75vw); }
-      .creation-controls .name-field .field-core { flex: 1; }
-      .control-group { display: none; justify-items: center; gap: 14px; }
-      .control-group.active { display: grid; }
-      .control-group .subtle { color: var(--ivory); font: 20px Georgia, serif; }
-      .swatches { display: flex; align-items: center; gap: 16px; }
-      .swatch { width: 28px; height: 28px; border: 1px solid var(--bronze); border-radius: 50%; }
-      .swatch.selected { outline: 2px solid var(--amber); outline-offset: 4px; }
-      .inventory-title { position: absolute; top: 40px; left: 46px; }
-      .inventory-title h1 { margin: 8px 0 0; font: 42px Zakon, Georgia, serif; }
-      .equipment { position: absolute; left: 50%; top: 42%; width: min(700px, 77%); height: 480px; transform: translate(-50%, -37%); pointer-events: none; }
-      .equipment .slot { position: absolute; display: grid; place-items: center; width: 63px; height: 63px; border: 1px solid #746956; background: rgba(11,15,16,.54); transform: rotate(45deg); color: var(--ivory); pointer-events: auto; }
-      .equipment .slot:hover { border-color: var(--amber); }
-      .equipment .slot.selected { border-color: var(--amber); }
-      .equipment .slot .icon { transform: rotate(-45deg); width: 27px; height: 27px; }
-      .equipment .slot.left1 { left: 3%; top: 18%; }.equipment .slot.left2 { left: 8%; top: 56%; }
-      .equipment .slot.right1 { right: 3%; top: 18%; }.equipment .slot.right2 { right: 8%; top: 56%; }
-      .equipment .slot.bottom1 { left: 30%; bottom: 0; }.equipment .slot.bottom2 { right: 30%; bottom: 0; }
-      .inventory-footer { position: absolute; right: 48px; bottom: 43px; }
-      .inventory-count { position: absolute; top: 48px; right: 49px; font: 18px Georgia, serif; color: var(--ivory); }
-      .modal-layer { position: absolute; inset: 0; z-index: 10; display: none; place-items: center; background: rgba(0,0,0,.58); }
-      .modal-layer.open { display: grid; }
-      .sheet { width: min(420px, calc(100% - 40px)); border: 1px solid var(--line); border-radius: 9px; background: var(--panel); box-shadow: 0 22px 80px rgba(0,0,0,.4); }
-      .sheet-head { display: flex; align-items: center; gap: 12px; min-height: 51px; padding: 8px 12px 8px 17px; background: var(--panel-hi); border-bottom: 1px solid var(--line); }
-      .sheet-head .icon { color: var(--bronze); }.sheet-head strong { flex: 1; font: 21px Georgia, serif; }
-      .sheet-body { padding: 20px; color: #c1b5a0; font-size: 14px; line-height: 1.55; }.sheet-body p { margin: 0 0 15px; }
-      .sheet-body .item-row { margin: 16px 0; }
-      .outside-note { display: flex; justify-content: space-between; gap: 18px; padding: 14px 3px 0; font-size: 12px; color: #8d948f; }
+      .stage[data-view="inventory"] .screen-inventory {
+        display: block;
+      }
+      .scene-title {
+        position: absolute;
+        top: 38px;
+        left: 48px;
+        z-index: 2;
+      }
+      .scene-title h1 {
+        margin: 8px 0 0;
+        font:
+          400 clamp(28px, 3vw, 45px)/1.06 Zakon,
+          Georgia,
+          serif;
+        letter-spacing: 0.015em;
+      }
+      .scene-title p {
+        margin: 11px 0 0;
+        font-size: 13px;
+        color: #aaafa8;
+      }
+      .ui-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 10px 18px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel-hi);
+        color: var(--ivory);
+        transition:
+          background 0.18s,
+          border-color 0.18s,
+          transform 0.18s;
+        white-space: nowrap;
+      }
+      .ui-button:hover {
+        border-color: var(--bronze);
+        background: #30271f;
+      }
+      .ui-button:active {
+        transform: translateY(1px);
+      }
+      .ui-button.primary {
+        border-color: var(--bronze);
+        background: #30251d;
+      }
+      .ui-button.ghost {
+        border-color: transparent;
+        background: transparent;
+      }
+      .ui-button.danger {
+        border-color: #8b4c42;
+        background: #321a18;
+      }
+      .ui-button:disabled {
+        opacity: 0.42;
+        cursor: default;
+      }
+      .ui-button.icon-only {
+        width: 44px;
+        padding: 0;
+      }
+      .ui-button.ornamented {
+        position: relative;
+        overflow: hidden;
+        isolation: isolate;
+        font-family: Zakon, Georgia, serif;
+        font-size: 18px;
+        letter-spacing: 0.025em;
+      }
+      .ui-button.ornamented > :not(.button-pattern) {
+        position: relative;
+        z-index: 1;
+      }
+      .button-ornament {
+        width: 23px;
+        height: 23px;
+        flex: none;
+        color: #caa16a;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.25;
+        stroke-linecap: square;
+        stroke-linejoin: miter;
+      }
+      .button-ornament.mirror {
+        transform: scaleX(-1);
+      }
+      .ui-button.danger .button-ornament {
+        color: #bd7d68;
+      }
+      .button-pattern {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        color: #c8a775;
+        opacity: 0.16;
+        pointer-events: none;
+      }
+      .ui-button.danger .button-pattern {
+        color: #d38c79;
+        opacity: 0.12;
+      }
+      .ui-button.ornament-fill {
+        padding-inline: 23px;
+      }
+      .ui-button.ornament-fill .button-label {
+        padding-inline: 8px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(33, 24, 19, 0.8) 20%,
+          rgba(33, 24, 19, 0.8) 80%,
+          transparent
+        );
+      }
+      .ui-button.ornamented.icon-only .button-pattern {
+        opacity: 0.3;
+      }
+      .name-field {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 46px;
+      }
+      .name-field .field-core {
+        display: flex;
+        align-items: center;
+        min-height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(31, 25, 20, 0.86);
+      }
+      .name-field .field-core::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        margin-left: 15px;
+        border: 1px solid var(--bronze);
+        transform: rotate(45deg);
+      }
+      .name-field input {
+        width: 100%;
+        min-width: 0;
+        height: 44px;
+        padding: 0 16px;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--ivory);
+        font:
+          25px Georgia,
+          serif;
+        text-align: center;
+      }
+      .name-field .field-core:focus-within {
+        border-color: var(--amber);
+      }
+      .name-field .field-core:focus-within::before {
+        border-color: var(--amber);
+      }
+      .choice-row {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      .choice {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 56px;
+        height: 56px;
+        border: 0;
+        background: transparent;
+        color: #a7a8a0;
+      }
+      .choice::before {
+        content: "";
+        position: absolute;
+        inset: 9px;
+        border: 1px solid #7f796b;
+        transform: rotate(45deg);
+      }
+      .choice[aria-pressed="true"] {
+        color: var(--ivory);
+      }
+      .choice[aria-pressed="true"]::before {
+        border-color: var(--amber);
+        box-shadow: 0 0 12px rgba(240, 160, 64, 0.18);
+      }
+      .choice:hover::before {
+        border-color: var(--bronze);
+      }
+      .choice svg {
+        position: relative;
+        z-index: 1;
+      }
+      .meter-group {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 69px;
+        height: 69px;
+        border: 1px solid var(--bronze);
+        transform: rotate(45deg);
+        background: rgba(31, 25, 20, 0.6);
+      }
+      .avatar svg {
+        width: 34px;
+        height: 34px;
+        transform: rotate(-45deg);
+        color: var(--ivory);
+      }
+      .meters {
+        display: grid;
+        gap: 10px;
+        width: 270px;
+      }
+      .meter {
+        display: grid;
+        grid-template-columns: 1fr 33px;
+        align-items: center;
+        gap: 9px;
+        font:
+          17px Georgia,
+          serif;
+      }
+      .track {
+        position: relative;
+        display: block;
+        height: 4px;
+        background: rgba(173, 169, 145, 0.27);
+      }
+      .fill {
+        display: block;
+        height: 100%;
+      }
+      .meter.hp .fill {
+        width: 78%;
+        background: var(--hp);
+      }
+      .meter.mana .fill {
+        width: 49%;
+        background: var(--mana);
+      }
+      .meter.stamina .fill {
+        width: 66%;
+        background: var(--stamina);
+      }
+      .meter .number {
+        text-align: right;
+        color: var(--ivory);
+      }
+      .item-row {
+        display: flex;
+        gap: 12px;
+      }
+      .item-tile {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        border: 1px solid #77634d;
+        border-radius: 6px;
+        background: rgba(13, 11, 9, 0.64);
+        color: var(--ivory);
+      }
+      .item-tile.selected {
+        border: 2px solid var(--amber);
+      }
+      .item-tile.empty {
+        border-color: var(--line-soft);
+        color: #786d60;
+      }
+      .item-tile:hover {
+        border-color: var(--bronze);
+      }
+      .item-tile .icon {
+        width: 25px;
+        height: 25px;
+      }
+      .footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      .footer-actions::before {
+        content: "";
+        display: none;
+      }
+      .footer-actions .separator {
+        width: 1px;
+        height: 31px;
+        background: var(--bronze);
+        opacity: 0.7;
+      }
+      .footer-actions button {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        background: transparent;
+        color: var(--ivory);
+      }
+      .footer-actions button:hover {
+        color: var(--amber);
+      }
+      .footer-actions .icon {
+        width: 30px;
+        height: 30px;
+      }
+      .library-grid {
+        position: absolute;
+        inset: 154px 58px 70px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 160px 180px 150px;
+        column-gap: 80px;
+        row-gap: 17px;
+        align-items: start;
+      }
+      .library-sample {
+        min-width: 0;
+        padding: 0 0 0 4px;
+      }
+      .library-sample .tiny-label {
+        display: block;
+        margin-bottom: 20px;
+      }
+      .library-sample .sample-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .library-sample .sample-line .name-field {
+        width: min(100%, 390px);
+      }
+      .library-sample .sample-line .field-core {
+        flex: 1;
+      }
+      .library-sample .item-row {
+        margin-top: 3px;
+      }
+      .library-note {
+        position: absolute;
+        right: 58px;
+        bottom: 35px;
+        color: #8f978f;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+      }
+      .hero-art {
+        position: absolute;
+        left: 50%;
+        bottom: -21px;
+        width: clamp(245px, 30vw, 400px);
+        height: auto;
+        transform: translateX(-50%);
+        filter: brightness(0.74) saturate(0.75)
+          drop-shadow(0 24px 30px rgba(0, 0, 0, 0.45));
+        pointer-events: none;
+      }
+      .stage[data-view="creation"] .hero-art {
+        width: clamp(250px, 29vw, 385px);
+      }
+      .stage[data-view="inventory"] .hero-art {
+        width: clamp(240px, 27vw, 365px);
+      }
+      .creation-top {
+        position: absolute;
+        top: 40px;
+        right: 46px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        color: #aaa99b;
+      }
+      .creation-top .step-count {
+        font:
+          17px Georgia,
+          serif;
+        color: var(--ivory);
+      }
+      .creation-nav {
+        position: absolute;
+        left: 50%;
+        bottom: 26px;
+        z-index: 4;
+        display: flex;
+        gap: 14px;
+        transform: translateX(-50%);
+      }
+      .creation-nav button {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        border: 0;
+        border-bottom: 1px solid transparent;
+        background: transparent;
+        color: #a49b89;
+      }
+      .creation-nav button.active {
+        color: var(--amber);
+        border-color: var(--amber);
+      }
+      .creation-nav .icon {
+        width: 25px;
+        height: 25px;
+      }
+      .creation-controls {
+        position: absolute;
+        left: 50%;
+        bottom: 88px;
+        z-index: 3;
+        min-width: 310px;
+        display: grid;
+        justify-items: center;
+        gap: 15px;
+        transform: translateX(-50%);
+      }
+      .creation-controls .name-field {
+        width: min(365px, 75vw);
+      }
+      .creation-controls .name-field .field-core {
+        flex: 1;
+      }
+      .control-group {
+        display: none;
+        justify-items: center;
+        gap: 14px;
+      }
+      .control-group.active {
+        display: grid;
+      }
+      .control-group .subtle {
+        color: var(--ivory);
+        font:
+          20px Georgia,
+          serif;
+      }
+      .swatches {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .swatch {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--bronze);
+        border-radius: 50%;
+      }
+      .swatch.selected {
+        outline: 2px solid var(--amber);
+        outline-offset: 4px;
+      }
+      .inventory-title {
+        position: absolute;
+        top: 40px;
+        left: 46px;
+      }
+      .inventory-title h1 {
+        margin: 8px 0 0;
+        font:
+          42px Zakon,
+          Georgia,
+          serif;
+      }
+      .equipment {
+        position: absolute;
+        left: 50%;
+        top: 42%;
+        width: min(700px, 77%);
+        height: 480px;
+        transform: translate(-50%, -37%);
+        pointer-events: none;
+      }
+      .equipment .slot {
+        position: absolute;
+        display: grid;
+        place-items: center;
+        width: 63px;
+        height: 63px;
+        border: 1px solid #746956;
+        background: rgba(11, 15, 16, 0.54);
+        transform: rotate(45deg);
+        color: var(--ivory);
+        pointer-events: auto;
+      }
+      .equipment .slot:hover {
+        border-color: var(--amber);
+      }
+      .equipment .slot.selected {
+        border-color: var(--amber);
+      }
+      .equipment .slot .icon {
+        transform: rotate(-45deg);
+        width: 27px;
+        height: 27px;
+      }
+      .equipment .slot.left1 {
+        left: 3%;
+        top: 18%;
+      }
+      .equipment .slot.left2 {
+        left: 8%;
+        top: 56%;
+      }
+      .equipment .slot.right1 {
+        right: 3%;
+        top: 18%;
+      }
+      .equipment .slot.right2 {
+        right: 8%;
+        top: 56%;
+      }
+      .equipment .slot.bottom1 {
+        left: 30%;
+        bottom: 0;
+      }
+      .equipment .slot.bottom2 {
+        right: 30%;
+        bottom: 0;
+      }
+      .inventory-footer {
+        position: absolute;
+        right: 48px;
+        bottom: 43px;
+      }
+      .inventory-count {
+        position: absolute;
+        top: 48px;
+        right: 49px;
+        font:
+          18px Georgia,
+          serif;
+        color: var(--ivory);
+      }
+      .modal-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        place-items: center;
+        background: rgba(0, 0, 0, 0.58);
+      }
+      .modal-layer.open {
+        display: grid;
+      }
+      .sheet {
+        width: min(420px, calc(100% - 40px));
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel);
+        box-shadow: 0 22px 80px rgba(0, 0, 0, 0.4);
+      }
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 51px;
+        padding: 8px 12px 8px 17px;
+        background: var(--panel-hi);
+        border-bottom: 1px solid var(--line);
+      }
+      .sheet-head .icon {
+        color: var(--bronze);
+      }
+      .sheet-head strong {
+        flex: 1;
+        font:
+          21px Georgia,
+          serif;
+      }
+      .sheet-body {
+        padding: 20px;
+        color: #c1b5a0;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+      .sheet-body p {
+        margin: 0 0 15px;
+      }
+      .sheet-body .item-row {
+        margin: 16px 0;
+      }
+      .outside-note {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 3px 0;
+        font-size: 12px;
+        color: #8d948f;
+      }
       @media (max-width: 900px) {
-        .workspace { padding: 14px; }.workbar { flex-wrap: wrap; gap: 10px; }.brand { display: block; }.brand span { display: block; padding-top: 3px; }
-        .view-switch { width: 100%; justify-content: space-between; }.view-switch button { flex: 1; padding: 8px 4px; }
-        .stage { min-height: 760px; }.library-grid { inset: 147px 25px 60px; grid-template-columns: 1fr 1fr; column-gap: 25px; }
-        .scene-title { left: 26px; }.library-note { right: 25px; }.creation-top { right: 26px; }
+        .workspace {
+          padding: 14px;
+        }
+        .workbar {
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .brand {
+          display: block;
+        }
+        .brand span {
+          display: block;
+          padding-top: 3px;
+        }
+        .view-switch {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .view-switch button {
+          flex: 1;
+          padding: 8px 4px;
+        }
+        .stage {
+          min-height: 760px;
+        }
+        .library-grid {
+          inset: 147px 25px 60px;
+          grid-template-columns: 1fr 1fr;
+          column-gap: 25px;
+        }
+        .scene-title {
+          left: 26px;
+        }
+        .library-note {
+          right: 25px;
+        }
+        .creation-top {
+          right: 26px;
+        }
       }
       @media (max-width: 620px) {
-        .stage { height: max(640px, calc(100svh - 140px)); min-height: 0; }.library-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; gap: 24px; overflow: auto; bottom: 55px; }
-        .library-sample { min-height: 92px; }.library-sample .tiny-label { margin-bottom: 9px; }.library-sample .sample-line { gap: 6px; max-width: 100%; }
-        .library-sample .sample-line .name-field { width: 100%; min-width: 0; }.library-sample .sample-line .name-field .field-core { min-width: 0; }
-        .library-note { display: none; }.scene-title h1 { font-size: 31px; }
-        .stage[data-view="creation"] .hero-art { width: 250px; bottom: 126px; opacity: .88; }.creation-controls { bottom: 93px; }
-        .creation-top { top: 43px; }.inventory-title h1 { font-size: 33px; }
-        .stage[data-view="inventory"] .hero-art { width: 230px; bottom: 113px; }.equipment { width: 88%; top: 48%; height: 430px; }.equipment .slot { width: 48px; height: 48px; }
-        .inventory-count { top: 48px; right: 25px; }.inventory-footer { right: 22px; bottom: 30px; }
-        .outside-note { display: block; line-height: 1.5; }
+        .stage {
+          height: max(640px, calc(100svh - 140px));
+          min-height: 0;
+        }
+        .library-grid {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto;
+          gap: 24px;
+          overflow: auto;
+          bottom: 55px;
+        }
+        .library-sample {
+          min-height: 92px;
+        }
+        .library-sample .tiny-label {
+          margin-bottom: 9px;
+        }
+        .library-sample .sample-line {
+          gap: 6px;
+          max-width: 100%;
+        }
+        .library-sample .sample-line .name-field {
+          width: 100%;
+          min-width: 0;
+        }
+        .library-sample .sample-line .name-field .field-core {
+          min-width: 0;
+        }
+        .library-note {
+          display: none;
+        }
+        .scene-title h1 {
+          font-size: 31px;
+        }
+        .stage[data-view="creation"] .hero-art {
+          width: 250px;
+          bottom: 126px;
+          opacity: 0.88;
+        }
+        .creation-controls {
+          bottom: 93px;
+        }
+        .creation-top {
+          top: 43px;
+        }
+        .inventory-title h1 {
+          font-size: 33px;
+        }
+        .stage[data-view="inventory"] .hero-art {
+          width: 230px;
+          bottom: 113px;
+        }
+        .equipment {
+          width: 88%;
+          top: 48%;
+          height: 430px;
+        }
+        .equipment .slot {
+          width: 48px;
+          height: 48px;
+        }
+        .inventory-count {
+          top: 48px;
+          right: 25px;
+        }
+        .inventory-footer {
+          right: 22px;
+          bottom: 30px;
+        }
+        .outside-note {
+          display: block;
+          line-height: 1.5;
+        }
       }
     </style>
   </head>
   <body>
-    <svg width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden">
+    <svg
+      width="0"
+      height="0"
+      aria-hidden="true"
+      style="position: absolute; overflow: hidden"
+    >
       <symbol id="ornament-branch" viewBox="0 0 32 32">
-        <path d="M3 16h8m10 0h8M16 3v8m0 10v8M11 11l5 5 5-5-5-5-5 5Zm0 10 5-5 5 5-5 5-5-5ZM6 9l3 3-3 3M26 9l-3 3 3 3M6 23l3-3-3-3m20 6-3-3 3-3"/>
+        <path
+          d="M3 16h8m10 0h8M16 3v8m0 10v8M11 11l5 5 5-5-5-5-5 5Zm0 10 5-5 5 5-5 5-5-5ZM6 9l3 3-3 3M26 9l-3 3 3 3M6 23l3-3-3-3m20 6-3-3 3-3"
+        />
       </symbol>
-      <pattern id="ornament-woven" width="40" height="40" patternUnits="userSpaceOnUse">
-        <path d="M0 20h7l4-4 4 4 5-5 5 5 4-4 4 4h7M20 0v7l-4 4 4 4 5-5-5-5-4 4M20 40v-7l4-4-4-4-5 5 5 5 4-4M0 0l7 7M40 0l-7 7M0 40l7-7M40 40l-7-7" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <path d="m20 17 3 3-3 3-3-3Zm-8-8h2m12 0h2m-16 22h2m12 0h2" fill="none" stroke="currentColor" stroke-width="1.1"/>
+      <pattern
+        id="ornament-woven"
+        width="40"
+        height="40"
+        patternUnits="userSpaceOnUse"
+      >
+        <path
+          d="M0 20h7l4-4 4 4 5-5 5 5 4-4 4 4h7M20 0v7l-4 4 4 4 5-5-5-5-4 4M20 40v-7l4-4-4-4-5 5 5 5 4-4M0 0l7 7M40 0l-7 7M0 40l7-7M40 40l-7-7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.2"
+        />
+        <path
+          d="m20 17 3 3-3 3-3-3Zm-8-8h2m12 0h2m-16 22h2m12 0h2"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.1"
+        />
       </pattern>
-      <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.5"/><path d="M4.5 21c.3-5.5 2.6-8.5 7.5-8.5s7.2 3 7.5 8.5"/></symbol>
-      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1.5 12S6 5.5 12 5.5 22.5 12 22.5 12 18 18.5 12 18.5 1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
-      <symbol id="i-hub" viewBox="0 0 24 24"><path d="m12 1 4 4-4 4-4-4Zm-7 7 4 4-4 4-4-4Zm14 0 4 4-4 4-4-4Zm-7 7 4 4-4 4-4-4Z"/></symbol>
-      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1.5 20 4v7c0 5.5-3 9-8 11-5-2-8-5.5-8-11V4Z"/><path d="M12 5v13M7 11h10"/></symbol>
-      <symbol id="i-bow" viewBox="0 0 24 24"><path d="M6 2c13 4 13 16 0 20M6 2v20M1 12h21m-5-4 5 4-5 4"/></symbol>
-      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4M4 4l3 3m10 10 3 3M20 4l-3 3M7 17l-3 3"/></symbol>
-      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m8 3 9 9-9 9"/></symbol>
-      <symbol id="i-back" viewBox="0 0 24 24"><path d="m16 3-9 9 9 9"/></symbol>
-      <symbol id="i-face" viewBox="0 0 24 24"><path d="M4 21V10c0-6 3-9 8-9s8 4 8 10l-4 5v5M4 21h12M12 2c1 4-1 6-6 7"/></symbol>
-      <symbol id="i-quill" viewBox="0 0 24 24"><path d="M2 22C3 9 10 3 22 2c-1 12-8 18-20 20Zm0 0L17 7M9 15l1-8"/></symbol>
-      <symbol id="i-sabre" viewBox="0 0 24 24"><path d="M4 18C10 14 17 8 21 2c-1 7-7 15-15 18M4 15l4 5M2 22l4-4"/></symbol>
-      <symbol id="i-bag" viewBox="0 0 24 24"><path d="M4 8h16l1 13H3L4 8Zm5 0V5a3 3 0 0 1 6 0v3M8 12h8"/></symbol>
-      <symbol id="i-boot" viewBox="0 0 24 24"><path d="M5 2h7v10l8 4 1 5H2v-5l3-2V2Z"/></symbol>
-      <symbol id="i-close" viewBox="0 0 24 24"><path d="M4 4l16 16M20 4 4 20"/></symbol>
-      <symbol id="i-check" viewBox="0 0 24 24"><path d="m3 12 6 6L21 5"/></symbol>
+      <symbol id="i-person" viewBox="0 0 24 24">
+        <circle cx="12" cy="7" r="3.5" />
+        <path d="M4.5 21c.3-5.5 2.6-8.5 7.5-8.5s7.2 3 7.5 8.5" />
+      </symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24">
+        <path
+          d="M1.5 12S6 5.5 12 5.5 22.5 12 22.5 12 18 18.5 12 18.5 1.5 12 1.5 12Z"
+        />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="i-hub" viewBox="0 0 24 24">
+        <path
+          d="m12 1 4 4-4 4-4-4Zm-7 7 4 4-4 4-4-4Zm14 0 4 4-4 4-4-4Zm-7 7 4 4-4 4-4-4Z"
+        />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="M12 1.5 20 4v7c0 5.5-3 9-8 11-5-2-8-5.5-8-11V4Z" />
+        <path d="M12 5v13M7 11h10" />
+      </symbol>
+      <symbol id="i-bow" viewBox="0 0 24 24">
+        <path d="M6 2c13 4 13 16 0 20M6 2v20M1 12h21m-5-4 5 4-5 4" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path
+          d="M12 1v4m0 14v4M1 12h4m14 0h4M4 4l3 3m10 10 3 3M20 4l-3 3M7 17l-3 3"
+        />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="m8 3 9 9-9 9" />
+      </symbol>
+      <symbol id="i-back" viewBox="0 0 24 24">
+        <path d="m16 3-9 9 9 9" />
+      </symbol>
+      <symbol id="i-face" viewBox="0 0 24 24">
+        <path
+          d="M4 21V10c0-6 3-9 8-9s8 4 8 10l-4 5v5M4 21h12M12 2c1 4-1 6-6 7"
+        />
+      </symbol>
+      <symbol id="i-quill" viewBox="0 0 24 24">
+        <path d="M2 22C3 9 10 3 22 2c-1 12-8 18-20 20Zm0 0L17 7M9 15l1-8" />
+      </symbol>
+      <symbol id="i-sabre" viewBox="0 0 24 24">
+        <path d="M4 18C10 14 17 8 21 2c-1 7-7 15-15 18M4 15l4 5M2 22l4-4" />
+      </symbol>
+      <symbol id="i-bag" viewBox="0 0 24 24">
+        <path d="M4 8h16l1 13H3L4 8Zm5 0V5a3 3 0 0 1 6 0v3M8 12h8" />
+      </symbol>
+      <symbol id="i-boot" viewBox="0 0 24 24">
+        <path d="M5 2h7v10l8 4 1 5H2v-5l3-2V2Z" />
+      </symbol>
+      <symbol id="i-close" viewBox="0 0 24 24">
+        <path d="M4 4l16 16M20 4 4 20" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m3 12 6 6L21 5" />
+      </symbol>
     </svg>
 
     <div class="workspace">
       <header class="workbar">
-        <div class="brand"><strong>SICHEN</strong><span>Minimal UI · HTML illustration</span></div>
+        <div class="brand">
+          <strong>SICHEN</strong><span>Minimal UI · HTML illustration</span>
+        </div>
         <nav class="view-switch" aria-label="Prototype views">
-          <button type="button" data-view-button="components">Components</button>
+          <button type="button" data-view-button="components">
+            Components
+          </button>
           <button type="button" data-view-button="creation">Creation</button>
           <button type="button" data-view-button="inventory">Inventory</button>
         </nav>
       </header>
 
       <main class="stage" data-view="creation">
-        <svg class="forest" viewBox="0 0 1400 790" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <g fill="#0a1216"><path d="m0 0 72 200-36-30 42 145-41-28 35 170H0Z"/><path d="m1400 0-70 220 32-34-45 154 46-35-39 180h76Z"/></g>
-          <g fill="#142026" opacity=".9"><path d="M172 0v350l-30-32 29 71-32-27 33 124h19l26-124-27 23 23-70-26 23V0Z"/><path d="M1220 0v350l-30-32 29 71-32-27 33 124h19l26-124-27 23 23-70-26 23V0Z"/><path d="M350 0v210l-24-26 22 56-26-19 27 92h17l25-92-23 19 22-56-24 26V0Z"/><path d="M1030 0v210l-24-26 22 56-26-19 27 92h17l25-92-23 19 22-56-24 26V0Z"/></g>
-          <path d="M0 658Q350 560 700 675T1400 640V790H0Z" fill="#111719" opacity=".8"/>
+        <svg
+          class="forest"
+          viewBox="0 0 1400 790"
+          preserveAspectRatio="xMidYMid slice"
+          aria-hidden="true"
+        >
+          <g fill="#0a1216">
+            <path d="m0 0 72 200-36-30 42 145-41-28 35 170H0Z" />
+            <path d="m1400 0-70 220 32-34-45 154 46-35-39 180h76Z" />
+          </g>
+          <g fill="#142026" opacity=".9">
+            <path
+              d="M172 0v350l-30-32 29 71-32-27 33 124h19l26-124-27 23 23-70-26 23V0Z"
+            />
+            <path
+              d="M1220 0v350l-30-32 29 71-32-27 33 124h19l26-124-27 23 23-70-26 23V0Z"
+            />
+            <path
+              d="M350 0v210l-24-26 22 56-26-19 27 92h17l25-92-23 19 22-56-24 26V0Z"
+            />
+            <path
+              d="M1030 0v210l-24-26 22 56-26-19 27 92h17l25-92-23 19 22-56-24 26V0Z"
+            />
+          </g>
+          <path
+            d="M0 658Q350 560 700 675T1400 640V790H0Z"
+            fill="#111719"
+            opacity=".8"
+          />
         </svg>
 
-        <section class="screen screen-components" aria-label="Component library">
-          <div class="scene-title"><span class="tiny-label">Reusable pieces</span><h1>Quiet controls</h1><p>Current components, one restrained surface language.</p></div>
-          <div class="library-grid">
-            <div class="library-sample"><span class="tiny-label">Status · Bar + Label</span><div class="meter-group"><div class="avatar"><svg class="icon"><use href="#i-person"/></svg></div><div class="meters"><div class="meter hp"><span class="track"><span class="fill"></span></span><span class="number">112</span></div><div class="meter mana"><span class="track"><span class="fill"></span></span><span class="number">64</span></div><div class="meter stamina"><span class="track"><span class="fill"></span></span><span class="number">80</span></div></div></div></div>
-            <div class="library-sample"><span class="tiny-label">Actions · GButton + ornament presets</span><div class="sample-line"><button class="ui-button primary ornamented ornament-sides" type="button" data-show-sheet><svg class="button-ornament" aria-hidden="true"><use href="#ornament-branch"/></svg><span class="button-label">Continue</span><svg class="icon sm"><use href="#i-arrow"/></svg></button><button class="ui-button ghost" type="button" data-show-sheet><svg class="icon sm"><use href="#i-back"/></svg>Back</button><button class="ui-button danger ornamented ornament-fill" type="button" data-show-sheet><svg class="button-pattern" viewBox="0 0 200 44" preserveAspectRatio="none" aria-hidden="true"><rect width="200" height="44" fill="url(#ornament-woven)"/></svg><span class="button-label">Erase</span></button><button class="ui-button ornamented ornament-sides" disabled type="button"><svg class="button-ornament" aria-hidden="true"><use href="#ornament-branch"/></svg><span class="button-label">Locked</span></button></div></div>
-            <div class="library-sample"><span class="tiny-label">Name · TextInput + GButton</span><div class="sample-line"><label class="name-field"><span class="field-core"><input aria-label="Hero name" value="Остап" maxlength="16" /></span><button class="ui-button icon-only" type="button" data-random-name aria-label="Random name">⚄</button></label></div></div>
-            <div class="library-sample"><span class="tiny-label">Choice · GButton compact + Glyph</span><div class="choice-row" data-choice-group><button class="choice" type="button" aria-pressed="true" aria-label="Lytsar"><svg class="icon lg"><use href="#i-shield"/></svg></button><button class="choice" type="button" aria-pressed="false" aria-label="Plastun"><svg class="icon lg"><use href="#i-bow"/></svg></button><button class="choice" type="button" aria-pressed="false" aria-label="Kharakternyk"><svg class="icon lg"><use href="#i-sun"/></svg></button></div></div>
-            <div class="library-sample"><span class="tiny-label">Equipment · ItemTile</span><div class="item-row"><button type="button" class="item-tile selected" aria-label="Selected sabre" data-show-sheet><svg class="icon"><use href="#i-sabre"/></svg></button><button type="button" class="item-tile" aria-label="Shield" data-show-sheet><svg class="icon"><use href="#i-shield"/></svg></button><button type="button" class="item-tile empty" aria-label="Empty slot" data-show-sheet>+</button></div></div>
-            <div class="library-sample"><span class="tiny-label">Footer · RoundButton glyph treatment</span><div class="footer-actions"><button type="button" aria-label="Look" data-show-sheet><svg class="icon"><use href="#i-eye"/></svg></button><span class="separator"></span><button type="button" aria-label="Menu" data-show-sheet><svg class="icon"><use href="#i-hub"/></svg></button></div></div>
+        <section
+          class="screen screen-components"
+          aria-label="Component library"
+        >
+          <div class="scene-title">
+            <span class="tiny-label">Reusable pieces</span>
+            <h1>Quiet controls</h1>
+            <p>Current components, one restrained surface language.</p>
           </div>
-          <div class="library-note">Tap a control to inspect its selected or open state.</div>
+          <div class="library-grid">
+            <div class="library-sample">
+              <span class="tiny-label">Status · Bar + Label</span>
+              <div class="meter-group">
+                <div class="avatar">
+                  <svg class="icon"><use href="#i-person" /></svg>
+                </div>
+                <div class="meters">
+                  <div class="meter hp">
+                    <span class="track"><span class="fill"></span></span
+                    ><span class="number">112</span>
+                  </div>
+                  <div class="meter mana">
+                    <span class="track"><span class="fill"></span></span
+                    ><span class="number">64</span>
+                  </div>
+                  <div class="meter stamina">
+                    <span class="track"><span class="fill"></span></span
+                    ><span class="number">80</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="library-sample">
+              <span class="tiny-label"
+                >Actions · GButton + ornament presets</span
+              >
+              <div class="sample-line">
+                <button
+                  class="ui-button primary ornamented ornament-sides"
+                  type="button"
+                  data-show-sheet
+                >
+                  <svg class="button-ornament" aria-hidden="true">
+                    <use href="#ornament-branch" /></svg
+                  ><span class="button-label">Continue</span
+                  ><svg class="icon sm"><use href="#i-arrow" /></svg></button
+                ><button class="ui-button ghost" type="button" data-show-sheet>
+                  <svg class="icon sm"><use href="#i-back" /></svg>Back</button
+                ><button
+                  class="ui-button danger ornamented ornament-fill"
+                  type="button"
+                  data-show-sheet
+                >
+                  <svg
+                    class="button-pattern"
+                    viewBox="0 0 200 44"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      width="200"
+                      height="44"
+                      fill="url(#ornament-woven)"
+                    /></svg
+                  ><span class="button-label">Erase</span></button
+                ><button
+                  class="ui-button ornamented ornament-sides"
+                  disabled
+                  type="button"
+                >
+                  <svg class="button-ornament" aria-hidden="true">
+                    <use href="#ornament-branch" /></svg
+                  ><span class="button-label">Locked</span>
+                </button>
+              </div>
+            </div>
+            <div class="library-sample">
+              <span class="tiny-label">Name · TextInput + GButton</span>
+              <div class="sample-line">
+                <label class="name-field"
+                  ><span class="field-core"
+                    ><input
+                      aria-label="Hero name"
+                      value="Остап"
+                      maxlength="16" /></span
+                  ><button
+                    class="ui-button icon-only"
+                    type="button"
+                    data-random-name
+                    aria-label="Random name"
+                  >
+                    ⚄
+                  </button></label
+                >
+              </div>
+            </div>
+            <div class="library-sample">
+              <span class="tiny-label">Choice · GButton compact + Glyph</span>
+              <div class="choice-row" data-choice-group>
+                <button
+                  class="choice"
+                  type="button"
+                  aria-pressed="true"
+                  aria-label="Lytsar"
+                >
+                  <svg class="icon lg"><use href="#i-shield" /></svg></button
+                ><button
+                  class="choice"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Plastun"
+                >
+                  <svg class="icon lg"><use href="#i-bow" /></svg></button
+                ><button
+                  class="choice"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Kharakternyk"
+                >
+                  <svg class="icon lg"><use href="#i-sun" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="library-sample">
+              <span class="tiny-label">Equipment · ItemTile</span>
+              <div class="item-row">
+                <button
+                  type="button"
+                  class="item-tile selected"
+                  aria-label="Selected sabre"
+                  data-show-sheet
+                >
+                  <svg class="icon"><use href="#i-sabre" /></svg></button
+                ><button
+                  type="button"
+                  class="item-tile"
+                  aria-label="Shield"
+                  data-show-sheet
+                >
+                  <svg class="icon"><use href="#i-shield" /></svg></button
+                ><button
+                  type="button"
+                  class="item-tile empty"
+                  aria-label="Empty slot"
+                  data-show-sheet
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div class="library-sample">
+              <span class="tiny-label"
+                >Footer · RoundButton glyph treatment</span
+              >
+              <div class="footer-actions">
+                <button type="button" aria-label="Look" data-show-sheet>
+                  <svg class="icon"><use href="#i-eye" /></svg></button
+                ><span class="separator"></span
+                ><button type="button" aria-label="Menu" data-show-sheet>
+                  <svg class="icon"><use href="#i-hub" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="library-note">
+            Tap a control to inspect its selected or open state.
+          </div>
         </section>
 
-        <section class="screen screen-creation" aria-label="Character creation example">
-          <div class="scene-title"><span class="tiny-label">A new hero</span><h1>Character creation</h1><p>One choice group at a time.</p></div>
-          <div class="creation-top"><span class="tiny-label">Step</span><span class="step-count" data-step-count>02 / 03</span></div>
-          <img class="hero-art" src="../redesign-concepts/ostap-clothed-reference.png" alt="Low-poly Cossack hero preview" />
-          <div class="creation-controls">
-            <div class="control-group" data-create-group="look"><span class="subtle">Appearance</span><div class="swatches"><button class="swatch selected" style="background:#1d1a17" type="button" aria-label="Black hair" aria-pressed="true"></button><button class="swatch" style="background:#5a3a1e" type="button" aria-label="Brown hair" aria-pressed="false"></button><button class="swatch" style="background:#a9763b" type="button" aria-label="Auburn hair" aria-pressed="false"></button><button class="swatch" style="background:#c9c1b2" type="button" aria-label="Pale hair" aria-pressed="false"></button></div></div>
-            <div class="control-group active" data-create-group="class"><span class="subtle" data-class-name>Лицар</span><div class="choice-row" data-choice-group><button class="choice" type="button" aria-pressed="true" aria-label="Lytsar" data-class="Лицар"><svg class="icon lg"><use href="#i-shield"/></svg></button><button class="choice" type="button" aria-pressed="false" aria-label="Plastun" data-class="Пластун"><svg class="icon lg"><use href="#i-bow"/></svg></button><button class="choice" type="button" aria-pressed="false" aria-label="Kharakternyk" data-class="Характерник"><svg class="icon lg"><use href="#i-sun"/></svg></button></div></div>
-            <div class="control-group" data-create-group="name"><label class="name-field"><span class="field-core"><input aria-label="Hero name" value="Остап" maxlength="16" /></span><button class="ui-button icon-only" type="button" data-random-name aria-label="Random name">⚄</button></label><button class="ui-button primary ornamented ornament-fill icon-only" type="button" data-show-sheet aria-label="Continue"><svg class="button-pattern" viewBox="0 0 200 44" preserveAspectRatio="none" aria-hidden="true"><rect width="200" height="44" fill="url(#ornament-woven)"/></svg><svg class="icon sm"><use href="#i-arrow"/></svg></button></div>
+        <section
+          class="screen screen-creation"
+          aria-label="Character creation example"
+        >
+          <div class="scene-title">
+            <span class="tiny-label">A new hero</span>
+            <h1>Character creation</h1>
+            <p>One choice group at a time.</p>
           </div>
-          <nav class="creation-nav" aria-label="Creation steps"><button type="button" data-create-step="look" aria-label="Appearance"><svg class="icon"><use href="#i-face"/></svg></button><button type="button" data-create-step="class" aria-label="Class" class="active"><svg class="icon"><use href="#i-shield"/></svg></button><button type="button" data-create-step="name" aria-label="Name"><svg class="icon"><use href="#i-quill"/></svg></button></nav>
+          <div class="creation-top">
+            <span class="tiny-label">Step</span
+            ><span class="step-count" data-step-count>02 / 03</span>
+          </div>
+          <img
+            class="hero-art"
+            src="../redesign-concepts/ostap-clothed-reference.png"
+            alt="Low-poly Cossack hero preview"
+          />
+          <div class="creation-controls">
+            <div class="control-group" data-create-group="look">
+              <span class="subtle">Appearance</span>
+              <div class="swatches">
+                <button
+                  class="swatch selected"
+                  style="background: #1d1a17"
+                  type="button"
+                  aria-label="Black hair"
+                  aria-pressed="true"
+                ></button
+                ><button
+                  class="swatch"
+                  style="background: #5a3a1e"
+                  type="button"
+                  aria-label="Brown hair"
+                  aria-pressed="false"
+                ></button
+                ><button
+                  class="swatch"
+                  style="background: #a9763b"
+                  type="button"
+                  aria-label="Auburn hair"
+                  aria-pressed="false"
+                ></button
+                ><button
+                  class="swatch"
+                  style="background: #c9c1b2"
+                  type="button"
+                  aria-label="Pale hair"
+                  aria-pressed="false"
+                ></button>
+              </div>
+            </div>
+            <div class="control-group active" data-create-group="class">
+              <span class="subtle" data-class-name>Лицар</span>
+              <div class="choice-row" data-choice-group>
+                <button
+                  class="choice"
+                  type="button"
+                  aria-pressed="true"
+                  aria-label="Lytsar"
+                  data-class="Лицар"
+                >
+                  <svg class="icon lg"><use href="#i-shield" /></svg></button
+                ><button
+                  class="choice"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Plastun"
+                  data-class="Пластун"
+                >
+                  <svg class="icon lg"><use href="#i-bow" /></svg></button
+                ><button
+                  class="choice"
+                  type="button"
+                  aria-pressed="false"
+                  aria-label="Kharakternyk"
+                  data-class="Характерник"
+                >
+                  <svg class="icon lg"><use href="#i-sun" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="control-group" data-create-group="name">
+              <label class="name-field"
+                ><span class="field-core"
+                  ><input
+                    aria-label="Hero name"
+                    value="Остап"
+                    maxlength="16" /></span
+                ><button
+                  class="ui-button icon-only"
+                  type="button"
+                  data-random-name
+                  aria-label="Random name"
+                >
+                  ⚄
+                </button></label
+              ><button
+                class="ui-button primary ornamented ornament-fill icon-only"
+                type="button"
+                data-show-sheet
+                aria-label="Continue"
+              >
+                <svg
+                  class="button-pattern"
+                  viewBox="0 0 200 44"
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                >
+                  <rect
+                    width="200"
+                    height="44"
+                    fill="url(#ornament-woven)"
+                  /></svg
+                ><svg class="icon sm"><use href="#i-arrow" /></svg>
+              </button>
+            </div>
+          </div>
+          <nav class="creation-nav" aria-label="Creation steps">
+            <button
+              type="button"
+              data-create-step="look"
+              aria-label="Appearance"
+            >
+              <svg class="icon"><use href="#i-face" /></svg></button
+            ><button
+              type="button"
+              data-create-step="class"
+              aria-label="Class"
+              class="active"
+            >
+              <svg class="icon"><use href="#i-shield" /></svg></button
+            ><button type="button" data-create-step="name" aria-label="Name">
+              <svg class="icon"><use href="#i-quill" /></svg>
+            </button>
+          </nav>
         </section>
 
         <section class="screen screen-inventory" aria-label="Inventory example">
-          <div class="inventory-title"><span class="tiny-label">Hero</span><h1>Equipment</h1></div><div class="inventory-count">Bag 7 / 20</div>
-          <img class="hero-art" src="../redesign-concepts/ostap-clothed-reference.png" alt="Low-poly Cossack hero preview" />
-          <div class="equipment" aria-label="Equipment slots">
-            <button type="button" class="slot left1 selected" aria-label="Sabre" data-show-sheet><svg class="icon"><use href="#i-sabre"/></svg></button>
-            <button type="button" class="slot left2" aria-label="Shield" data-show-sheet><svg class="icon"><use href="#i-shield"/></svg></button>
-            <button type="button" class="slot right1" aria-label="Bow" data-show-sheet><svg class="icon"><use href="#i-bow"/></svg></button>
-            <button type="button" class="slot right2" aria-label="Amulet" data-show-sheet><svg class="icon"><use href="#i-sun"/></svg></button>
-            <button type="button" class="slot bottom1" aria-label="Bag" data-show-sheet><svg class="icon"><use href="#i-bag"/></svg></button>
-            <button type="button" class="slot bottom2" aria-label="Boots" data-show-sheet><svg class="icon"><use href="#i-boot"/></svg></button>
+          <div class="inventory-title">
+            <span class="tiny-label">Hero</span>
+            <h1>Equipment</h1>
           </div>
-          <div class="inventory-footer footer-actions"><button type="button" aria-label="Details" data-show-sheet><svg class="icon"><use href="#i-eye"/></svg></button><span class="separator"></span><button type="button" aria-label="More" data-show-sheet><svg class="icon"><use href="#i-hub"/></svg></button></div>
+          <div class="inventory-count">Bag 7 / 20</div>
+          <img
+            class="hero-art"
+            src="../redesign-concepts/ostap-clothed-reference.png"
+            alt="Low-poly Cossack hero preview"
+          />
+          <div class="equipment" aria-label="Equipment slots">
+            <button
+              type="button"
+              class="slot left1 selected"
+              aria-label="Sabre"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-sabre" /></svg>
+            </button>
+            <button
+              type="button"
+              class="slot left2"
+              aria-label="Shield"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-shield" /></svg>
+            </button>
+            <button
+              type="button"
+              class="slot right1"
+              aria-label="Bow"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-bow" /></svg>
+            </button>
+            <button
+              type="button"
+              class="slot right2"
+              aria-label="Amulet"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-sun" /></svg>
+            </button>
+            <button
+              type="button"
+              class="slot bottom1"
+              aria-label="Bag"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-bag" /></svg>
+            </button>
+            <button
+              type="button"
+              class="slot bottom2"
+              aria-label="Boots"
+              data-show-sheet
+            >
+              <svg class="icon"><use href="#i-boot" /></svg>
+            </button>
+          </div>
+          <div class="inventory-footer footer-actions">
+            <button type="button" aria-label="Details" data-show-sheet>
+              <svg class="icon"><use href="#i-eye" /></svg></button
+            ><span class="separator"></span
+            ><button type="button" aria-label="More" data-show-sheet>
+              <svg class="icon"><use href="#i-hub" /></svg>
+            </button>
+          </div>
         </section>
 
-        <div class="modal-layer" data-modal role="dialog" aria-modal="true" aria-label="Item details">
-          <div class="sheet"><div class="sheet-head"><svg class="icon"><use href="#i-shield"/></svg><strong>Selected detail</strong><button class="ui-button ghost icon-only" type="button" data-close-sheet aria-label="Close details"><svg class="icon sm"><use href="#i-close"/></svg></button></div><div class="sheet-body"><p>A small sheet for text that needs space. The world stays visible behind it.</p><div class="item-row"><span class="item-tile selected"><svg class="icon"><use href="#i-sabre"/></svg></span><span>Carved sabre<br /><span style="color:var(--muted)">Strength +4 · Level 8</span></span></div><button class="ui-button primary ornamented ornament-sides" type="button" data-close-sheet><svg class="button-ornament" aria-hidden="true"><use href="#ornament-branch"/></svg><span class="button-label">Done</span></button></div></div>
+        <div
+          class="modal-layer"
+          data-modal
+          role="dialog"
+          aria-modal="true"
+          aria-label="Item details"
+        >
+          <div class="sheet">
+            <div class="sheet-head">
+              <svg class="icon"><use href="#i-shield" /></svg
+              ><strong>Selected detail</strong
+              ><button
+                class="ui-button ghost icon-only"
+                type="button"
+                data-close-sheet
+                aria-label="Close details"
+              >
+                <svg class="icon sm"><use href="#i-close" /></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p>
+                A small sheet for text that needs space. The world stays visible
+                behind it.
+              </p>
+              <div class="item-row">
+                <span class="item-tile selected"
+                  ><svg class="icon"><use href="#i-sabre" /></svg></span
+                ><span
+                  >Carved sabre<br /><span style="color: var(--muted)"
+                    >Strength +4 · Level 8</span
+                  ></span
+                >
+              </div>
+              <button
+                class="ui-button primary ornamented ornament-sides"
+                type="button"
+                data-close-sheet
+              >
+                <svg class="button-ornament" aria-hidden="true">
+                  <use href="#ornament-branch" /></svg
+                ><span class="button-label">Done</span>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
-      <div class="outside-note"><span>Illustration only · app components remain unchanged</span><span>Palette, spacing, and structure follow the current GButton, Bar, Sheet, ItemTile, and Label.</span></div>
+      <div class="outside-note">
+        <span>Illustration only · app components remain unchanged</span
+        ><span
+          >Palette, spacing, and structure follow the current GButton, Bar,
+          Sheet, ItemTile, and Label.</span
+        >
+      </div>
     </div>
     <script>
-      const stage = document.querySelector('.stage');
+      const stage = document.querySelector(".stage");
       const params = new URLSearchParams(location.search);
-      const initialView = ['components', 'creation', 'inventory'].includes(params.get('view')) ? params.get('view') : 'creation';
+      const initialView = ["components", "creation", "inventory"].includes(
+        params.get("view"),
+      )
+        ? params.get("view")
+        : "creation";
       function setView(view) {
         stage.dataset.view = view;
-        document.querySelectorAll('[data-view-button]').forEach(button => {
+        document.querySelectorAll("[data-view-button]").forEach((button) => {
           const active = button.dataset.viewButton === view;
-          button.classList.toggle('active', active);
-          button.setAttribute('aria-current', active ? 'page' : 'false');
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-current", active ? "page" : "false");
         });
-        params.set('view', view);
-        history.replaceState(null, '', `${location.pathname}?${params.toString()}`);
+        params.set("view", view);
+        history.replaceState(
+          null,
+          "",
+          `${location.pathname}?${params.toString()}`,
+        );
       }
-      document.querySelectorAll('[data-view-button]').forEach(button => button.addEventListener('click', () => setView(button.dataset.viewButton)));
+      document
+        .querySelectorAll("[data-view-button]")
+        .forEach((button) =>
+          button.addEventListener("click", () =>
+            setView(button.dataset.viewButton),
+          ),
+        );
       setView(initialView);
-      document.querySelectorAll('[data-choice-group]').forEach(group => group.addEventListener('click', event => {
-        const button = event.target.closest('.choice');
-        if (!button || !group.contains(button)) return;
-        group.querySelectorAll('.choice').forEach(choice => choice.setAttribute('aria-pressed', String(choice === button)));
-        const className = document.querySelector('[data-class-name]');
-        if (button.dataset.class && className) className.textContent = button.dataset.class;
-      }));
-      const stepOrder = ['look', 'class', 'name'];
-      document.querySelectorAll('[data-create-step]').forEach(button => button.addEventListener('click', () => {
-        const step = button.dataset.createStep;
-        document.querySelectorAll('[data-create-step]').forEach(item => item.classList.toggle('active', item === button));
-        document.querySelectorAll('[data-create-group]').forEach(group => group.classList.toggle('active', group.dataset.createGroup === step));
-        document.querySelector('[data-step-count]').textContent = `0${stepOrder.indexOf(step) + 1} / 03`;
-      }));
-      document.querySelectorAll('.swatch').forEach(button => button.addEventListener('click', () => {
-        document.querySelectorAll('.swatch').forEach(item => {
-          item.classList.toggle('selected', item === button);
-          item.setAttribute('aria-pressed', String(item === button));
-        });
-      }));
-      const names = ['Остап', 'Марко', 'Данило', 'Северин'];
-      document.querySelectorAll('[data-random-name]').forEach(button => button.addEventListener('click', () => {
-        const input = button.closest('.name-field').querySelector('input');
-        const next = names[(names.indexOf(input.value) + 1) % names.length];
-        document.querySelectorAll('.name-field input').forEach(field => field.value = next);
-      }));
-      document.querySelectorAll('.name-field input').forEach(input => input.addEventListener('input', () => {
-        document.querySelectorAll('.name-field input').forEach(other => { if (other !== input) other.value = input.value; });
-      }));
-      const modal = document.querySelector('[data-modal]');
-      document.querySelectorAll('[data-show-sheet]').forEach(button => button.addEventListener('click', () => modal.classList.add('open')));
-      document.querySelectorAll('[data-close-sheet]').forEach(button => button.addEventListener('click', () => modal.classList.remove('open')));
-      modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); });
-      document.addEventListener('keydown', event => { if (event.key === 'Escape') modal.classList.remove('open'); });
+      document.querySelectorAll("[data-choice-group]").forEach((group) =>
+        group.addEventListener("click", (event) => {
+          const button = event.target.closest(".choice");
+          if (!button || !group.contains(button)) return;
+          group
+            .querySelectorAll(".choice")
+            .forEach((choice) =>
+              choice.setAttribute("aria-pressed", String(choice === button)),
+            );
+          const className = document.querySelector("[data-class-name]");
+          if (button.dataset.class && className)
+            className.textContent = button.dataset.class;
+        }),
+      );
+      const stepOrder = ["look", "class", "name"];
+      document.querySelectorAll("[data-create-step]").forEach((button) =>
+        button.addEventListener("click", () => {
+          const step = button.dataset.createStep;
+          document
+            .querySelectorAll("[data-create-step]")
+            .forEach((item) =>
+              item.classList.toggle("active", item === button),
+            );
+          document
+            .querySelectorAll("[data-create-group]")
+            .forEach((group) =>
+              group.classList.toggle(
+                "active",
+                group.dataset.createGroup === step,
+              ),
+            );
+          document.querySelector("[data-step-count]").textContent =
+            `0${stepOrder.indexOf(step) + 1} / 03`;
+        }),
+      );
+      document.querySelectorAll(".swatch").forEach((button) =>
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".swatch").forEach((item) => {
+            item.classList.toggle("selected", item === button);
+            item.setAttribute("aria-pressed", String(item === button));
+          });
+        }),
+      );
+      const names = ["Остап", "Марко", "Данило", "Северин"];
+      document.querySelectorAll("[data-random-name]").forEach((button) =>
+        button.addEventListener("click", () => {
+          const input = button.closest(".name-field").querySelector("input");
+          const next = names[(names.indexOf(input.value) + 1) % names.length];
+          document
+            .querySelectorAll(".name-field input")
+            .forEach((field) => (field.value = next));
+        }),
+      );
+      document.querySelectorAll(".name-field input").forEach((input) =>
+        input.addEventListener("input", () => {
+          document.querySelectorAll(".name-field input").forEach((other) => {
+            if (other !== input) other.value = input.value;
+          });
+        }),
+      );
+      const modal = document.querySelector("[data-modal]");
+      document
+        .querySelectorAll("[data-show-sheet]")
+        .forEach((button) =>
+          button.addEventListener("click", () => modal.classList.add("open")),
+        );
+      document
+        .querySelectorAll("[data-close-sheet]")
+        .forEach((button) =>
+          button.addEventListener("click", () =>
+            modal.classList.remove("open"),
+          ),
+        );
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) modal.classList.remove("open");
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") modal.classList.remove("open");
+      });
     </script>
   </body>
 </html>
