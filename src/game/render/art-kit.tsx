@@ -60,6 +60,7 @@ const G = {
   dodeca: new THREE.DodecahedronGeometry(0.5, 0),
   torus: new THREE.TorusGeometry(0.4, 0.05, 5, 12, Math.PI),
   plane: new THREE.PlaneGeometry(1, 1),
+  skirt: new THREE.CylinderGeometry(0.3, 0.5, 1, 8),
   gable: gableGeometry(),
 };
 
@@ -83,11 +84,17 @@ export function gableGeometry(): THREE.BufferGeometry {
 
 // ---------------------------------------------------------------- walk cycle
 
-/** Bobs and swings a figure while it moves; reads the speed it is given. */
+/**
+ * Bobs and swings a figure while it moves; reads the speed it is given.
+ * `left`/`right` are the legs; arms, when a figure has them, swing against
+ * the leg on their side (the weapon arm only a little).
+ */
 function useWalk(speed: () => number) {
   const body = useRef<THREE.Group>(null);
   const left = useRef<THREE.Group>(null);
   const right = useRef<THREE.Group>(null);
+  const leftArm = useRef<THREE.Group>(null);
+  const rightArm = useRef<THREE.Group>(null);
   const phase = useRef(0);
   useFrame((_, dt) => {
     const s = speed();
@@ -95,98 +102,282 @@ function useWalk(speed: () => number) {
     const swing = s > 0.05 ? Math.sin(phase.current) * 0.6 : 0;
     if (left.current) left.current.rotation.x = swing;
     if (right.current) right.current.rotation.x = -swing;
+    if (leftArm.current) leftArm.current.rotation.x = -swing * 0.8;
+    if (rightArm.current) rightArm.current.rotation.x = swing * 0.25;
     if (body.current)
       body.current.position.y =
         s > 0.05 ? Math.abs(Math.sin(phase.current)) * 0.06 : 0;
   });
-  return { body, left, right };
+  return { body, left, right, leftArm, rightArm };
 }
 
 // ---------------------------------------------------------------- heroes
 
-const CLASS_COAT: Record<string, number> = {
-  lytsar: 0x8c1d1d,
-  plastun: 0x2f4a2a,
-  kharakternyk: 0x2b2e5a,
+/** The class's cloth: the kozak's sharovary, the kozachka's skirt. */
+const CLASS_CLOTH: Record<string, number> = {
+  lytsar: 0xb3261e,
+  plastun: 0x4f5e2e,
+  kharakternyk: 0x2c3f86,
 };
 
-function Weapon({ kind }: { kind?: string }) {
+const HERO = {
+  shirt: 0xece5d5,
+  stitch: 0xb3261e,
+  belt: 0x1f1712,
+  buckle: 0xc9a24a,
+  sash: 0x7a1712,
+  boot: 0x231a14,
+  bootWoman: 0x8c1d1d,
+  steel: 0xd8dbe0,
+  wood: 0x5b3a1e,
+  brass: 0xc9a24a,
+};
+
+/** Where the hand sits in the arm's frame (the shoulder is the origin). */
+const HAND: Vec3 = [0, -0.54, 0.02];
+
+/**
+ * How each weapon is held: the weapon arm's rest pose, and the direction
+ * (in the figure's frame) the weapon's own +y points. Weapons are drawn
+ * from the grip outwards along +y.
+ */
+const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
+  sabre: { arm: [-0.3, 0, 0.16], aim: [0.35, -0.35, 0.87] },
+  staff: { arm: [-0.45, 0, 0.12], aim: [0, 1, 0.06] },
+  spear: { arm: [-0.45, 0, 0.12], aim: [0, 1, 0.12] },
+  bulava: { arm: [-0.55, 0, 0.16], aim: [0.15, 0.55, 0.8] },
+  pistol: { arm: [-1.1, 0, 0.08], aim: [0.05, 0.05, 1] },
+  bow: { arm: [-0.15, 0, 0.2], aim: [0, 1, 0] },
+};
+
+/** The weapon's rotation inside the (resting) arm, so it points at `aim`. */
+function gripRotation(grip: { arm: Vec3; aim: Vec3 }): Vec3 {
+  const arm = new THREE.Quaternion().setFromEuler(new THREE.Euler(...grip.arm));
+  const aim = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(...grip.aim).normalize(),
+  );
+  const e = new THREE.Euler().setFromQuaternion(arm.invert().multiply(aim));
+  return [e.x, e.y, e.z];
+}
+
+const GRIP_ROTATION: Record<string, Vec3> = Object.fromEntries(
+  Object.entries(GRIPS).map(([kind, grip]) => [kind, gripRotation(grip)]),
+);
+
+/** A weapon drawn from its grip (the origin) along +y. */
+function Weapon({ kind }: { kind: string }) {
   switch (kind) {
     case "bow":
+      // Belly forward and turned a little outwards so it reads from
+      // behind too; tips and string towards the body.
       return (
-        // Held upright at the side, belly forward and turned a little
-        // outwards so it reads from behind too; string on the hand side.
-        <group
-          position={[0.36, 0.82, 0.04]}
-          rotation={[0, -Math.PI / 2 + 0.6, -Math.PI / 2]}
-        >
-          <Part geometry={G.torus} color={0x6b4423} scale={[1.6, 0.7, 1.2]} />
+        <group rotation={[0, -Math.PI / 2 + 0.6, 0]}>
+          <Part
+            geometry={G.torus}
+            color={0x6b4423}
+            position={[-0.28, 0, 0]}
+            rotation={[0, 0, -Math.PI / 2]}
+            scale={[1.6, 0.7, 1.2]}
+          />
           <Part
             geometry={G.box}
             color={0xe8dcc0}
-            scale={[1.28, 0.018, 0.018]}
+            position={[-0.28, 0, 0]}
+            scale={[0.018, 1.28, 0.018]}
           />
         </group>
       );
     case "staff":
       return (
-        <group position={[0.4, 0.9, 0.05]}>
-          <Part geometry={G.cyl} color={0x5b3a1e} scale={[0.07, 1.7, 0.07]} />
+        <group>
+          <Part
+            geometry={G.cyl}
+            color={HERO.wood}
+            position={[0, 0.25, 0]}
+            scale={[0.07, 1.7, 0.07]}
+          />
           <Part
             geometry={G.octa}
             color={0xff8a2a}
             emissive={0xff6a00}
-            position={[0, 0.9, 0]}
+            position={[0, 1.18, 0]}
             scale={[0.18, 0.18, 0.18]}
           />
         </group>
       );
     case "spear":
       return (
-        <group position={[0.4, 1, 0.05]}>
-          <Part geometry={G.cyl} color={0x5b3a1e} scale={[0.06, 2.2, 0.06]} />
+        <group>
+          <Part
+            geometry={G.cyl}
+            color={HERO.wood}
+            position={[0, 0.3, 0]}
+            scale={[0.06, 2.2, 0.06]}
+          />
           <Part
             geometry={G.cone}
             color={0xb8b8c0}
-            position={[0, 1.2, 0]}
+            position={[0, 1.55, 0]}
             scale={[0.12, 0.3, 0.12]}
           />
         </group>
       );
     case "bulava":
       return (
-        <group position={[0.42, 0.7, 0.15]} rotation={[0.6, 0, 0]}>
-          <Part geometry={G.cyl} color={0x5b3a1e} scale={[0.06, 0.7, 0.06]} />
+        <group>
+          <Part
+            geometry={G.cyl}
+            color={HERO.wood}
+            position={[0, 0.2, 0]}
+            scale={[0.06, 0.62, 0.06]}
+          />
           <Part
             geometry={G.dodeca}
-            color={0xc9a24a}
-            position={[0, 0.4, 0]}
+            color={HERO.brass}
+            position={[0, 0.56, 0]}
             scale={[0.22, 0.22, 0.22]}
           />
         </group>
       );
     case "pistol":
       return (
-        <group position={[0.42, 0.75, 0.25]} rotation={[Math.PI / 2, 0, 0]}>
-          <Part geometry={G.box} color={0x3a2a1a} scale={[0.08, 0.4, 0.1]} />
+        <group>
+          <Part
+            geometry={G.box}
+            color={0x3a3a40}
+            position={[0, 0.2, 0.03]}
+            scale={[0.05, 0.4, 0.05]}
+          />
+          <Part
+            geometry={G.box}
+            color={0x3a2a1a}
+            position={[0, 0, 0]}
+            scale={[0.07, 0.16, 0.1]}
+          />
         </group>
       );
     default:
-      // A sabre, curved by a slight tilt.
+      // A shabla: grip, crossguard, and a blade that curves back towards
+      // its spine in three bends.
       return (
-        <group position={[0.42, 0.72, 0.2]} rotation={[0.9, 0, 0.1]}>
+        <group>
+          <Part
+            geometry={G.sphere}
+            color={HERO.brass}
+            position={[0, -0.09, 0]}
+            scale={[0.06, 0.06, 0.06]}
+          />
+          <Part geometry={G.box} color={0x2a1a10} scale={[0.045, 0.15, 0.05]} />
           <Part
             geometry={G.box}
-            color={0xd8dbe0}
-            position={[0, 0.35, 0]}
-            scale={[0.04, 0.75, 0.09]}
+            color={HERO.brass}
+            position={[0, 0.085, 0]}
+            scale={[0.05, 0.035, 0.17]}
           />
-          <Part geometry={G.box} color={0xc9a24a} scale={[0.2, 0.05, 0.08]} />
+          <group position={[0, 0.1, 0]}>
+            <Part
+              geometry={G.box}
+              color={HERO.steel}
+              position={[0, 0.15, 0]}
+              scale={[0.022, 0.3, 0.07]}
+            />
+            <group position={[0, 0.3, 0]} rotation={[-0.16, 0, 0]}>
+              <Part
+                geometry={G.box}
+                color={HERO.steel}
+                position={[0, 0.14, 0]}
+                scale={[0.022, 0.28, 0.065]}
+              />
+              <group position={[0, 0.28, 0]} rotation={[-0.22, 0, 0]}>
+                <Part
+                  geometry={G.cone4}
+                  color={HERO.steel}
+                  position={[0, 0.1, 0.0]}
+                  rotation={[0, Math.PI / 4, 0]}
+                  scale={[0.03, 0.2, 0.09]}
+                />
+              </group>
+            </group>
+          </group>
         </group>
       );
   }
 }
 
+/** A loose-sleeved shirt arm from the shoulder down, with a stitched cuff. */
+function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
+  return (
+    <>
+      <Part
+        geometry={G.sphere}
+        color={HERO.shirt}
+        position={[0, -0.03, 0]}
+        scale={[0.21, 0.2, 0.21]}
+      />
+      <Part
+        geometry={G.box}
+        color={HERO.shirt}
+        position={[0, -0.17, 0]}
+        scale={[0.16, 0.28, 0.17]}
+      />
+      <Part
+        geometry={G.sphere}
+        color={HERO.shirt}
+        position={[0, -0.37, 0.01]}
+        scale={[0.19, 0.24, 0.19]}
+      />
+      <Part
+        geometry={G.box}
+        color={HERO.stitch}
+        position={[0, -0.47, 0.015]}
+        scale={[0.13, 0.04, 0.13]}
+      />
+      <Part
+        geometry={G.box}
+        color={skin}
+        position={HAND}
+        scale={[0.1, 0.12, 0.11]}
+      />
+    </>
+  );
+}
+
+/** A boot from the hip down; under sharovary for him, a skirt for her. */
+function Leg({ woman, cloth }: { woman: boolean; cloth: number }) {
+  const boot = woman ? HERO.bootWoman : HERO.boot;
+  return (
+    <>
+      {woman ? null : (
+        // The wide sharovary leg, ballooning over the boot top.
+        <Part
+          geometry={G.sphere}
+          color={cloth}
+          position={[0, -0.24, 0]}
+          scale={[0.3, 0.46, 0.32]}
+        />
+      )}
+      <Part
+        geometry={G.cyl}
+        color={boot}
+        position={[0, -0.46, 0]}
+        scale={[0.15, 0.34, 0.16]}
+      />
+      <Part
+        geometry={G.box}
+        color={boot}
+        position={[0, -0.62, 0.05]}
+        scale={[0.15, 0.08, 0.27]}
+      />
+    </>
+  );
+}
+
+/**
+ * The hero: a kozak in a white stitched shirt, wide sharovary in the class's
+ * colour, a black belt with a red sash and dark boots, the oseledets lock on
+ * a shaved head; or a kozachka in a skirt, red boots and a vinok.
+ */
 export function HeroFigure({
   look,
   classId,
@@ -200,56 +391,180 @@ export function HeroFigure({
   helmet?: boolean;
   speed: () => number;
 }) {
-  const { body, left, right } = useWalk(speed);
+  const { body, left, right, leftArm, rightArm } = useWalk(speed);
   const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
   const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
-  const coat = CLASS_COAT[classId] ?? 0x8c1d1d;
+  const cloth = CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
   const woman = look.body === "kozachka";
+  const kind = weapon && GRIPS[weapon] ? weapon : "sabre";
+  const grip = GRIPS[kind]!;
   return (
     <group>
       <group ref={body}>
-        {/* Sharovary, coat, sash */}
+        {/* Hips: the sharovary's seat, or the skirt with a stitched hem */}
+        {woman ? (
+          <>
+            <Part
+              geometry={G.skirt}
+              color={cloth}
+              position={[0, 0.56, 0]}
+              scale={[0.9, 0.5, 0.75]}
+            />
+            <Part
+              geometry={G.cyl}
+              color={HERO.stitch}
+              position={[0, 0.33, 0]}
+              scale={[0.92, 0.05, 0.77]}
+            />
+          </>
+        ) : (
+          <Part
+            geometry={G.sphere}
+            color={cloth}
+            position={[0, 0.67, 0]}
+            scale={[0.54, 0.3, 0.38]}
+          />
+        )}
+        {/* Belt, buckle and the sash's hanging end */}
         <Part
-          geometry={woman ? G.cone : G.box}
-          color={woman ? coat : 0x22324a}
-          position={[0, 0.55, 0]}
-          scale={woman ? [0.75, 0.75, 0.6] : [0.5, 0.35, 0.34]}
+          geometry={G.box}
+          color={HERO.belt}
+          position={[0, 0.8, 0]}
+          scale={[0.47, 0.1, 0.32]}
         />
         <Part
           geometry={G.box}
-          color={coat}
-          position={[0, 0.95, 0]}
-          scale={[0.52, 0.5, 0.34]}
+          color={HERO.buckle}
+          position={[0, 0.8, 0.165]}
+          scale={[0.08, 0.07, 0.02]}
         />
         <Part
           geometry={G.box}
-          color={0xc9a24a}
-          position={[0, 0.74, 0]}
-          scale={[0.54, 0.08, 0.36]}
+          color={HERO.sash}
+          position={[-0.17, 0.67, 0.15]}
+          rotation={[0, 0, 0.12]}
+          scale={[0.07, 0.24, 0.03]}
         />
-        {/* Head */}
+        {/* Shirt: waist and chest, the collar slit with its embroidery */}
+        <Part
+          geometry={G.box}
+          color={HERO.shirt}
+          position={[0, 0.93, 0]}
+          scale={[0.44, 0.18, 0.29]}
+        />
+        <Part
+          geometry={G.box}
+          color={HERO.shirt}
+          position={[0, 1.1, 0]}
+          scale={[0.54, 0.3, 0.32]}
+        />
+        <Part
+          geometry={G.box}
+          color={skin}
+          position={[0, 1.18, 0.157]}
+          scale={[0.07, 0.13, 0.02]}
+        />
+        <Part
+          geometry={G.box}
+          color={HERO.stitch}
+          position={[-0.055, 1.15, 0.161]}
+          scale={[0.03, 0.16, 0.02]}
+        />
+        <Part
+          geometry={G.box}
+          color={HERO.stitch}
+          position={[0.055, 1.15, 0.161]}
+          scale={[0.03, 0.16, 0.02]}
+        />
+        {/* Neck and head */}
+        <Part
+          geometry={G.cyl}
+          color={skin}
+          position={[0, 1.28, 0]}
+          scale={[0.14, 0.12, 0.14]}
+        />
         <Part
           geometry={G.sphere}
           color={skin}
-          position={[0, 1.42, 0]}
-          scale={[0.36, 0.4, 0.36]}
+          position={[0, 1.46, 0]}
+          scale={[0.34, 0.37, 0.33]}
         />
+        <Part
+          geometry={G.box}
+          color={skin}
+          position={[-0.17, 1.45, -0.01]}
+          scale={[0.04, 0.08, 0.06]}
+        />
+        <Part
+          geometry={G.box}
+          color={skin}
+          position={[0.17, 1.45, -0.01]}
+          scale={[0.04, 0.08, 0.06]}
+        />
+        <Part
+          geometry={G.box}
+          color={skin}
+          position={[0, 1.45, 0.17]}
+          scale={[0.05, 0.08, 0.05]}
+        />
+        {/* Eyes and brows */}
+        {[-1, 1].map((side) => (
+          <group key={side} position={[side * 0.068, 0, 0]}>
+            <Part
+              geometry={G.box}
+              color={0x1a1210}
+              position={[0, 1.49, 0.153]}
+              scale={[0.045, 0.03, 0.02]}
+            />
+            <Part
+              geometry={G.box}
+              color={hair}
+              position={[0, 1.528, 0.15]}
+              rotation={[0, 0, side * -0.18]}
+              scale={[0.08, 0.026, 0.03]}
+            />
+          </group>
+        ))}
+        {/* Hair, or a hat */}
         {helmet ? (
-          <Part
-            geometry={G.cyl}
-            color={0x2a2018}
-            position={[0, 1.64, 0]}
-            scale={[0.36, 0.22, 0.36]}
-          />
+          <>
+            <Part
+              geometry={G.cyl}
+              color={0x2a2018}
+              position={[0, 1.61, 0]}
+              scale={[0.37, 0.2, 0.37]}
+            />
+            <Part
+              geometry={G.cyl}
+              color={HERO.sash}
+              position={[0, 1.715, 0]}
+              scale={[0.3, 0.04, 0.3]}
+            />
+          </>
         ) : woman ? (
           <>
-            {/* Vinok: a wreath of flowers, with a braid down the back */}
+            {/* Hair, a vinok of flowers and a braid down the back */}
+            <Part
+              geometry={G.sphere}
+              color={hair}
+              position={[0, 1.58, -0.035]}
+              scale={[0.36, 0.2, 0.36]}
+            />
             <Part
               geometry={G.cyl}
               color={0xd23a3a}
               position={[0, 1.6, 0]}
               scale={[0.38, 0.07, 0.38]}
             />
+            {[-0.12, 0, 0.12].map((x) => (
+              <Part
+                key={x}
+                geometry={G.sphere}
+                color={x === 0 ? 0xf2c94c : 0xe8e0d0}
+                position={[x, 1.64, 0.13]}
+                scale={[0.08, 0.08, 0.08]}
+              />
+            ))}
             <Part
               geometry={G.box}
               color={hair}
@@ -258,64 +573,94 @@ export function HeroFigure({
             />
           </>
         ) : look.hair === 0 ? (
-          // Oseledets: the shaved head's single long lock.
-          <Part
-            geometry={G.box}
-            color={hair}
-            position={[0.05, 1.62, -0.05]}
-            rotation={[0, 0, -0.6]}
-            scale={[0.07, 0.3, 0.07]}
-          />
+          <>
+            {/* Oseledets: a tuft on the crown of the shaved head and its
+                long lock falling over to one side */}
+            <Part
+              geometry={G.sphere}
+              color={hair}
+              position={[0, 1.645, -0.02]}
+              scale={[0.11, 0.09, 0.11]}
+            />
+            <Part
+              geometry={G.box}
+              color={hair}
+              position={[-0.07, 1.7, -0.03]}
+              rotation={[0, 0, 0.9]}
+              scale={[0.06, 0.16, 0.06]}
+            />
+            <Part
+              geometry={G.box}
+              color={hair}
+              position={[-0.17, 1.6, -0.05]}
+              rotation={[0.2, 0, -0.3]}
+              scale={[0.05, 0.2, 0.05]}
+            />
+          </>
         ) : (
-          <Part
-            geometry={G.sphere}
-            color={hair}
-            position={[0, 1.52, -0.02]}
-            scale={[0.38, 0.26, 0.38]}
-          />
+          <>
+            <Part
+              geometry={G.sphere}
+              color={hair}
+              position={[0, 1.585, -0.035]}
+              scale={[0.37, 0.2, 0.37]}
+            />
+            {look.hair === 2 ? (
+              // A chupryna: the forelock swept over the brow.
+              <Part
+                geometry={G.box}
+                color={hair}
+                position={[0.05, 1.6, 0.13]}
+                rotation={[0.4, 0, -0.5]}
+                scale={[0.16, 0.06, 0.08]}
+              />
+            ) : null}
+          </>
         )}
         {look.mustache && !woman ? (
-          <Part
-            geometry={G.box}
-            color={hair}
-            position={[0, 1.34, 0.17]}
-            scale={[0.3, 0.04, 0.04]}
-          />
+          <>
+            {/* A long moustache drooping past the chin */}
+            {[-1, 1].map((side) => (
+              <group key={side}>
+                <Part
+                  geometry={G.box}
+                  color={hair}
+                  position={[side * 0.065, 1.4, 0.168]}
+                  rotation={[0, 0, side * -0.4]}
+                  scale={[0.12, 0.04, 0.05]}
+                />
+                <Part
+                  geometry={G.box}
+                  color={hair}
+                  position={[side * 0.125, 1.33, 0.14]}
+                  rotation={[0.15, 0, side * 0.12]}
+                  scale={[0.035, 0.13, 0.035]}
+                />
+              </group>
+            ))}
+          </>
         ) : null}
-        <Weapon kind={weapon} />
+        {/* Arms: the left swings; the right holds the weapon */}
+        <group position={[-0.32, 1.2, 0]} rotation={[0, 0, -0.12]}>
+          <group ref={leftArm}>
+            <Arm skin={skin} />
+          </group>
+        </group>
+        <group position={[0.32, 1.2, 0]} rotation={grip.arm}>
+          <group ref={rightArm}>
+            <Arm skin={skin} />
+            <group position={HAND} rotation={GRIP_ROTATION[kind]}>
+              <Weapon kind={kind} />
+            </group>
+          </group>
+        </group>
       </group>
-      {!woman ? (
-        <>
-          <group ref={left} position={[-0.13, 0.4, 0]}>
-            <Part
-              geometry={G.box}
-              color={0x22324a}
-              position={[0, -0.18, 0]}
-              scale={[0.17, 0.4, 0.2]}
-            />
-            <Part
-              geometry={G.box}
-              color={0x3a1a10}
-              position={[0, -0.38, 0.03]}
-              scale={[0.18, 0.12, 0.26]}
-            />
-          </group>
-          <group ref={right} position={[0.13, 0.4, 0]}>
-            <Part
-              geometry={G.box}
-              color={0x22324a}
-              position={[0, -0.18, 0]}
-              scale={[0.17, 0.4, 0.2]}
-            />
-            <Part
-              geometry={G.box}
-              color={0x3a1a10}
-              position={[0, -0.38, 0.03]}
-              scale={[0.18, 0.12, 0.26]}
-            />
-          </group>
-        </>
-      ) : null}
+      <group ref={left} position={[-0.13, 0.66, 0]}>
+        <Leg woman={woman} cloth={cloth} />
+      </group>
+      <group ref={right} position={[0.13, 0.66, 0]}>
+        <Leg woman={woman} cloth={cloth} />
+      </group>
     </group>
   );
 }
