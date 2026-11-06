@@ -11,6 +11,7 @@ import TitleScreen from "./screens/title";
 import WorldScreen from "./screens/world";
 import { anonymousAuth } from "./state/platform";
 import { useGameFonts } from "./ui/fonts";
+import { FpsMeter } from "./ui/fps-meter";
 import { fullscreenOnFirstTap } from "./ui/fullscreen";
 import * as actions from "./state/actions";
 import { runtime } from "./state/runtime";
@@ -49,6 +50,7 @@ export default function Game() {
       {scene.name === "death" ? (
         <DeathScreen cards={scene.cards} picked={scene.picked} />
       ) : null}
+      <FpsMeter />
     </View>
   );
 }

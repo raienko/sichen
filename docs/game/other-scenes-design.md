@@ -26,7 +26,7 @@ Equip/Unequip and Drop stay in a compact lower-edge action dock, outside the her
 
 Show STR/DEX/INT compactly; they derive from class, level, gear and passives. Full derived stats, resistances, sets and affixes open deliberately from the stat glyph. Preserve potions, relic operations, stash access and loot-filter controls in their appropriate contexts. Do not introduce manual attribute allocation, food stacks, crafting materials or extra currencies through decorative art.
 
-The illustrative level-8 Lytsar, Karabela, attributes, XP, rarity, bag contents and comparison are composition examples, not a validated save. Production reads real items, requirements and derived stats.
+The illustrative level-8 Ratnyk, Karabela, attributes, XP, rarity, bag contents and comparison are composition examples, not a validated save. Production reads real items, requirements and derived stats.
 
 ## Active skills
 
@@ -44,7 +44,7 @@ Also support tap skill, then tap destination slot, with the same result. This ke
 
 The previous six-row loadout list and separate Library button are superseded: the library is now directly visible and loadout is a separate horizontal strip below it. Do not copy support gems, linked sockets, gem capacity, ranks, DPS or real-time attack speed from the composition reference.
 
-The library preserves the eight current Lytsar entries: five potentially learned at level 8, Blessed blade gated at level 10, and two quest-hidden entries. Reflect the actual learned list and training/quest conditions; level alone does not grant a skill. Keep undiscovered names hidden. The existing panel is learned-only; locked-library presentation is a deliberate interface extension.
+The library preserves the eight current Ratnyk entries: five potentially learned at level 8, Blessed blade gated at level 10, and two quest-hidden entries. Reflect the actual learned list and training/quest conditions; level alone does not grant a skill. Keep undiscovered names hidden. The existing panel is learned-only; locked-library presentation is a deliberate interface extension.
 
 Selection reveals name, AP, mana/stamina costs, delivery/damage type and effects in the top information region. Descriptions remain available for targeting, duration and conditions. Show all actual costs, including Battle cry's five mana, with distinct resource glyphs.
 
@@ -62,7 +62,7 @@ Preserve the actual graph: **43 nodes and 45 edges**, three class starts, three 
 
 | Arm                | Position    | Notables                    |
 | ------------------ | ----------- | --------------------------- |
-| STR / Lytsar       | Lower left  | Bulwark, Berserker          |
+| STR / Ratnyk       | Lower left  | Bulwark, Berserker          |
 | DEX / Plastun      | Lower right | Sharpshooter, Ghost step    |
 | INT / Kharakternyk | Top         | Fire-born, Kharakter's will |
 

@@ -336,6 +336,39 @@ export function fitPlan(
   return { attacks, defense, readyAt: 0 };
 }
 
+/** Applies one enemy and one ally selection to every matching player action. */
+export function aimPlan(
+  state: BattleState,
+  actor: Combatant,
+  plan: Plan,
+  enemyTargetId: string | null,
+  allyTargetId: string | null,
+): Plan {
+  const foes = living(state, actor.side === 0 ? 1 : 0);
+  const allies = living(state, actor.side);
+  const enemyId =
+    foes.find((a) => a.id === enemyTargetId)?.id ??
+    foes.find((a) => a.row === 0)?.id ??
+    foes[0]?.id;
+  const allyId =
+    allies.find((a) => a.id === allyTargetId)?.id ??
+    allies.find((a) => a.id === actor.id)?.id ??
+    allies[0]?.id;
+  return {
+    ...plan,
+    attacks: plan.attacks.map((action) => {
+      const target = getSkill(action.skillId).target;
+      const targetId =
+        target === "enemy" || target === "enemyRow"
+          ? enemyId
+          : target === "ally"
+            ? allyId
+            : undefined;
+      return { skillId: action.skillId, targetId };
+    }),
+  };
+}
+
 // ---------------------------------------------------------------- resolution
 
 type Ctx = {
@@ -378,9 +411,10 @@ function resolveTargets(
       return allies.length === 0
         ? []
         : [
-            allies.reduce((low, a) =>
-              a.hp / a.base.maxHp < low.hp / low.base.maxHp ? a : low,
-            ),
+            allies.find((a) => a.id === wanted) ??
+              allies.reduce((low, a) =>
+                a.hp / a.base.maxHp < low.hp / low.base.maxHp ? a : low,
+              ),
           ];
     }
     case "allEnemies":
@@ -388,7 +422,9 @@ function resolveTargets(
     default: {
       const pool = reachable(ctx, actor, deliveryOf(skill));
       if (pool.length === 0) return [];
-      const chosen = pool.find((p) => p.id === wanted) ?? ctx.rng.pick(pool);
+      const chosen =
+        pool.find((p) => p.id === wanted) ??
+        pool.reduce((low, p) => (p.hp < low.hp ? p : low));
       if (skill.target === "enemyRow") {
         return opponentsOf(ctx, actor).filter((f) => f.row === chosen.row);
       }

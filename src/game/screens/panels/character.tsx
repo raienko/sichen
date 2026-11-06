@@ -12,13 +12,14 @@ import { useT } from "../../i18n";
 import HeroPreview from "../../render/hero-preview";
 import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
-import { meetsRequirement } from "../../sim/hero";
+import { equip, meetsRequirement } from "../../sim/hero";
 import {
   RELICS,
   type EquipSlot,
   type Item,
   type ItemSlot,
 } from "../../sim/types";
+import { useDoubleTap } from "../../ui/double-tap";
 import { ItemCard, ItemTile } from "../../ui/items";
 import { GIcon, Label, RoundButton, Row } from "../../ui/kit";
 import { palette, rarityColor } from "../../ui/palette";
@@ -30,9 +31,13 @@ import { CornerAction, Workspace } from "./workspace";
 /**
  * Character and bag in one screen, after the approved composition: the
  * hero turning in the middle with the ten worn positions down both sides,
- * the bag below with a category rail, and the selected item's details
- * laid over the dimmed hero. Equip, Take off and Drop sit in the lower
- * right; the bag and equipment stay usable while details show.
+ * the bag below. The bag's category tabs sit in the bottom bar on wide
+ * screens and under the bag on tall ones. A selected item's details pop up
+ * over the equipment with Equip, Take off and Drop in the popup itself;
+ * its close sits top right, and a tap on empty space outside closes it.
+ * A bag item is shown beside whatever it would replace, so the popup
+ * covers the worn positions too; a worn item's popup stays between them.
+ * Double-tap equips a bag item or takes a worn one off.
  */
 
 /** Down the left: head to waist. Down the right: jewellery and hands. */
@@ -92,13 +97,16 @@ function WornSlot({
   item,
   selected,
   onPress,
+  onDoublePress,
 }: {
   slot: EquipSlot;
   item: Item | undefined;
   selected: boolean;
   onPress: () => void;
+  onDoublePress: () => void;
 }) {
   const { t, tr } = useT();
+  const press = useDoubleTap(onPress, onDoublePress)!;
   const color = item ? rarityColor[item.rarity] : palette.faint;
   return (
     <RoundButton
@@ -110,7 +118,7 @@ function WornSlot({
       }
       selected={selected}
       dim={!item}
-      onPress={onPress}
+      onPress={press}
       style={styles.wornSlot}
     >
       <View style={styles.wornIcon}>
@@ -124,6 +132,15 @@ function WornSlot({
         <View style={[styles.rarity, { backgroundColor: color }]} />
       ) : null}
     </RoundButton>
+  );
+}
+
+function PopupHeading({ icon, label }: { icon: string; label: string }) {
+  return (
+    <Row gap={6}>
+      <GIcon name={icon} size={12} color={palette.muted} />
+      <Label value={label} type="caption2" color={palette.muted} />
+    </Row>
   );
 }
 
@@ -143,6 +160,7 @@ export function CharacterScreen({
   const [selected, setSelected] = useState<Selection | null>(null);
   const [category, setCategory] = useState<Category>("all");
   const [gridWidth, setGridWidth] = useState(0);
+  const [equipmentWidth, setEquipmentWidth] = useState(0);
   const { hero } = save;
 
   const item: Item | undefined = !selected
@@ -158,6 +176,12 @@ export function CharacterScreen({
     : save.inventory;
   const cell = gridWidth > 0 ? Math.floor((gridWidth - 4 * 4) / COLUMNS) : 0;
   const weapon = hero.equipment.weapon;
+  // What equipping the selected bag item would take off: the item in its
+  // slot, plus the offhand or weapon a two-handed swap pushes out.
+  const replaced =
+    selected?.from === "bag" && item ? equip(hero, item).removed : [];
+  // Two cards side by side need about this much room; narrower, they stack.
+  const sideBySide = equipmentWidth >= 340;
 
   const toggle = (next: Selection) =>
     setSelected((prev) =>
@@ -170,6 +194,91 @@ export function CharacterScreen({
         : next,
     );
 
+  const equipFromBag = (it: Item) => {
+    if (!meetsRequirement(hero, it)) {
+      actions.toast("user-shield", "inv.cantWear", undefined, "bad");
+      return;
+    }
+    actions.equipItem(it.uid);
+    setSelected(null);
+  };
+  const takeOff = (slot: EquipSlot) => {
+    actions.unequipItem(slot);
+    setSelected(null);
+  };
+
+  const popup =
+    item && selected ? (
+      // Taps on the popup itself stay here instead of closing it.
+      <View onStartShouldSetResponder={() => true} style={styles.details}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.detailsBody}
+        >
+          {replaced.length ? (
+            <View style={sideBySide ? styles.compareRow : styles.compareStack}>
+              <View style={sideBySide ? styles.compareColumn : styles.stacked}>
+                <PopupHeading icon="bag-shopping" label={t("inv.selected")} />
+                <ItemCard item={item} hero={hero} bare compact />
+              </View>
+              <View
+                style={
+                  sideBySide
+                    ? [styles.compareColumn, styles.equippedBeside]
+                    : [styles.stacked, styles.equippedBelow]
+                }
+              >
+                <PopupHeading icon="user-shield" label={t("inv.equipped")} />
+                {replaced.map((r) => (
+                  <ItemCard key={r.uid} item={r} hero={hero} bare compact />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <ItemCard item={item} hero={hero} bare />
+          )}
+        </ScrollView>
+        <Row gap={6} style={styles.actions}>
+          {selected.from === "bag" ? (
+            <>
+              <CornerAction
+                icon="arrow-up"
+                label={t("inv.equip")}
+                iconOnly
+                disabled={!meetsRequirement(hero, item)}
+                onPress={() => equipFromBag(item)}
+              />
+              <CornerAction
+                icon="trash"
+                label={t("inv.drop")}
+                iconOnly
+                danger
+                onPress={() => {
+                  actions.dropItem(item.uid);
+                  setSelected(null);
+                }}
+              />
+            </>
+          ) : (
+            <CornerAction
+              icon="arrow-down"
+              label={t("inv.unequip")}
+              iconOnly
+              onPress={() => takeOff(selected.slot)}
+            />
+          )}
+        </Row>
+        <View style={styles.close}>
+          <CornerAction
+            icon="xmark"
+            label={t("menu.close")}
+            iconOnly
+            onPress={() => setSelected(null)}
+          />
+        </View>
+      </View>
+    ) : null;
+
   const hero3d = (
     <View style={styles.stage}>
       <View style={StyleSheet.absoluteFill}>
@@ -180,19 +289,16 @@ export function CharacterScreen({
           helmet={!!hero.equipment.helmet}
         />
       </View>
-      {item ? (
-        // The details fade over a locally dimmed hero.
-        <View style={styles.details}>
-          <ScrollView contentContainerStyle={styles.detailsBody}>
-            <ItemCard item={item} hero={hero} bare />
-          </ScrollView>
-        </View>
-      ) : null}
+      {/* A worn item's details fade over the locally dimmed hero. */}
+      {selected?.from === "worn" ? popup : null}
     </View>
   );
 
   const equipment = (
-    <View style={styles.equipment}>
+    <View
+      style={styles.equipment}
+      onLayout={(e) => setEquipmentWidth(e.nativeEvent.layout.width)}
+    >
       <View style={styles.column}>
         {LEFT.map((slot) => (
           <WornSlot
@@ -202,6 +308,9 @@ export function CharacterScreen({
             selected={selected?.from === "worn" && selected.slot === slot}
             onPress={() =>
               hero.equipment[slot] ? toggle({ from: "worn", slot }) : undefined
+            }
+            onDoublePress={() =>
+              hero.equipment[slot] ? takeOff(slot) : undefined
             }
           />
         ))}
@@ -217,9 +326,44 @@ export function CharacterScreen({
             onPress={() =>
               hero.equipment[slot] ? toggle({ from: "worn", slot }) : undefined
             }
+            onDoublePress={() =>
+              hero.equipment[slot] ? takeOff(slot) : undefined
+            }
           />
         ))}
       </View>
+      {/* A bag item's popup covers the worn positions to fit the comparison. */}
+      {selected?.from === "bag" ? popup : null}
+    </View>
+  );
+
+  const categoryTabs = (
+    <View accessibilityRole="tablist" style={styles.categories}>
+      {CATEGORIES.map((c) => (
+        <Pressable
+          key={c.id}
+          accessibilityRole="tab"
+          accessibilityLabel={
+            c.id === "relics" ? t("inv.tab.relics") : t(`inv.cat.${c.id}`)
+          }
+          accessibilityState={{ selected: category === c.id }}
+          onPress={() => setCategory(c.id)}
+          style={[styles.categoryTab, category === c.id && styles.categoryOn]}
+        >
+          <GIcon
+            name={c.icon}
+            size={17}
+            color={category === c.id ? palette.amber : palette.muted}
+          />
+          {c.id === "relics" ? (
+            <Label
+              value={String(RELICS.reduce((n, r) => n + save.relics[r], 0))}
+              type="caption2"
+              color={palette.muted}
+            />
+          ) : null}
+        </Pressable>
+      ))}
     </View>
   );
 
@@ -241,33 +385,6 @@ export function CharacterScreen({
         <Label value={String(hero.potions.mana)} type="footnote" />
       </Row>
       <View style={styles.bagBody}>
-        <View style={styles.rail}>
-          {CATEGORIES.map((c) => (
-            <Pressable
-              key={c.id}
-              accessibilityRole="tab"
-              accessibilityLabel={
-                c.id === "relics" ? t("inv.tab.relics") : t(`inv.cat.${c.id}`)
-              }
-              accessibilityState={{ selected: category === c.id }}
-              onPress={() => setCategory(c.id)}
-              style={[styles.railItem, category === c.id && styles.railOn]}
-            >
-              <GIcon
-                name={c.icon}
-                size={17}
-                color={category === c.id ? palette.amber : palette.muted}
-              />
-              {c.id === "relics" ? (
-                <Label
-                  value={String(RELICS.reduce((n, r) => n + save.relics[r], 0))}
-                  type="caption2"
-                  color={palette.muted}
-                />
-              ) : null}
-            </Pressable>
-          ))}
-        </View>
         {category === "relics" ? (
           <ScrollView style={styles.flex}>
             <RelicsTab save={save} />
@@ -304,6 +421,9 @@ export function CharacterScreen({
                               ? () => toggle({ from: "bag", uid: it.uid })
                               : undefined
                           }
+                          onDoublePress={
+                            it ? () => equipFromBag(it) : undefined
+                          }
                         />
                       );
                     },
@@ -313,41 +433,7 @@ export function CharacterScreen({
           </ScrollView>
         )}
       </View>
-      {item ? (
-        <Row gap={14} style={styles.actions}>
-          {selected?.from === "bag" ? (
-            <>
-              <CornerAction
-                icon="user-shield"
-                label={t("inv.equip")}
-                disabled={!meetsRequirement(hero, item)}
-                onPress={() => {
-                  actions.equipItem(item.uid);
-                  setSelected(null);
-                }}
-              />
-              <CornerAction
-                icon="trash"
-                label={t("inv.drop")}
-                danger
-                onPress={() => {
-                  actions.dropItem(item.uid);
-                  setSelected(null);
-                }}
-              />
-            </>
-          ) : selected?.from === "worn" ? (
-            <CornerAction
-              icon="arrow-down"
-              label={t("inv.unequip")}
-              onPress={() => {
-                actions.unequipItem(selected.slot);
-                setSelected(null);
-              }}
-            />
-          ) : null}
-        </Row>
-      ) : null}
+      {wide ? null : categoryTabs}
     </View>
   );
 
@@ -356,11 +442,18 @@ export function CharacterScreen({
       save={save}
       tab={showStats ? "character" : "inventory"}
       onClose={onClose}
+      navExtra={!showStats && wide ? categoryTabs : undefined}
     >
       {showStats ? (
         <CharacterStats save={save} />
       ) : (
-        <View style={wide ? styles.wide : styles.tall}>
+        // A tap on empty space closes the item popup; items, slots and
+        // buttons take their own taps first.
+        <View
+          onStartShouldSetResponder={() => !!selected}
+          onResponderRelease={() => setSelected(null)}
+          style={wide ? styles.wide : styles.tall}
+        >
           <View style={wide ? styles.half : styles.top}>{equipment}</View>
           <View style={wide ? styles.half : styles.flex}>{bag}</View>
         </View>
@@ -388,10 +481,32 @@ const styles = StyleSheet.create({
   stage: { flex: 1, overflow: "hidden", borderRadius: 12 },
   details: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(12, 10, 8, 0.72)",
+    borderRadius: 12,
+    backgroundColor: "rgba(12, 10, 8, 0.86)",
+    paddingBottom: 8,
+  },
+  detailsBody: {
+    padding: 12,
+    paddingTop: 52,
+    gap: 6,
+    flexGrow: 1,
     justifyContent: "center",
   },
-  detailsBody: { padding: 12, gap: 6, flexGrow: 1, justifyContent: "center" },
+  close: { position: "absolute", top: 0, end: 0 },
+  compareRow: { flexDirection: "row", gap: 12 },
+  compareStack: { gap: 14 },
+  compareColumn: { flex: 1, gap: 6 },
+  stacked: { gap: 6 },
+  equippedBeside: {
+    paddingStart: 10,
+    borderStartWidth: 1,
+    borderColor: palette.lineSoft,
+  },
+  equippedBelow: {
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderColor: palette.lineSoft,
+  },
   rarity: {
     position: "absolute",
     bottom: 3,
@@ -401,20 +516,20 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   bag: { flex: 1, gap: 8 },
-  bagBody: { flex: 1, flexDirection: "row", gap: 8 },
-  rail: {
+  bagBody: { flex: 1 },
+  categories: { flexDirection: "row", gap: 4 },
+  categoryTab: {
+    minWidth: 44,
+    height: 44,
+    paddingHorizontal: 6,
+    flexDirection: "row",
     gap: 4,
-    paddingEnd: 6,
-    borderEndWidth: 1,
-    borderColor: palette.bronze,
-  },
-  railItem: {
-    width: 44,
-    minHeight: 44,
     alignItems: "center",
     justifyContent: "center",
+    borderBottomWidth: 2,
+    borderColor: "transparent",
   },
-  railOn: { borderStartWidth: 2, borderColor: palette.amber },
+  categoryOn: { borderColor: palette.amber },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  actions: { alignSelf: "flex-end" },
+  actions: { alignSelf: "flex-end", paddingHorizontal: 8 },
 });

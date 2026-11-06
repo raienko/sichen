@@ -38,12 +38,15 @@ export function Workspace({
   tab,
   onClose,
   hideHeader,
+  navExtra,
   children,
 }: {
   save: SaveData;
   tab: WorkspaceTab;
   onClose: () => void;
   hideHeader?: boolean;
+  /** The screen's own controls, in the bottom bar between the tabs and Back. */
+  navExtra?: ReactNode;
   children: ReactNode;
 }) {
   const { t, tr } = useT();
@@ -134,7 +137,7 @@ export function Workspace({
             </View>
           </Row>
         ))}
-        <View style={styles.flex} />
+        <View style={styles.navExtra}>{navExtra}</View>
         <RoundButton
           size={54}
           accessibilityLabel={t("menu.close")}
@@ -158,12 +161,15 @@ export function CornerAction({
   onPress,
   disabled,
   danger,
+  iconOnly,
 }: {
   icon: string;
   label: string;
   onPress: () => void;
   disabled?: boolean;
   danger?: boolean;
+  /** The label is only read out, not shown. */
+  iconOnly?: boolean;
 }) {
   const tone = danger ? palette.bad : palette.ivory;
   return (
@@ -184,7 +190,7 @@ export function CornerAction({
       <View style={[styles.cornerRing, { borderColor: tone }]}>
         <GIcon name={icon} size={20} color={tone} />
       </View>
-      <Label value={label} type="caption2" color={tone} />
+      {iconOnly ? null : <Label value={label} type="caption2" color={tone} />}
     </Pressable>
   );
 }
@@ -213,6 +219,7 @@ const styles = StyleSheet.create({
   title: { flex: 1, gap: 4, minWidth: 0 },
   body: { flex: 1 },
   nav: { alignItems: "center" },
+  navExtra: { flex: 1, alignItems: "flex-end" },
   navTab: { width: 54, height: 54 },
   navButton: {
     borderWidth: 0,

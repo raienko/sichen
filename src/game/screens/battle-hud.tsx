@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
@@ -19,8 +19,8 @@ import { battleActions } from "../sim/hero";
 import { DELIVERIES, type Skill, type StatusKind } from "../sim/types";
 import { arcLayout } from "../ui/arc";
 import { Glyph } from "../ui/glyphs";
-import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
-import { LevelBadge } from "../ui/level-badge";
+import { ActorResourceHud } from "../ui/actor-resource-hud";
+import { GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { OrnamentRule } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
@@ -38,45 +38,34 @@ const STATUS_ICON: Record<StatusKind, string> = {
   stun: "star",
 };
 
-/** An ally's or a foe's portrait, name, level and resource bars. */
+/** The hero and the selected foe share a mirrored resource pendant. */
 export function ActorPanel({
   actor,
+  portrait,
   heroLevel,
   align = "start",
   compact,
 }: {
   actor: Combatant | undefined;
+  /** The fighter's 3D face; while it stands, it replaces the class icon. */
+  portrait?: ReactNode;
   /** For a foe: colours its level badge by danger. */
   heroLevel?: number;
   align?: "start" | "end";
-  /** Short screens: no name line and a smaller portrait. */
+  /** Short screens use a smaller pendant. Names show above, in the battle screen's own band. */
   compact?: boolean;
 }) {
-  const { t, tr } = useT();
-  const type = useTypography();
-  // Bars that print their numbers are as tall as that text, at any scale.
-  const textBar = type.caption2.lineHeight + 2;
-  // Both sides share one shape, so the two panels line up: a two-line name
-  // box, three bar rows (an empty row where a fighter has no such
-  // resource) and a status row.
-  const nameBox = type.subheadline.lineHeight * 2;
-  const statusRow = 14;
-  // Bars only need room for the longest value, "9999/9999"; the body is
-  // that wide and the name wraps within it.
-  const barWidth = Math.ceil(type.caption2.fontSize * 0.62 * 9) + 14;
-  const bodyHeight =
-    (compact ? 0 : nameBox + 3) + 3 * textBar + 2 * 3 + 3 + statusRow;
+  const { t } = useT();
   if (!actor) {
     return (
       <View
         style={[
-          styles.panel,
-          styles.panelEmpty,
-          { minHeight: bodyHeight + 16, width: barWidth + 70 },
-          { alignSelf: align === "end" ? "flex-end" : "flex-start" },
-          align === "end" && styles.panelEnd,
+          styles.emptyTarget,
+          compact && styles.emptyTargetCompact,
+          align === "end" && styles.emptyTargetEnd,
         ]}
       >
+        <GIcon name="crosshairs" size={18} color={palette.faint} />
         <Label
           value={t("battle.noTarget")}
           type="caption2"
@@ -87,76 +76,23 @@ export function ActorPanel({
     );
   }
   const foe = actor.side === 1;
-  const end = align === "end";
-  const ring = foe ? (actor.boss ? "#b04ae8" : palette.bad) : palette.ivory;
-  const portrait = (
-    <View>
-      <View
-        style={[
-          styles.panelPortrait,
-          compact && styles.panelPortraitCompact,
-          { borderColor: ring },
-        ]}
-      >
-        <GIcon
-          name={actor.hp > 0 ? actor.icon : "skull"}
-          size={compact ? 16 : 22}
-          color={ring}
-        />
-      </View>
-      <LevelBadge
-        level={actor.level}
-        heroLevel={foe ? heroLevel : undefined}
-        style={styles.panelLevel}
-      />
-    </View>
-  );
-  const bar = (value: number, max: number, color: string) =>
-    max > 0 ? (
-      <Bar value={value} max={max} color={color} height={textBar} showText />
-    ) : (
-      <View style={{ height: textBar }} />
-    );
   return (
-    <View
-      style={[
-        styles.panel,
-        compact && styles.panelCompact,
-        end && styles.panelEnd,
-        // Hug the content at the outer edge rather than stretch.
-        { alignSelf: end ? "flex-end" : "flex-start" },
-      ]}
-      accessibilityLabel={tr(actor.name)}
-    >
-      {portrait}
-      <View style={[styles.panelBody, { height: bodyHeight, width: barWidth }]}>
-        {compact ? null : (
-          <View style={[styles.panelName, { height: nameBox }]}>
-            <Label
-              value={tr(actor.name)}
-              type="subheadline"
-              display
-              color={palette.ivory}
-              numberOfLines={2}
-              style={end && styles.textEnd}
-            />
-          </View>
-        )}
-        {bar(actor.hp, actor.base.maxHp, palette.hp)}
-        {bar(actor.mana, actor.base.maxMana, palette.mana)}
-        {bar(actor.stamina, actor.base.maxStamina, palette.stamina)}
-        <Row gap={4} style={[{ height: statusRow }, end && styles.rowEnd]}>
-          {actor.statuses.map((s) => (
-            <GIcon
-              key={s.kind}
-              name={STATUS_ICON[s.kind]}
-              size={11}
-              color={palette.status[s.kind]}
-            />
-          ))}
-        </Row>
-      </View>
-    </View>
+    <ActorResourceHud
+      icon={actor.hp > 0 ? actor.icon : "skull"}
+      portrait={actor.hp > 0 ? portrait : undefined}
+      level={actor.level}
+      heroLevel={foe ? heroLevel : undefined}
+      portraitAccent={foe ? (actor.boss ? "#b04ae8" : palette.bad) : undefined}
+      reverse={foe}
+      hp={{ value: actor.hp, max: actor.base.maxHp }}
+      mana={{ value: actor.mana, max: actor.base.maxMana }}
+      stamina={{ value: actor.stamina, max: actor.base.maxStamina }}
+      compact={compact}
+      statuses={actor.statuses.map((status) => ({
+        icon: STATUS_ICON[status.kind],
+        color: palette.status[status.kind],
+      }))}
+    />
   );
 }
 
@@ -175,8 +111,7 @@ function resourcesLeft(battle: BattleSession, except?: number) {
     stamina -= s.cost.stamina ?? 0;
     if (s.potion) potions[s.potion] -= 1;
   }
-  // Never below zero: during playback the plan shown is the round being
-  // played, while a fresh freeze may already have cut this round's AP.
+  // During playback the slots already show the next round's plan.
   const ap = Math.max(0, apFor(hero) - planCost({ ...battle.plan, attacks }));
   return { hero, mana, stamina, potions, ap };
 }
@@ -205,7 +140,7 @@ export function ActionSlots({
   onOpen: (index: number) => void;
 }) {
   const { t, tr } = useT();
-  const planning = battle.phase === "planning";
+  const editable = battle.phase !== "over" && !battle.state.result;
   const { hero, ap } = resourcesLeft(battle);
   const stunned = hasStatus(hero, "stun");
   const frozen = hasStatus(hero, "freeze");
@@ -255,7 +190,7 @@ export function ActionSlots({
                     ? `${t("battle.slot", { n: i + 1 })}: ${tr(skill.name)}`
                     : t("battle.slot", { n: i + 1 })
                 }
-                disabled={!planning || stunned}
+                disabled={!editable || stunned}
                 onPress={() => onOpen(i)}
               >
                 {skill ? (
@@ -294,7 +229,7 @@ function skillColor(skill: Skill): string {
 /** The three defence shields, on or off, 1 AP each. */
 function DefenseToggles({ battle }: { battle: BattleSession }) {
   const { t } = useT();
-  const planning = battle.phase === "planning";
+  const editable = battle.phase !== "over" && !battle.state.result;
   const { hero, ap } = resourcesLeft(battle);
   const stunned = hasStatus(hero, "stun");
   return (
@@ -306,7 +241,7 @@ function DefenseToggles({ battle }: { battle: BattleSession }) {
             key={kind}
             accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
             accessibilityState={{ selected: on }}
-            disabled={!planning || stunned || (!on && ap <= 0)}
+            disabled={!editable || stunned || (!on && ap <= 0)}
             onPress={() => actions.toggleDefense(kind)}
             style={[
               styles.defense,
@@ -314,7 +249,7 @@ function DefenseToggles({ battle }: { battle: BattleSession }) {
                 borderColor: palette.delivery[kind],
                 backgroundColor: "rgba(42, 34, 27, 0.95)",
               },
-              !on && planning && ap <= 0 && styles.off,
+              !on && editable && ap <= 0 && styles.off,
             ]}
           >
             <GIcon
@@ -352,19 +287,14 @@ function tabOf(skill: Skill): Tab {
   return "skills";
 }
 
-/**
- * Every action the hero can put in slot `index`, by tab. An enemy-targeted
- * action goes at `targetId`, the foe selected in the scene.
- */
+/** Every action the hero can put in slot `index`, by tab. */
 export function ActionPicker({
   battle,
   index,
-  targetId,
   onClose,
 }: {
   battle: BattleSession;
   index: number;
-  targetId: string | undefined;
   onClose: () => void;
 }) {
   const { t, tr } = useT();
@@ -382,8 +312,7 @@ export function ActionPicker({
   const nameBox = useTypography().caption2.lineHeight * 2;
 
   const pick = (skill: Skill) => {
-    const aimed = skill.target === "enemy" || skill.target === "enemyRow";
-    actions.setAttack(index, skill.id, aimed ? targetId : undefined);
+    actions.setAttack(index, skill.id);
     onClose();
   };
 
@@ -579,7 +508,7 @@ export function TacticsBar({
 }) {
   const { t } = useT();
   const save = useSave();
-  const planning = battle.phase === "planning";
+  const editable = battle.phase !== "over" && !battle.state.result;
   const empty =
     battle.plan.attacks.length +
       DELIVERIES.reduce((n, k) => n + battle.plan.defense[k], 0) ===
@@ -595,7 +524,7 @@ export function TacticsBar({
             accessibilityLabel={t("battle.tactic", { n: i + 1 })}
             selected={active}
             dim={!tactic && !active}
-            disabled={!planning}
+            disabled={!editable}
             onPress={() => actions.pickTactic(i)}
             onLongPress={() => actions.saveTactic(i)}
           >
@@ -610,7 +539,7 @@ export function TacticsBar({
       <RoundButton
         size={size}
         accessibilityLabel={t("battle.saveTactic")}
-        disabled={!planning}
+        disabled={!editable}
         onPress={() => actions.saveTactic(save.settings.tactic)}
       >
         <GIcon name="floppy-disk" size={size * 0.36} color={palette.ivory} />
@@ -618,7 +547,7 @@ export function TacticsBar({
       <RoundButton
         size={size}
         accessibilityLabel={t("battle.clear")}
-        disabled={!planning || empty}
+        disabled={!editable || empty}
         onPress={actions.clearPlan}
       >
         <GIcon name="eraser" size={size * 0.36} color={palette.ivory} />
@@ -657,6 +586,7 @@ export function ReadyArc({
 }) {
   const { t } = useT();
   const planning = battle.phase === "planning";
+  const editable = battle.phase !== "over" && !battle.state.result;
   const { hero, ap } = resourcesLeft(battle);
   const stunned = hasStatus(hero, "stun");
   const layout = arcLayout(slot, ready);
@@ -698,7 +628,7 @@ export function ReadyArc({
             size={slot}
             accessibilityLabel={`${t("battle.defense")}: ${t(`delivery.${kind}`)}`}
             selected={on}
-            disabled={!planning || stunned || (!on && ap <= 0)}
+            disabled={!editable || stunned || (!on && ap <= 0)}
             onPress={() => actions.toggleDefense(kind)}
             style={at(layout.points[i + 1], slot)}
           >
@@ -747,33 +677,17 @@ const GLASS = "rgba(18, 14, 10, 0.82)";
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   off: { opacity: 0.35 },
-  panel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 8,
-    borderRadius: 32,
-    // No frame: a soft local shade is enough to read the bars on the scene.
-    backgroundColor: "rgba(10, 8, 6, 0.4)",
-  },
-  panelEnd: { flexDirection: "row-reverse" },
-  panelCompact: { paddingVertical: 5, gap: 8 },
-  panelPortraitCompact: { width: 34, height: 34, borderRadius: 17 },
-  panelEmpty: { justifyContent: "center", minHeight: 64 },
-  panelPortrait: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
+  emptyTarget: {
+    width: 118,
+    minHeight: 90,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: palette.night,
+    gap: 6,
+    padding: 8,
+    backgroundColor: palette.glass,
   },
-  panelLevel: { position: "absolute", bottom: -5, end: -8 },
-  panelBody: { gap: 3 },
-  panelName: { justifyContent: "flex-end" },
-  textEnd: { textAlign: "right" },
-  rowEnd: { justifyContent: "flex-end" },
+  emptyTargetCompact: { width: 104, minHeight: 60 },
+  emptyTargetEnd: { alignSelf: "flex-end" },
   defense: {
     flexDirection: "row",
     alignItems: "center",

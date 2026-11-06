@@ -54,6 +54,7 @@ const en = {
   "menu.lootFilter": "Hide loot below",
   "menu.tutorial": "Tutorial hints",
   "menu.fullscreen": "Fullscreen",
+  "menu.fps": "FPS meter",
   "menu.homeScreen":
     "For fullscreen on iPhone: Share → Add to Home Screen, then play from the icon.",
   "hint.gotIt": "Got it",
@@ -138,6 +139,7 @@ const en = {
   "death.gold": "−{{amount}} gold",
   "death.rise": "Rise again in Kyiv",
   "inv.equipped": "Equipped",
+  "inv.selected": "Selected",
   "inv.equip": "Equip",
   "inv.unequip": "Take off",
   "inv.drop": "Drop",
@@ -298,6 +300,7 @@ const uk: Record<StringKey, string> = {
   "menu.lootFilter": "Ховати здобич нижче",
   "menu.tutorial": "Підказки",
   "menu.fullscreen": "На весь екран",
+  "menu.fps": "Лічильник FPS",
   "menu.homeScreen":
     "Щоб грати на весь екран на iPhone: Поділитися → На початковий екран, і запускай з іконки.",
   "hint.gotIt": "Зрозумів",
@@ -382,6 +385,7 @@ const uk: Record<StringKey, string> = {
   "death.gold": "−{{amount}} золота",
   "death.rise": "Воскреснути в Києві",
   "inv.equipped": "Одягнено",
+  "inv.selected": "Обране",
   "inv.equip": "Одягти",
   "inv.unequip": "Зняти",
   "inv.drop": "Викинути",

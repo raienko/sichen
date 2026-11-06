@@ -8,8 +8,9 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { haptics } from "@/features/haptics";
+import { useTypography } from "@/features/responsive";
 
-import { getBase, getSkill, getZone, RULES } from "../data";
+import { getBase, getEnemy, getSkill, getZone, RULES } from "../data";
 import { useT, type StringKey } from "../i18n";
 import * as actions from "../state/actions";
 import { useGame, type BattleSession } from "../state/store";
@@ -29,6 +30,7 @@ import { Bar, GButton, GIcon, Label, Row } from "../ui/kit";
 import { OrnamentRule } from "../ui/ornaments";
 import { palette } from "../ui/palette";
 
+import FacePortrait from "../render/face-portrait";
 import BattleStage, {
   type Acting,
   type UnitSpot,
@@ -239,14 +241,14 @@ function UnitTag({
   actor,
   spot,
   floaters,
-  marked,
+  targeted,
   heroLevel,
   onPress,
 }: {
   actor: Combatant;
   spot: UnitSpot;
   floaters: Floater[];
-  marked: number;
+  targeted: boolean;
   heroLevel: number;
   onPress?: () => void;
 }) {
@@ -295,11 +297,11 @@ function UnitTag({
               {actor.buffs.length > 0 ? (
                 <GIcon name="arrow-up" size={11} color={palette.good} />
               ) : null}
-              {marked > 0 ? (
+              {targeted ? (
                 <View style={styles.mark}>
-                  <Label
-                    value={String(marked)}
-                    type="caption2"
+                  <GIcon
+                    name={actor.side === 1 ? "crosshairs" : "plus"}
+                    size={10}
                     color={palette.night}
                   />
                 </View>
@@ -419,10 +421,11 @@ export default function BattleScreen() {
   const zoneId = useGame((s) => s.save?.world.zoneId ?? "kyiv");
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
+  const { tr } = useT();
+  const type = useTypography();
   const [now, setNow] = useState(() => Date.now());
-  // The slot whose action picker is open, and the foe actions aim at.
+  // The slot whose action picker is open.
   const [picking, setPicking] = useState<number | null>(null);
-  const [chosenFoe, setChosenFoe] = useState<string | null>(null);
   // Where the 3D scene drew each fighter, for the overlay.
   const [spots, setSpots] = useState<Record<string, UnitSpot>>({});
   // The middle band's top and height in the page, measured.
@@ -485,12 +488,6 @@ export default function BattleScreen() {
   }, [phase, auto, heroStunned, deadline]);
 
   const playback = usePlayback(battle!);
-  const marks = useMemo(() => {
-    const out: Record<string, number> = {};
-    for (const a of battle?.plan.attacks ?? [])
-      if (a.targetId) out[a.targetId] = (out[a.targetId] ?? 0) + 1;
-    return out;
-  }, [battle?.plan.attacks]);
 
   if (!battle) return null;
   const shown = battle.phase === "playing" ? playback.shown : battle.state;
@@ -500,12 +497,17 @@ export default function BattleScreen() {
     Math.max(0, Math.ceil((battle.deadline - now) / 1000)),
   );
   const hero = shown.actors.find((a) => a.id === "hero");
-  // The selected foe: the one tapped, while it stands; else the front one.
+  // The selected targets are shared by all actions aimed at that side.
   const foes = living(shown, 1);
   const foe =
-    foes.find((f) => f.id === chosenFoe) ??
+    foes.find((f) => f.id === battle.enemyTargetId) ??
     foes.find((f) => f.row === 0) ??
     foes[0];
+  const allies = living(shown, 0);
+  const allyTarget =
+    allies.find((a) => a.id === battle.allyTargetId) ??
+    allies.find((a) => a.id === "hero") ??
+    allies[0];
   const planning = battle.phase === "planning";
   // The five slots, Auto and Ready share the bottom row: the largest slot
   // (40-54 points; Ready half as large again, at least 68) whose two groups
@@ -524,10 +526,60 @@ export default function BattleScreen() {
   if (foe) highlights[foe.id] = 0xffffff;
   // Short (landscape phone) screens get slimmer panels, more room to fight.
   const short = height < 500;
-  const ally = <ActorPanel actor={hero} compact={short} />;
+  // The selected ally (the hero until another is picked) and foe, by name,
+  // in a band of their own above the panels: each has half the width and
+  // may wrap, so a name never crops.
+  // On a narrow phone a long name takes two lines; the band always keeps
+  // room for them there, so the panels don't jump between targets.
+  const nameType = short ? "subheadline" : "headline";
+  const nameLines = width < 480 ? 2 : 1;
+  const names = (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.names,
+        { minHeight: type[nameType].lineHeight * nameLines },
+      ]}
+    >
+      <Label
+        value={allyTarget ? tr(allyTarget.name) : ""}
+        type={nameType}
+        color={palette.ivory}
+        numberOfLines={2}
+        style={styles.nameStart}
+      />
+      <Label
+        value={foe ? tr(foe.name) : ""}
+        type={nameType}
+        color={palette.ivory}
+        numberOfLines={2}
+        style={styles.nameEnd}
+      />
+    </View>
+  );
+  // HUD avatars are the fighters' own 3D faces, turned to the middle.
+  const face = (actor: Combatant | undefined, facing: 1 | -1) =>
+    !actor ? undefined : actor.enemyId ? (
+      <FacePortrait
+        subject={{ monster: getEnemy(actor.enemyId).kind }}
+        facing={facing}
+      />
+    ) : (
+      // Other players' heroes wear this hero's look, as on the stage.
+      <FacePortrait subject={{ hero: heroLook }} facing={facing} />
+    );
+  const allyShown = allyTarget ?? hero;
+  const ally = (
+    <ActorPanel
+      actor={allyShown}
+      portrait={face(allyShown, 1)}
+      compact={short}
+    />
+  );
   const enemy = (
     <ActorPanel
       actor={foe}
+      portrait={face(foe, -1)}
       heroLevel={hero?.level ?? 1}
       align="end"
       compact={short}
@@ -582,16 +634,21 @@ export default function BattleScreen() {
         {shown.actors.map((a) => {
           const spot = spots[a.id];
           if (!spot) return null;
-          const isFoe = a.side === 1;
           return (
             <UnitTag
               key={a.id}
               actor={a}
               spot={spot}
               floaters={playback.floaters.filter((f) => f.actor === a.id)}
-              marked={planning ? (marks[a.id] ?? 0) : 0}
+              targeted={
+                a.side === 1
+                  ? a.id === foe?.id
+                  : battle.allyTargetId !== null && a.id === allyTarget?.id
+              }
               heroLevel={hero?.level ?? 1}
-              onPress={isFoe && a.hp > 0 ? () => setChosenFoe(a.id) : undefined}
+              onPress={
+                a.hp > 0 ? () => actions.selectBattleTarget(a.id) : undefined
+              }
             />
           );
         })}
@@ -610,6 +667,7 @@ export default function BattleScreen() {
           },
         ]}
       >
+        {names}
         <View pointerEvents="box-none" style={styles.topBar}>
           <View style={styles.panelSide}>{ally}</View>
           <View style={styles.panelSide}>{enemy}</View>
@@ -636,11 +694,10 @@ export default function BattleScreen() {
           {ready}
         </View>
       </View>
-      {picking !== null && planning ? (
+      {picking !== null && battle.phase !== "over" && !battle.state.result ? (
         <ActionPicker
           battle={battle}
           index={picking}
-          targetId={foe?.id}
           onClose={() => setPicking(null)}
         />
       ) : null}
@@ -663,6 +720,9 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
+  names: { flexDirection: "row", gap: 16 },
+  nameStart: { flex: 1, textAlign: "left" },
+  nameEnd: { flex: 1, textAlign: "right" },
   // Each panel hugs its content at its own edge.
   panelSide: { flexShrink: 1 },
   middle: { flex: 1, justifyContent: "center" },

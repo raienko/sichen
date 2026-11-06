@@ -7,6 +7,7 @@ import { decodeSave, encodeSave } from "../state/codec";
 
 import { planFor } from "./ai";
 import {
+  aimPlan,
   createBattle,
   fitPlan,
   enemyCombatant,
@@ -246,6 +247,88 @@ describe("battle", () => {
       { skillId: "strike", targetId: b!.id },
     ]);
     expect(plan.defense).toEqual({ melee: 1, ranged: 1, mental: 1 });
+  });
+
+  it("uses one target per side for every player action and replaces dead targets", () => {
+    const hero = heroCombatant(createHero(new Rng(6), "Ostap", LOOK, "lytsar"));
+    const ally = enemyCombatant({ enemyId: "orc_grunt", level: 1 }, 0, 0, 0);
+    const state = createBattle(
+      6,
+      [hero, ally],
+      [
+        { enemyId: "orc_grunt", level: 1 },
+        { enemyId: "upyr", level: 1 },
+      ],
+    );
+    const [first, second] = living(state, 1);
+    const plan: Plan = {
+      attacks: [
+        { skillId: "strike", targetId: first.id },
+        { skillId: "strike", targetId: second.id },
+        { skillId: "m_mend" },
+      ],
+      defense: { melee: 0, ranged: 0, mental: 0 },
+      readyAt: 0,
+    };
+    expect(
+      aimPlan(state, hero, plan, second.id, ally.id).attacks.map(
+        (a) => a.targetId,
+      ),
+    ).toEqual([second.id, second.id, ally.id]);
+
+    second.hp = 0;
+    ally.hp = 0;
+    expect(
+      aimPlan(state, hero, plan, second.id, ally.id).attacks.map(
+        (a) => a.targetId,
+      ),
+    ).toEqual([first.id, first.id, hero.id]);
+  });
+
+  it("redirects later attacks when the shared enemy target dies mid-round", () => {
+    const hero = heroCombatant(createHero(new Rng(7), "Ostap", LOOK, "lytsar"));
+    const state = createBattle(
+      7,
+      [hero],
+      [
+        { enemyId: "orc_grunt", level: 1 },
+        { enemyId: "orc_grunt", level: 1 },
+      ],
+    );
+    const [first, second] = living(state, 1);
+    first.hp = 1;
+    const plan = aimPlan(
+      state,
+      hero,
+      {
+        attacks: [{ skillId: "strike" }, { skillId: "strike" }],
+        defense: { melee: 0, ranged: 0, mental: 0 },
+        readyAt: 0,
+      },
+      first.id,
+      null,
+    );
+    let redirected = false;
+    for (let seed = 1; seed <= 40; seed++) {
+      state.rng = seed;
+      const { events } = resolveRound(state, { hero: plan });
+      if (
+        !events.some(
+          (event) => event.t === "death" && event.target === first.id,
+        )
+      )
+        continue;
+      const attacks = events.filter(
+        (event) => event.t === "action" && event.actor === hero.id,
+      );
+      expect(attacks).toMatchObject([
+        { targets: [first.id] },
+        { targets: [second.id] },
+      ]);
+      redirected = true;
+      break;
+    }
+    expect(redirected).toBe(true);
   });
 
   it("can try to flee several times in one round", () => {

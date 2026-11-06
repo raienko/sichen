@@ -7,7 +7,7 @@
 ## What a player does
 
 1. **Title → slot → create a hero.** Name (random cossack name button), kozak/kozachka, face, hair, hair colour, moustache, class.
-2. **Kyiv hub.** Ivan Sirko gives the main quest. Grand masters teach class skills: Olha (Kharakternyk, fire), Sviatoslav (Lytsar), Ustym Karmaliuk (Plastun). A merchant buys loot and sells potions; a chest is the stash. The gate leads to the zone.
+2. **Kyiv hub.** Ivan Sirko gives the main quest. Grand masters teach class skills: Olha (Kharakternyk, fire), Sviatoslav (Ratnyk), Ustym Karmaliuk (Plastun). A merchant buys loot and sells potions; a chest is the stash. The gate leads to the zone.
 3. **Vyshhorod outskirts (levels 1-10).** Free movement with a fixed ~50° camera. Packs of upyrs, vovkulaky, mavky, chorty, potopelnyky and the orc horde. Tap a mob for Attack / View; aggressive mobs (or ones far above your level) charge on sight. Beaten packs respawn: common ones after 2 minutes, elite ones after 6, Likho after 20 (and all of them when you ride out from Kyiv). A ruined shrine and a kurgan stone are quest objects.
 4. **Battle** in a separate side-view scene, Taern style. Loot, XP and gold on a win; the death god's cards on a loss.
 5. **Boss: Likho One-Eye** at the zone's end, two phases, summons up to four upyrs. Beating it ends the slice's main quest.
@@ -30,7 +30,7 @@
 
 ## Progression and loot
 
-- Classes: Plastun (Dex), Lytsar (Str), Kharakternyk (Int). A class is pure data: base stats, start node on the tree, its grand master and its 8 skills (6 taught, 2 hidden behind a quest or condition).
+- Classes: Plastun (Dex), Ratnyk (Str), Kharakternyk (Int). A class is pure data: base stats, start node on the tree, its grand master and its 8 skills (6 taught, 2 hidden behind a quest or condition).
 - Skills level with the character for now; a `skillLevel()` hook is where gems or other sources plug in later.
 - Shared passive tree: one point per level, classes start in different corners, cheap respec in town.
 - Items: 10 slots, Normal / Magic / Rare / Unique / Set, prefix/suffix affixes tiered by item level, attribute and level requirements. **Sets** are not class-bound: whoever meets the requirements can wear them, and the bonus grows with pieces worn. The slice ships 3 sets and 6 lore uniques. Items carry empty `sockets` for runes later.

@@ -31,6 +31,7 @@ import {
   isFullscreen,
   needsHomeScreen,
 } from "../../ui/fullscreen";
+import { fpsMeterSetting } from "../../ui/fps-meter";
 import { LevelBadge } from "../../ui/level-badge";
 import { palette, rarityColor } from "../../ui/palette";
 import { startPackAttack } from "../../render/world-scene";
@@ -193,6 +194,7 @@ export function MenuPanel({
   const { locale, setPreference } = useLocale();
   const { width, height } = useWindowDimensions();
   const shortLandscape = width > height && height < 500;
+  const fpsMeter = fpsMeterSetting.useValue() === true;
   const destinations = [
     ["inventory", "bag-shopping", "menu.inventory"],
     ["skills", "book-open", "menu.skills"],
@@ -244,6 +246,14 @@ export function MenuPanel({
           tone={save.settings.tutorial ? "primary" : "default"}
           style={styles.menuAction}
           onPress={() => actions.setTutorial(!save.settings.tutorial)}
+        />
+        <GButton
+          icon="gauge-high"
+          accessibilityLabel={t("menu.fps")}
+          compact
+          tone={fpsMeter ? "primary" : "default"}
+          style={styles.menuAction}
+          onPress={() => fpsMeterSetting.setValue(!fpsMeter)}
         />
         <GButton
           icon="floppy-disk"

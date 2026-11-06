@@ -8,8 +8,8 @@ import type { ClassDef } from "../sim/types";
 export const CLASSES: readonly ClassDef[] = [
   {
     id: "lytsar",
-    name: { en: "Lytsar", uk: "Лицар" },
-    role: { en: "Knight · strength", uk: "Лицар · сила" },
+    name: { en: "Ratnyk", uk: "Ратник" },
+    role: { en: "Warrior · strength", uk: "Ратник · сила" },
     icon: "shield-halved",
     primary: "str",
     base: {

@@ -37,6 +37,9 @@ export type BattleSession = {
   packId: string | null;
   questChoice?: { questId: string; choiceId: string };
   plan: Plan;
+  /** One selected target per side for every player action in the next round. */
+  enemyTargetId: string | null;
+  allyTargetId: string | null;
   /** When the planning timer runs out (ms since epoch). */
   deadline: number;
   phase: "planning" | "playing" | "over";

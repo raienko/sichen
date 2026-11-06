@@ -19,7 +19,7 @@ The world fills the entire screen. The HUD floats over it as small, separate sym
 ## Visual language
 
 - **Environment:** weathered stone paths, timber fences, a recognizable Ukrainian chapel silhouette, Dnipro mist, reeds, amber trees, burial stones and embroidered cloth tied to branches. Compose navigable clearings rather than covering every tile in props.
-- **Characters:** readable 3D silhouettes; white linen, oxblood sash and trousers, oseledets haircut, saber and boots. Classes differ through silhouette and equipment: Lytsar's stance and saber, Plastun's light kit, Kharakternyk's staff and restrained supernatural effects.
+- **Characters:** readable 3D silhouettes; white linen, oxblood sash and trousers, oseledets haircut, saber and boots. Classes differ through silhouette and equipment: Ratnyk's stance and saber, Plastun's light kit, Kharakternyk's staff and restrained supernatural effects.
 - **Creatures:** each folklore enemy has an immediately recognizable shape. Likho reads as a large one-eyed figure; its eye and posture communicate focus and phase change. Use the existing events and statuses, without inventing extra mechanics.
 - **Color:** moss and slate for the environment, warm daylight/torchlight, quiet linen/bronze HUD marks, oxblood for folk accents and danger. Keep red HP, blue mana and ochre stamina visually consistent.
 - **Folk detail:** small red embroidery stitches at selected edges; incised geometric motifs on shields and relics; carved wood and woven cloth in the world. Avoid decorative frames around every control.

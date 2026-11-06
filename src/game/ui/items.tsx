@@ -6,6 +6,7 @@ import { itemName, requirement } from "../sim/loot";
 import { heroStats } from "../sim/stats";
 import type { Hero, Item, StatKey, StatMods } from "../sim/types";
 
+import { useDoubleTap } from "./double-tap";
 import { GIcon, Label } from "./kit";
 import { palette, rarityColor } from "./palette";
 
@@ -53,20 +54,24 @@ export function ItemTile({
   item,
   selected,
   onPress,
+  onDoublePress,
   size = 46,
   dim,
 }: {
   item?: Item;
   selected?: boolean;
   onPress?: () => void;
+  /** A second tap soon after the first, e.g. to equip. */
+  onDoublePress?: () => void;
   size?: number;
   dim?: boolean;
 }) {
   const { tr } = useT();
+  const press = useDoubleTap(onPress, onDoublePress);
   const color = item ? rarityColor[item.rarity] : palette.lineSoft;
   return (
     <Pressable
-      onPress={onPress}
+      onPress={press}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityLabel={item ? tr(itemName(item)) : undefined}
@@ -97,11 +102,14 @@ export function ItemCard({
   item,
   hero,
   bare,
+  compact,
 }: {
   item: Item;
   hero: Hero;
   /** No frame or fill: for laying over a scene with its own shade. */
   bare?: boolean;
+  /** One step smaller text, for two cards side by side. */
+  compact?: boolean;
 }) {
   const { t, tr } = useT();
   const lines = useModLines();
@@ -109,6 +117,9 @@ export function ItemCard({
   const req = requirement(item);
   const stats = heroStats(hero);
   const color = rarityColor[item.rarity];
+  const title = compact ? "subheadline" : "headline";
+  const body = compact ? "caption1" : "footnote";
+  const small = compact ? "caption2" : "caption1";
   const set = item.setId ? getSet(item.setId) : null;
   const worn = set
     ? Object.values(hero.equipment).filter((e) => e?.setId === set.id).length
@@ -136,31 +147,26 @@ export function ItemCard({
   ];
   return (
     <View style={[styles.card, { borderColor: color }, bare && styles.bare]}>
-      <Label value={tr(itemName(item))} type="headline" color={color} />
+      <Label value={tr(itemName(item))} type={title} color={color} />
       <Label
-        value={`${t(`rarity.${item.rarity}`)} · ${tr(base.name)} · ilvl ${item.ilvl}`}
-        type="caption1"
+        value={`${t(`rarity.${item.rarity}`)} · ${tr(base.name)}`}
+        type={small}
         color={palette.muted}
       />
       {implicit.map((l) => (
-        <Label key={`i${l}`} value={l} type="footnote" color={palette.muted} />
+        <Label key={`i${l}`} value={l} type={body} color={palette.muted} />
       ))}
       {special.map((l) => (
-        <Label key={`s${l}`} value={l} type="footnote" color={color} />
+        <Label key={`s${l}`} value={l} type={body} color={color} />
       ))}
       {rolled.map((l) => (
-        <Label
-          key={`r${l}`}
-          value={l}
-          type="footnote"
-          color={rarityColor.magic}
-        />
+        <Label key={`r${l}`} value={l} type={body} color={rarityColor.magic} />
       ))}
       {set ? (
         <View style={styles.setBlock}>
           <Label
             value={`${tr(set.name)} · ${t("inv.set", { count: worn, total: set.pieces.length })}`}
-            type="caption1"
+            type={small}
             color={rarityColor.set}
           />
           {set.bonuses.map((b) => (

@@ -3,6 +3,7 @@ import { translate, type StringKey, type Vars } from "../i18n";
 import { planFor } from "../sim/ai";
 import {
   apFor,
+  aimPlan,
   createBattle,
   emptyPlan,
   fitPlan,
@@ -579,7 +580,9 @@ export function startBattle(
   // The first round starts from the selected tactic, if there is one.
   const tactic = data.tactics[data.settings.tactic];
   const hero = state.actors.find((a) => a.id === "hero")!;
-  const plan = tactic ? fitPlan(state, hero, tactic) : emptyPlan();
+  const plan = tactic
+    ? withoutActionTargets(fitPlan(state, hero, tactic))
+    : emptyPlan();
   runtime.moveTarget = null;
   set({
     scene: { name: "battle" },
@@ -590,6 +593,8 @@ export function startBattle(
       packId,
       questChoice,
       plan,
+      enemyTargetId: null,
+      allyTargetId: null,
       deadline: Date.now() + RULES.roundSeconds * 1000,
       phase: "planning",
       events: [],
@@ -632,8 +637,29 @@ export function devJoinPlayer(level: number, side: 0 | 1 = 1) {
 
 function updatePlan(update: (plan: Plan) => Plan) {
   const battle = get().battle;
-  if (!battle || battle.phase !== "planning") return;
+  if (!battle || battle.phase === "over" || battle.state.result) return;
   set({ battle: { ...battle, plan: update(battle.plan) } });
+}
+
+/** Player plans keep skills only; one target for each side is applied at Ready. */
+function withoutActionTargets(plan: Plan): Plan {
+  return {
+    ...plan,
+    attacks: plan.attacks.map(({ skillId }) => ({ skillId })),
+  };
+}
+
+export function selectBattleTarget(actorId: string) {
+  const battle = get().battle;
+  if (!battle || battle.phase === "over" || battle.state.result) return;
+  const actor = battle.state.actors.find((a) => a.id === actorId);
+  if (!actor || actor.hp <= 0) return;
+  set({
+    battle: {
+      ...battle,
+      [actor.side === 1 ? "enemyTargetId" : "allyTargetId"]: actorId,
+    },
+  });
 }
 
 export function planBudget(): number {
@@ -643,13 +669,13 @@ export function planBudget(): number {
   return apFor(hero) - planCost(battle.plan);
 }
 
-export function addAttack(skillId: string, targetId?: string) {
+export function addAttack(skillId: string) {
   const skill = getSkill(skillId);
   if (planBudget() < skill.ap) return;
   updatePlan((plan) =>
     plan.attacks.length >= RULES.attackSlots
       ? plan
-      : { ...plan, attacks: [...plan.attacks, { skillId, targetId }] },
+      : { ...plan, attacks: [...plan.attacks, { skillId }] },
   );
 }
 
@@ -658,17 +684,17 @@ export function addAttack(skillId: string, targetId?: string) {
  * the first free slot when `index` is past the filled ones. Refused when
  * the AP left (with that slot emptied) can't pay for it.
  */
-export function setAttack(index: number, skillId: string, targetId?: string) {
+export function setAttack(index: number, skillId: string) {
   const battle = get().battle;
   const hero = battle?.state.actors.find((a) => a.id === "hero");
-  if (!battle || !hero || battle.phase !== "planning") return;
+  if (!battle || !hero || battle.phase === "over" || battle.state.result)
+    return;
   const attacks = [...battle.plan.attacks];
   const without = attacks.filter((_, i) => i !== index);
   const left = apFor(hero) - planCost({ ...battle.plan, attacks: without });
   if (getSkill(skillId).ap > left) return;
-  if (index < attacks.length) attacks[index] = { skillId, targetId };
-  else if (attacks.length < RULES.attackSlots)
-    attacks.push({ skillId, targetId });
+  if (index < attacks.length) attacks[index] = { skillId };
+  else if (attacks.length < RULES.attackSlots) attacks.push({ skillId });
   updatePlan((plan) => ({ ...plan, attacks }));
 }
 
@@ -703,7 +729,7 @@ export function pickTactic(index: number) {
   if (!battle || !tactic) return;
   const hero = battle.state.actors.find((a) => a.id === "hero");
   if (!hero) return;
-  updatePlan(() => fitPlan(battle.state, hero, tactic));
+  updatePlan(() => withoutActionTargets(fitPlan(battle.state, hero, tactic)));
 }
 
 /** Stores the current plan (without targets) as a tactic. */
@@ -734,7 +760,7 @@ export function autoPlan() {
   const hero = battle?.state.actors.find((a) => a.id === "hero");
   if (!battle || !hero || battle.phase !== "planning") return;
   const plan = planFor(battle.state, hero, rng(), battleActions(save().hero));
-  set({ battle: { ...battle, plan } });
+  set({ battle: { ...battle, plan: withoutActionTargets(plan) } });
 }
 
 /** Locks in the hero's plan, plans the enemies and resolves the round. */
@@ -743,14 +769,25 @@ export function ready() {
   if (!battle || battle.phase !== "planning") return;
   const r = new Rng(battle.state.rng ^ 0x5bd1e995);
   const secondsLeft = Math.max(0, (battle.deadline - Date.now()) / 1000);
+  const hero = battle.state.actors.find((a) => a.id === "hero")!;
   const plans: Record<string, Plan> = {
-    hero: { ...battle.plan, readyAt: secondsLeft },
+    hero: {
+      ...aimPlan(
+        battle.state,
+        hero,
+        battle.plan,
+        battle.enemyTargetId,
+        battle.allyTargetId,
+      ),
+      readyAt: secondsLeft,
+    },
   };
   for (const actor of living(battle.state)) {
     if (actor.controller === "ai")
       plans[actor.id] = planFor(battle.state, actor, r);
   }
   const { state, events } = resolveRound(battle.state, plans);
+  const nextHero = state.actors.find((a) => a.id === "hero");
   set({
     battle: {
       ...battle,
@@ -758,6 +795,10 @@ export function ready() {
       state,
       events,
       phase: "playing",
+      // The resolved plan is frozen in `events`; the slots now edit the next one.
+      plan: nextHero
+        ? withoutActionTargets(fitPlan(state, nextHero, battle.plan))
+        : emptyPlan(),
     },
   });
 }
@@ -770,11 +811,26 @@ export function finishPlayback() {
   if (!state.result) {
     // Next round's slots start as this round's plan, fitted to what's left.
     const hero = state.actors.find((a) => a.id === "hero");
+    const foes = living(state, 1);
+    const allies = living(state, 0);
     set({
       battle: {
         ...battle,
         phase: "planning",
-        plan: hero ? fitPlan(state, hero, battle.plan) : emptyPlan(),
+        enemyTargetId:
+          foes.find((a) => a.id === battle.enemyTargetId)?.id ??
+          foes.find((a) => a.row === 0)?.id ??
+          foes[0]?.id ??
+          null,
+        allyTargetId: battle.allyTargetId
+          ? (allies.find((a) => a.id === battle.allyTargetId)?.id ??
+            allies.find((a) => a.id === "hero")?.id ??
+            allies[0]?.id ??
+            null)
+          : null,
+        plan: hero
+          ? withoutActionTargets(fitPlan(state, hero, battle.plan))
+          : emptyPlan(),
         deadline: Date.now() + RULES.roundSeconds * 1000,
         events: [],
       },

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getClass, getEnemy, getNpc, getZone } from "../data";
 import { useT } from "../i18n";
+import FacePortrait from "../render/face-portrait";
 import WorldScene from "../render/world-scene";
 import * as actions from "../state/actions";
 import { runtime } from "../state/runtime";
@@ -13,8 +14,8 @@ import { heroStats } from "../sim/stats";
 import { useKeyboardMovement } from "../ui/input";
 import { HintCard } from "../ui/hint";
 import { Glyph } from "../ui/glyphs";
-import { Bar, GIcon, Label, RoundButton, Row } from "../ui/kit";
-import { LevelBadge } from "../ui/level-badge";
+import { ActorResourceHud } from "../ui/actor-resource-hud";
+import { GIcon, Label, RoundButton, Row } from "../ui/kit";
 import { Minimap } from "../ui/minimap";
 import { palette } from "../ui/palette";
 
@@ -158,72 +159,29 @@ function ActionArc({ save }: { save: SaveData }) {
   );
 }
 
-/** Upper left: diamond portrait and only the three resources. */
+/** Upper left: the same portrait pendant used for the battle hero. */
 function HeroStatus({ save }: { save: SaveData }) {
   const { hero } = save;
   const stats = heroStats(hero);
   return (
-    <Row gap={10} style={styles.status}>
-      <View>
-        <View style={styles.portrait}>
-          <View style={styles.portraitInner}>
-            <GIcon
-              name={getClass(hero.classId).icon}
-              size={23}
-              color={palette.ivory}
-            />
-          </View>
-        </View>
-        <LevelBadge level={hero.level} style={styles.portraitLevel} />
-      </View>
-      <View style={styles.bars}>
-        <Row gap={7}>
-          <Bar
-            value={hero.hp}
-            max={stats.maxHp}
-            color={palette.hp}
-            height={4}
-            style={styles.barTrack}
-          />
-          <Label
-            value={String(Math.round(hero.hp))}
-            type="caption2"
-            color={palette.hp}
-            style={styles.barNumber}
-          />
-        </Row>
-        <Row gap={7}>
-          <Bar
-            value={hero.mana}
-            max={stats.maxMana}
-            color={palette.mana}
-            height={4}
-            style={styles.barTrack}
-          />
-          <Label
-            value={String(Math.round(hero.mana))}
-            type="caption2"
-            color={palette.mana}
-            style={styles.barNumber}
-          />
-        </Row>
-        <Row gap={7}>
-          <Bar
-            value={hero.stamina}
-            max={stats.maxStamina}
-            color={palette.stamina}
-            height={4}
-            style={styles.barTrack}
-          />
-          <Label
-            value={String(Math.round(hero.stamina))}
-            type="caption2"
-            color={palette.stamina}
-            style={styles.barNumber}
-          />
-        </Row>
-      </View>
-    </Row>
+    <ActorResourceHud
+      icon={getClass(hero.classId).icon}
+      portrait={
+        <FacePortrait
+          subject={{
+            hero: {
+              look: hero.look,
+              classId: hero.classId,
+              helmet: !!hero.equipment.helmet,
+            },
+          }}
+        />
+      }
+      level={hero.level}
+      hp={{ value: hero.hp, max: stats.maxHp }}
+      mana={{ value: hero.mana, max: stats.maxMana }}
+      stamina={{ value: hero.stamina, max: stats.maxStamina }}
+    />
   );
 }
 
@@ -366,29 +324,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 8,
   },
-  // No card: a soft local shade keeps the bars readable over the scene.
-  status: {
-    flexShrink: 1,
-    alignItems: "flex-start",
-    padding: 7,
-    paddingEnd: 10,
-    backgroundColor: "rgba(8, 12, 13, 0.4)",
-  },
-  portrait: {
-    width: 49,
-    height: 49,
-    borderWidth: 1.5,
-    borderColor: palette.bronze,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: palette.glass,
-    transform: [{ rotate: "45deg" }],
-  },
-  portraitInner: { transform: [{ rotate: "-45deg" }] },
-  portraitLevel: { position: "absolute", bottom: -4, end: -6 },
-  bars: { width: 128, gap: 5 },
-  barTrack: { flex: 1 },
-  barNumber: { width: 26, textAlign: "right" },
   topRight: { alignItems: "flex-end", gap: 4 },
   minimap: {
     borderRadius: 4,
