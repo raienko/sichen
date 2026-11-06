@@ -166,9 +166,9 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   spear: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.12] },
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
-  // The bow arm hangs at the side. This is the bow as it is drawn,
+  // The bow arm hangs out from the side. This is the bow as it is drawn,
   // upright; at rest it is tilted low in the fist (see BOW_IDLE).
-  bow: { arm: [-0.1, 0, -0.18], aim: [0, 1, 0] },
+  bow: { arm: [-0.1, 0, -0.4], aim: [0, 1, 0] },
   /** Empty hands: the arm hangs like the other one. */
   none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
@@ -431,12 +431,14 @@ const POSES = {
   },
 } satisfies Record<string, Pose>;
 
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
 /**
  * The bow at rest, as a turn of the hand's frame: low at the side in the
- * hanging hand, tilted about 50° from upright (upper limb forward and up,
- * lower limb back past the leg, belly forward and down, string behind
- * the arm) and turned outwards so the lower limb passes behind the legs,
- * clear of the arm and the body, and the bow reads from the front.
+ * hand held out from the hip, tilted about 50° from upright (upper limb
+ * forward and up, lower limb back past the leg), the belly out and the
+ * string on the inner side of the hand, clear of the hips and the arm.
  * Built from the bow's world turn, moved into the resting arm's frame
  * and taken back off the drawn grip.
  */
@@ -444,9 +446,10 @@ const BOW_IDLE = (() => {
   const arm = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(...GRIPS.bow!.arm),
   );
-  const world = new THREE.Quaternion().setFromEuler(
-    new THREE.Euler(0.87, -0.55, 0, "YXZ"),
-  );
+  // Turned about its own limbs so the string faces the body, then tilted.
+  const world = new THREE.Quaternion()
+    .setFromAxisAngle(X_AXIS, 0.87)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(Y_AXIS, -1.3));
   const drawn = new THREE.Quaternion().setFromEuler(
     new THREE.Euler(...GRIP_ROTATION.bow!),
   );
@@ -454,7 +457,6 @@ const BOW_IDLE = (() => {
 })();
 const bowHeld = new THREE.Quaternion();
 const bowDrawn = new THREE.Quaternion();
-const X_AXIS = new THREE.Vector3(1, 0, 0);
 /** How upright the bow is through the shot (0 level, 1 upright). */
 const BOW_RAISE: Keys = [
   [0, 0],
