@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <radialGradient id="forest"><stop stop-color="#20303a"/><stop offset=".65" stop-color="#111b20"/><stop offset="1" stop-color="#090e11"/></radialGradient>
+    <linearGradient id="oak" x2="0" y2="1"><stop stop-color="#493125"/><stop offset=".4" stop-color="#2b211c"/><stop offset="1" stop-color="#171717"/></linearGradient>
+    <linearGradient id="thread" x2="0" y2="1"><stop stop-color="#2a2221"/><stop offset="1" stop-color="#111718"/></linearGradient>
+    <pattern id="woodgrain" width="40" height="24" patternUnits="userSpaceOnUse"><path d="M2 6h20M12 19h23" stroke="#b37f58" stroke-width="1" stroke-opacity=".1"/></pattern>
+    <pattern id="weave" width="16" height="16" patternUnits="userSpaceOnUse"><path d="m8 1 7 7-7 7-7-7z" fill="none" stroke="#be5e4b" stroke-width=".8" stroke-opacity=".45"/></pattern>
+    <symbol id="diamond" viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24Z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="chevron" viewBox="0 0 34 34"><path d="m11 5 12 12-12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="eye" viewBox="0 0 48 48"><path d="M4 24Q24 5 44 24 24 43 4 24Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="2" fill="currentColor"/></symbol>
+    <symbol id="hub" viewBox="0 0 48 48"><path d="m24 2 9 9-9 9-9-9zM11 15l9 9-9 9-9-9zM37 15l9 9-9 9-9-9zM24 28l9 9-9 9-9-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="shield" viewBox="0 0 48 48"><path d="M24 4 41 10v14c0 10-7 17-17 21C14 41 7 34 7 24V10Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 11v28M12 22h24" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="bow" viewBox="0 0 48 48"><path d="M13 4c26 9 26 31 0 40M13 4v40M4 24h39m-9-8 9 8-9 8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="sun" viewBox="0 0 48 48"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 3v9m0 24v9M3 24h9m24 0h9M9 9l7 7m16 16 7 7M39 9l-7 7M16 32l-7 7" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="person" viewBox="0 0 48 48"><circle cx="24" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 43c1-11 6-17 14-17s13 6 14 17" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <style>
+      .title{font:600 46px Georgia,serif;fill:#eddfc7;letter-spacing:1px}.lead{font:18px Arial,sans-serif;fill:#9ca7a6}.head{font:600 28px Georgia,serif;fill:#e8d9bb}.sub{font:15px Arial,sans-serif;fill:#9aa19b;letter-spacing:.4px}.tag{font:600 12px Arial,sans-serif;letter-spacing:2px;fill:#a69782}.sample{font:24px Georgia,serif;fill:#eee0c8}.num{font:20px Georgia,serif;fill:#eee0c8}.ivory{color:#edddc4}.bronze{color:#b69a70}.ember{color:#dda26b}.dim{color:#756f67}.line{stroke:#665744;stroke-width="1"}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#forest)"/>
+  <path d="M0 0h170L80 540 0 720Zm1600 0h-160l84 580 76 130Z" fill="#080d10" opacity=".55"/>
+  <text x="60" y="78" class="title">Three directions for the same UI</text>
+  <text x="62" y="113" class="lead">A shared layout and interaction model; only the material, edge, and ornament change.</text>
+  <path d="M60 136h1480" stroke="#6c604d"/>
+
+  <!-- A: Carved oak -->
+  <g transform="translate(60 166)">
+    <rect width="460" height="762" rx="13" fill="#12191c" stroke="#7d5f47" stroke-width="1.5"/>
+    <path d="M18 20h424" stroke="#8c684b"/><path d="M18 742h424" stroke="#8c684b"/>
+    <text x="30" y="52" class="head">01  Carved Oak</text><text x="30" y="79" class="sub">Warm relics · bronze edge · visible grain</text>
+    <text x="30" y="126" class="tag">STATUS</text>
+    <path d="m62 152 48 48-48 48-48-48z" fill="url(#oak)" stroke="#b79569" stroke-width="2"/><use href="#person" x="39" y="177" width="46" height="46" class="ivory"/>
+    <g transform="translate(117 164)"><path d="M0 0h291l12 12-12 12H0" fill="#211a19" stroke="#965b50"/><path d="M4 4h197v16H4" fill="#8d413a"/><text x="250" y="19" class="num">112</text>
+      <path d="M0 29h291l12 12-12 12H0" fill="#191e20" stroke="#5c7b88"/><path d="M4 33h143v16H4" fill="#3d7185"/><text x="260" y="48" class="num">64</text>
+      <path d="M0 58h291l12 12-12 12H0" fill="#201c18" stroke="#97784e"/><path d="M4 62h170v16H4" fill="#9c7a43"/><text x="260" y="77" class="num">80</text></g>
+    <text x="30" y="300" class="tag">NAME INPUT</text>
+    <path d="M45 319h302l13 28-13 28H45l-13-28z" fill="url(#oak)" stroke="#aa7d56" stroke-width="2"/><path d="M48 325h296l8 22-8 22H48l-8-22z" fill="url(#woodgrain)" stroke="#634a37"/><text x="157" y="356" class="sample">Остап</text>
+    <rect x="377" y="321" width="52" height="52" rx="5" fill="#211b18" stroke="#997651"/><text x="391" y="354" class="sample">⚄</text>
+    <text x="30" y="415" class="tag">PRIMARY BUTTON</text>
+    <path d="M84 434h268l15 28-15 28H84l-15-28z" fill="url(#oak)" stroke="#d49a63" stroke-width="2"/><path d="M92 440h252l10 22-10 22H92l-10-22z" fill="url(#woodgrain)" stroke="#765039"/>
+    <text x="177" y="471" class="sample">Continue</text><use href="#chevron" x="324" y="445" width="34" height="34" class="ivory"/>
+    <text x="30" y="537" class="tag">CLASS / ITEM</text>
+    <use href="#diamond" x="43" y="548" width="70" height="70" class="ember"/><use href="#shield" x="57" y="562" width="42" height="42" class="ivory"/>
+    <use href="#diamond" x="145" y="548" width="70" height="70" class="bronze"/><use href="#bow" x="159" y="562" width="42" height="42" class="ivory"/>
+    <use href="#diamond" x="247" y="548" width="70" height="70" class="bronze"/><use href="#sun" x="261" y="562" width="42" height="42" class="ivory"/>
+    <rect x="353" y="553" width="60" height="60" rx="5" fill="#161a1b" stroke="#b49768"/><use href="#shield" x="365" y="565" width="36" height="36" class="ivory"/>
+    <text x="30" y="677" class="tag">FOOTER</text><use href="#eye" x="137" y="663" width="48" height="48" class="ivory"/><path d="M228 670v39" stroke="#a5855e"/><use href="#hub" x="270" y="665" width="45" height="45" class="ivory"/>
+  </g>
+
+  <!-- B: Night rune -->
+  <g transform="translate(570 166)">
+    <rect width="460" height="762" rx="13" fill="#0c1419" stroke="#4d5a5d" stroke-width="1"/>
+    <path d="M18 20h424M18 742h424" stroke="#4f666b" stroke-opacity=".65"/>
+    <text x="30" y="52" class="head">02  Night Rune</text><text x="30" y="79" class="sub">Near-black · floating ivory · scarce amber</text>
+    <text x="30" y="126" class="tag">STATUS</text>
+    <path d="m62 152 48 48-48 48-48-48z" fill="#101b20" stroke="#d9d2be" stroke-width="1.4"/><use href="#person" x="39" y="177" width="46" height="46" class="ivory"/>
+    <g transform="translate(117 164)"><path d="M0 23h291M0 52h291M0 81h291" stroke="#566b70"/><path d="M0 23h201M0 52h143M0 81h170" stroke-width="4" stroke-linecap="round" stroke="#a8514d"/><path d="M0 52h143" stroke-width="4" stroke="#558ba5"/><path d="M0 81h170" stroke-width="4" stroke="#b69959"/><text x="250" y="20" class="num">112</text><text x="260" y="49" class="num">64</text><text x="260" y="78" class="num">80</text></g>
+    <text x="30" y="300" class="tag">NAME INPUT</text>
+    <path d="M34 372h326M34 322h326" stroke="#7b8a85"/><path d="m38 322 9-9 9 9m290 0 9-9 9 9" fill="none" stroke="#a6b4ad"/>
+    <text x="157" y="356" class="sample">Остап</text><text x="391" y="354" class="sample">⚄</text>
+    <text x="30" y="415" class="tag">PRIMARY BUTTON</text>
+    <path d="M113 487h230" stroke="#c89664" stroke-width="1.7"/><path d="m108 487 9-9 9 9-9 9z" fill="none" stroke="#c89664"/>
+    <text x="177" y="471" class="sample">Continue</text><use href="#chevron" x="324" y="445" width="34" height="34" class="ivory"/>
+    <text x="30" y="537" class="tag">CLASS / ITEM</text>
+    <use href="#diamond" x="43" y="548" width="70" height="70" class="ember"/><use href="#shield" x="57" y="562" width="42" height="42" class="ivory"/>
+    <use href="#shield" x="159" y="562" width="42" height="42" class="dim" opacity="0"/>
+    <use href="#bow" x="159" y="562" width="42" height="42" class="ivory"/><use href="#sun" x="261" y="562" width="42" height="42" class="ivory"/>
+    <rect x="353" y="553" width="60" height="60" rx="2" fill="#0b141a" stroke="#62737b"/><use href="#shield" x="365" y="565" width="36" height="36" class="ivory"/>
+    <text x="30" y="677" class="tag">FOOTER</text><use href="#eye" x="137" y="663" width="48" height="48" class="ivory"/><path d="M228 670v39" stroke="#899a94"/><use href="#hub" x="270" y="665" width="45" height="45" class="ivory"/>
+  </g>
+
+  <!-- C: Woven ember -->
+  <g transform="translate(1080 166)">
+    <rect width="460" height="762" rx="13" fill="#13191b" stroke="#745043" stroke-width="1.5"/>
+    <path d="M18 20h424M18 742h424" stroke="#a65a45" stroke-width="3"/>
+    <path d="M21 15h417v10H21zM21 737h417v10H21z" fill="url(#weave)" opacity=".45"/>
+    <text x="30" y="52" class="head">03  Woven Ember</text><text x="30" y="79" class="sub">Soot cloth · stitched red · small bone knots</text>
+    <text x="30" y="126" class="tag">STATUS</text>
+    <path d="m62 152 48 48-48 48-48-48z" fill="url(#thread)" stroke="#a76651" stroke-width="1.8"/><path d="m62 160 40 40-40 40-40-40z" fill="none" stroke="#c5a48c" stroke-dasharray="3 3"/><use href="#person" x="39" y="177" width="46" height="46" class="ivory"/>
+    <g transform="translate(117 164)"><path d="M0 0h291l12 12-12 12H0" fill="#1d1a1b" stroke="#ad5a50"/><path d="M4 4h197v16H4" fill="#8f3e38"/><text x="250" y="19" class="num">112</text>
+      <path d="M0 29h291l12 12-12 12H0" fill="#1b1d21" stroke="#56738b"/><path d="M4 33h143v16H4" fill="#3d6c85"/><text x="260" y="48" class="num">64</text>
+      <path d="M0 58h291l12 12-12 12H0" fill="#1d1c1b" stroke="#9e8051"/><path d="M4 62h170v16H4" fill="#9b7a45"/><text x="260" y="77" class="num">80</text></g>
+    <text x="30" y="300" class="tag">NAME INPUT</text>
+    <path d="M45 319h302l13 28-13 28H45l-13-28z" fill="url(#thread)" stroke="#aa6951" stroke-width="1.8"/><path d="M45 325h302v44H45z" fill="url(#weave)" opacity=".45"/><path d="m50 347 7-7 7 7-7 7zm282 0 7-7 7 7-7 7z" fill="#ead9bd"/>
+    <text x="157" y="356" class="sample">Остап</text><rect x="377" y="321" width="52" height="52" rx="2" fill="#221b1b" stroke="#a36653"/><text x="391" y="354" class="sample">⚄</text>
+    <text x="30" y="415" class="tag">PRIMARY BUTTON</text>
+    <path d="M84 434h268l15 28-15 28H84l-15-28z" fill="url(#thread)" stroke="#c17b59" stroke-width="2"/><path d="M90 440h256v44H90z" fill="url(#weave)" opacity=".52"/>
+    <text x="177" y="471" class="sample">Continue</text><use href="#chevron" x="324" y="445" width="34" height="34" class="ivory"/>
+    <text x="30" y="537" class="tag">CLASS / ITEM</text>
+    <use href="#diamond" x="43" y="548" width="70" height="70" class="ember"/><use href="#shield" x="57" y="562" width="42" height="42" class="ivory"/>
+    <use href="#diamond" x="145" y="548" width="70" height="70" class="bronze"/><use href="#bow" x="159" y="562" width="42" height="42" class="ivory"/>
+    <use href="#diamond" x="247" y="548" width="70" height="70" class="bronze"/><use href="#sun" x="261" y="562" width="42" height="42" class="ivory"/>
+    <rect x="353" y="553" width="60" height="60" rx="3" fill="#191a1c" stroke="#a7564b"/><path d="M357 557h52v52h-52z" fill="none" stroke="#c7a187" stroke-dasharray="2 4"/><use href="#shield" x="365" y="565" width="36" height="36" class="ivory"/>
+    <text x="30" y="677" class="tag">FOOTER</text><use href="#eye" x="137" y="663" width="48" height="48" class="ivory"/><path d="M228 670v39" stroke="#b57159"/><use href="#hub" x="270" y="665" width="45" height="45" class="ivory"/>
+  </g>
+  <text x="61" y="974" class="sub">All three use the existing button, bar, tile, label, row, and glyph building blocks. The illustrated motifs are surface treatments.</text>
+</svg>

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+  <defs>
+    <radialGradient id="soot"><stop stop-color="#182226"/><stop offset="1" stop-color="#090e11"/></radialGradient>
+    <radialGradient id="thread"><stop stop-color="#241d1e"/><stop offset="1" stop-color="#0b1012"/></radialGradient>
+    <radialGradient id="forest"><stop stop-color="#241f1b"/><stop offset="1" stop-color="#0c1011"/></radialGradient>
+    <radialGradient id="spirit"><stop stop-color="#102734"/><stop offset="1" stop-color="#070d13"/></radialGradient>
+    <linearGradient id="oak" x2="0" y2="1"><stop stop-color="#493126"/><stop offset=".55" stop-color="#2a211d"/><stop offset="1" stop-color="#161719"/></linearGradient>
+    <pattern id="wood" width="35" height="24" patternUnits="userSpaceOnUse"><path d="M2 6h19m-8 13h21" stroke="#a87551" stroke-opacity=".12"/></pattern>
+    <pattern id="stitch" width="20" height="20" patternUnits="userSpaceOnUse"><path d="m10 1 9 9-9 9-9-9z" fill="none" stroke="#ae6652" stroke-width="1" stroke-opacity=".45"/></pattern>
+    <filter id="blueglow"><feGaussianBlur stdDeviation="7"/></filter>
+    <symbol id="diamond" viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24Z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="nested" viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24Z M24 10 38 24 24 38 10 24Z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m24 19 5 5-5 5-5-5z" fill="currentColor"/></symbol>
+    <symbol id="step" viewBox="0 0 48 48"><path d="M18 2h12v7h7v7h7v16h-7v7h-7v7H18v-7h-7v-7H4V16h7V9h7Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m24 15 9 9-9 9-9-9z" fill="none" stroke="currentColor"/></symbol>
+    <symbol id="arrow" viewBox="0 0 36 36"><path d="m12 6 12 12-12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="eye" viewBox="0 0 48 48"><path d="M4 24Q24 5 44 24 24 43 4 24Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="2" fill="currentColor"/></symbol>
+    <symbol id="hub" viewBox="0 0 48 48"><path d="m24 2 9 9-9 9-9-9zM11 15l9 9-9 9-9-9zM37 15l9 9-9 9-9-9zM24 28l9 9-9 9-9-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="shield" viewBox="0 0 48 48"><path d="M24 4 41 10v14c0 10-7 17-17 21C14 41 7 34 7 24V10Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 11v28M12 22h24" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="bow" viewBox="0 0 48 48"><path d="M13 4c26 9 26 31 0 40M13 4v40M4 24h39m-9-8 9 8-9 8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="sun" viewBox="0 0 48 48"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 3v9m0 24v9M3 24h9m24 0h9M9 9l7 7m16 16 7 7M39 9l-7 7M16 32l-7 7" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="person" viewBox="0 0 48 48"><circle cx="24" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 43c1-11 6-17 14-17s13 6 14 17" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <style>
+      .title{font:600 30px Georgia,serif;fill:#eee1c9}.lead{font:16px Arial,sans-serif;fill:#a4a49b}.mini{font:12px Arial,sans-serif;fill:#92958e;letter-spacing:2px}.value{font:23px Georgia,serif;fill:#ecddc4}.button{font:26px Georgia,serif;fill:#ecddc4}.ivory{color:#eaddc5}.bronze{color:#b5966c}.amber{color:#d9a06c}.dim{color:#64706e}.red{color:#a9544a}.blue{color:#93d6db}
+    </style>
+  </defs>
+  <rect width="800" height="560" fill="url(#soot)"/><rect x="800" width="800" height="560" fill="url(#thread)"/>
+  <rect y="560" width="800" height="560" fill="url(#forest)"/><rect x="800" y="560" width="800" height="560" fill="url(#spirit)"/>
+  <path d="M800 0v1120M0 560h1600" stroke="#554b40" stroke-opacity=".75"/>
+
+  <!-- 01: Soot and ivory; style-only -->
+  <text x="52" y="65" class="title">01 / Soot &amp; Ivory</text><text x="54" y="92" class="lead">Open space, sharp line glyphs, one warm active mark.</text>
+  <text x="54" y="137" class="mini">STATUS</text>
+  <use href="#diamond" x="73" y="159" width="84" height="84" class="ivory"/><use href="#person" x="94" y="180" width="42" height="42" class="ivory"/>
+  <path d="M161 181h391M161 207h391M161 233h391" stroke="#495858" stroke-width="1.6"/><path d="M161 181h251" stroke="#a8524d" stroke-width="3"/><path d="M161 207h171" stroke="#5c8ca4" stroke-width="3"/><path d="M161 233h218" stroke="#b3975c" stroke-width="3"/>
+  <text x="572" y="190" class="value">112</text><text x="582" y="216" class="value">64</text><text x="582" y="242" class="value">80</text>
+  <text x="54" y="289" class="mini">NAME + ACTION</text><path d="M75 346h428" stroke="#a7987c" stroke-width="1.5"/><use href="#nested" x="73" y="323" width="28" height="28" class="amber"/>
+  <text x="236" y="336" class="button">Остап</text><text x="523" y="336" class="button">⚄</text>
+  <text x="218" y="424" class="button">Continue</text><path d="M172 439h365" stroke="#c9a073"/><use href="#arrow" x="506" y="391" width="42" height="42" class="ivory"/>
+  <text x="54" y="493" class="mini">CHOICE GLYPHS</text><use href="#diamond" x="260" y="465" width="58" height="58" class="amber"/><use href="#shield" x="273" y="478" width="32" height="32" class="ivory"/><use href="#bow" x="391" y="478" width="32" height="32" class="ivory"/><use href="#sun" x="510" y="478" width="32" height="32" class="ivory"/>
+
+  <!-- 02: stitched textile; a single tiny motif strip -->
+  <text x="852" y="65" class="title">02 / Embroidered Thread</text><text x="854" y="92" class="lead">A narrow woven line ties choices and resources together.</text>
+  <text x="854" y="137" class="mini">STATUS</text>
+  <use href="#diamond" x="875" y="159" width="84" height="84" class="ivory"/><use href="#person" x="896" y="180" width="42" height="42" class="ivory"/>
+  <path d="M969 173h376v78H969Z" fill="url(#stitch)" opacity=".32"/><path d="M969 181h376M969 207h376M969 233h376" stroke="#785c50" stroke-width="1.4"/>
+  <path d="M969 181h244" stroke="#a6514b" stroke-width="3"/><path d="M969 207h168" stroke="#527f94" stroke-width="3"/><path d="M969 233h209" stroke="#af9157" stroke-width="3"/>
+  <use href="#step" x="952" y="170" width="24" height="24" class="red"/><use href="#step" x="952" y="196" width="24" height="24" class="bronze"/><use href="#step" x="952" y="222" width="24" height="24" class="amber"/>
+  <text x="1368" y="190" class="value">112</text><text x="1378" y="216" class="value">64</text><text x="1378" y="242" class="value">80</text>
+  <text x="854" y="289" class="mini">NAME + ACTION</text><path d="M878 346h480" stroke="#ae8567"/><path d="m887 346 9-9 9 9-9 9zm452 0 9-9 9 9-9 9z" fill="none" stroke="#b96554"/>
+  <path d="M918 341h45m334 0h42" stroke="#b08b5a" stroke-dasharray="2 4" stroke-width="4"/><text x="1060" y="336" class="button">Остап</text><text x="1374" y="336" class="button">⚄</text>
+  <path d="M1016 438h308" stroke="#a36556"/><path d="M1016 443h308" stroke="#a36556" stroke-dasharray="2 5"/><text x="1060" y="423" class="button">Continue</text><use href="#arrow" x="1280" y="392" width="40" height="40" class="ivory"/>
+  <text x="854" y="493" class="mini">CHOICE GLYPHS</text><use href="#step" x="1077" y="464" width="62" height="62" class="amber"/><use href="#shield" x="1091" y="478" width="34" height="34" class="ivory"/><use href="#diamond" x="1207" y="470" width="50" height="50" class="bronze"/><use href="#bow" x="1218" y="481" width="28" height="28" class="ivory"/><use href="#diamond" x="1333" y="470" width="50" height="50" class="bronze"/><use href="#sun" x="1344" y="481" width="28" height="28" class="ivory"/>
+
+  <!-- 03: carved oak rail; physical, not panelled -->
+  <text x="52" y="626" class="title">03 / Oak Totem</text><text x="54" y="653" class="lead">One vertical relic collects infrequent actions.</text>
+  <g transform="translate(65 694)"><path d="M17 0h77l17 18v341l-17 18H17L0 359V18Z" fill="url(#oak)" stroke="#9e7654" stroke-width="2"/><path d="M17 17h77v343H17Z" fill="url(#wood)"/>
+    <use href="#eye" x="33" y="29" width="44" height="44" class="ivory"/><use href="#nested" x="30" y="112" width="50" height="50" class="red"/><use href="#hub" x="33" y="200" width="44" height="44" class="ivory"/><use href="#sun" x="33" y="284" width="44" height="44" class="ivory"/></g>
+  <text x="229" y="721" class="mini">STATUS</text><use href="#diamond" x="228" y="740" width="92" height="92" class="bronze"/><use href="#person" x="252" y="764" width="44" height="44" class="ivory"/>
+  <g transform="translate(323 762)"><path d="M0 0h302l12 12-12 12H0M0 28h302l12 12-12 12H0M0 56h302l12 12-12 12H0" fill="#191a1b" stroke="#7e604b"/><path d="M4 4h215v16H4" fill="#85433e"/><path d="M4 32h148v16H4" fill="#3d6d86"/><path d="M4 60h180v16H4" fill="#9b7b4c"/></g>
+  <text x="228" y="894" class="mini">NAME / PRIMARY</text><path d="M244 914h390l14 24-14 24H244l-14-24Z" fill="url(#oak)" stroke="#a57b56"/><text x="372" y="947" class="button">Остап</text>
+  <path d="M385 991h178l13 23-13 23H385l-13-23Z" fill="url(#oak)" stroke="#c99565" stroke-width="2"/><use href="#arrow" x="466" y="996" width="36" height="36" class="ivory"/>
+  <text x="228" y="1087" class="mini">CLASS CHOICES CAN USE THE SAME OAK GLYPHS</text>
+
+  <!-- 04: cold omen; one color and glow state -->
+  <text x="852" y="626" class="title">04 / Cold Omen</text><text x="854" y="653" class="lead">Bone lines at rest; blue light only when magic wakes.</text>
+  <text x="854" y="721" class="mini">STATUS</text><use href="#nested" x="866" y="738" width="90" height="90" class="blue"/><use href="#person" x="889" y="761" width="44" height="44" class="ivory"/>
+  <path d="M955 761h356M955 789h356M955 817h356" stroke="#536b76" stroke-width="1.6"/><path d="M955 761h234" stroke="#a75755" stroke-width="3"/><path d="M955 789h170" stroke="#72b7c2" stroke-width="4"/><path d="M955 817h208" stroke="#b49d64" stroke-width="3"/>
+  <use href="#nested" x="1084" y="767" width="44" height="44" class="blue" opacity=".8" filter="url(#blueglow)"/>
+  <text x="1332" y="770" class="value">112</text><text x="1342" y="798" class="value">64</text><text x="1342" y="826" class="value">80</text>
+  <text x="854" y="894" class="mini">NAME / PRIMARY</text><path d="M875 957h453" stroke="#80aab1" stroke-width="1.5"/><use href="#nested" x="865" y="919" width="42" height="42" class="blue"/><text x="1058" y="945" class="button">Остап</text><text x="1353" y="944" class="button">⚄</text>
+  <use href="#step" x="1090" y="988" width="69" height="69" class="blue" opacity=".9" filter="url(#blueglow)"/><use href="#step" x="1090" y="988" width="69" height="69" class="blue"/><use href="#arrow" x="1106" y="1004" width="36" height="36" class="ivory"/>
+  <text x="1190" y="1032" class="mini">MAGIC FOCUS STATE</text>
+</svg>

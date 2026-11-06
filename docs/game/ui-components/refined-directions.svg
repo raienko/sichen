@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="950" viewBox="0 0 1600 950">
+  <defs>
+    <radialGradient id="night" cx="50%" cy="35%" r="78%"><stop stop-color="#1d2a2d"/><stop offset=".55" stop-color="#11191c"/><stop offset="1" stop-color="#080c0e"/></radialGradient>
+    <radialGradient id="fire" cx="50%" cy="50%" r="50%"><stop stop-color="#8d4c2f" stop-opacity=".16"/><stop offset="1" stop-color="#8d4c2f" stop-opacity="0"/></radialGradient>
+    <linearGradient id="oak" x2="0" y2="1"><stop stop-color="#3b2b23"/><stop offset=".45" stop-color="#261e1b"/><stop offset="1" stop-color="#161719"/></linearGradient>
+    <pattern id="wood" width="45" height="22" patternUnits="userSpaceOnUse"><path d="M2 7h26m-10 11h22" stroke="#ad7950" stroke-opacity=".11"/></pattern>
+    <symbol id="diamond" viewBox="0 0 48 48"><path d="M24 2 46 24 24 46 2 24Z" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="step" viewBox="0 0 48 48"><path d="M24 4v7h7v7h7v12h-7v7h-7v7h-12v-7H5v-7H0V18h5v-7h7V4Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m18 18 6-6 6 6 6 6-6 6-6 6-6-6-6-6z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="chev" viewBox="0 0 36 36"><path d="m12 6 12 12-12 12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="eye" viewBox="0 0 48 48"><path d="M4 24Q24 5 44 24 24 43 4 24Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="24" cy="24" r="2" fill="currentColor"/></symbol>
+    <symbol id="hub" viewBox="0 0 48 48"><path d="m24 2 9 9-9 9-9-9zM11 15l9 9-9 9-9-9zM37 15l9 9-9 9-9-9zM24 28l9 9-9 9-9-9z" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="shield" viewBox="0 0 48 48"><path d="M24 4 41 10v14c0 10-7 17-17 21C14 41 7 34 7 24V10Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 11v28M12 22h24" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="bow" viewBox="0 0 48 48"><path d="M13 4c26 9 26 31 0 40M13 4v40M4 24h39m-9-8 9 8-9 8" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="sun" viewBox="0 0 48 48"><circle cx="24" cy="24" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M24 3v9m0 24v9M3 24h9m24 0h9M9 9l7 7m16 16 7 7M39 9l-7 7M16 32l-7 7" stroke="currentColor" stroke-width="2"/></symbol>
+    <symbol id="person" viewBox="0 0 48 48"><circle cx="24" cy="15" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 43c1-11 6-17 14-17s13 6 14 17" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+    <style>
+      .title{font:600 44px Georgia,serif;letter-spacing:1px;fill:#eee0c8}.sub{font:18px Arial,sans-serif;fill:#a6a49a}.name{font:600 28px Georgia,serif;fill:#eee0c8}.caption{font:14px Arial,sans-serif;fill:#a8a091;letter-spacing:1px}.mini{font:12px Arial,sans-serif;fill:#898a81;letter-spacing:2px}.value{font:24px Georgia,serif;fill:#e7d7b7}
+      .bone{color:#e9d7b9}.bronze{color:#aa8962}.ember{color:#d8a06d}.dim{color:#6c716d}.red{color:#a75a4d}
+    </style>
+  </defs>
+  <rect width="1600" height="950" fill="url(#night)"/>
+  <ellipse cx="810" cy="510" rx="550" ry="400" fill="url(#fire)"/>
+  <path d="M0 0h150L70 700 0 860Zm1600 0h-155l90 700 65 160Z" fill="#070b0d" opacity=".7"/>
+  <path d="M0 940c280-90 520-48 790-66s570-56 810 42v34H0Z" fill="#080c0d"/>
+  <text x="78" y="76" class="title">Less frame. More symbol.</text>
+  <text x="80" y="110" class="sub">Two light treatments for the same reusable controls, with Carpathian geometric accents.</text>
+  <path d="M80 132h1440" stroke="#6b5a46" stroke-width="1"/>
+
+  <!-- left: embroidered glyph -->
+  <text x="92" y="187" class="name">A  /  Woven Glyph</text>
+  <text x="94" y="213" class="caption">Thread-like runes float over the world.</text>
+  <text x="95" y="266" class="mini">STATUS</text>
+  <g transform="translate(130 291)">
+    <use href="#diamond" width="96" height="96" class="bone"/><use href="#person" x="26" y="26" width="44" height="44" class="bone"/>
+    <path d="m48-16 8 8-8 8-8-8zm0 112 8 8-8 8-8-8z" fill="none" stroke="#b76454" stroke-width="1.5"/>
+    <path d="m28-8 5-5 5 5-5 5zm40 0 5-5 5 5-5 5z" fill="#9a834d"/><path d="m28 105 5-5 5 5-5 5zm40 0 5-5 5 5-5 5z" fill="#526449"/>
+    <path d="M94 23h333M94 50h333M94 77h333" stroke="#4c5958" stroke-width="1.4"/>
+    <path d="M94 23h217" stroke="#a7514a" stroke-width="3"/><path d="M94 50h150" stroke="#54849a" stroke-width="3"/><path d="M94 77h184" stroke="#ad8c50" stroke-width="3"/>
+    <path d="m107 23 5-5 5 5-5 5zm0 27 5-5 5 5-5 5zm0 27 5-5 5 5-5 5z" fill="#d6aa79"/>
+    <text x="446" y="30" class="value">112</text><text x="456" y="57" class="value">64</text><text x="456" y="84" class="value">80</text>
+  </g>
+  <text x="95" y="451" class="mini">NAME</text>
+  <g transform="translate(135 466)">
+    <path d="M0 54h467" stroke="#9d8c70" stroke-width="1.5"/>
+    <path d="m9 54 9-9 9 9-9 9zm430 0 9-9 9 9-9 9z" fill="none" stroke="#b35e50" stroke-width="1.5"/>
+    <path d="m37 54 6-6 6 6-6 6m6 0 6-6 6 6-6 6m6 0 6-6 6 6-6 6" fill="none" stroke="#aa8a61" stroke-width="1"/>
+    <path d="m376 54 6-6 6 6-6 6m6 0 6-6 6 6-6 6m6 0 6-6 6 6-6 6" fill="none" stroke="#aa8a61" stroke-width="1"/>
+    <text x="197" y="43" class="name">Остап</text><text x="486" y="45" class="value">⚄</text>
+  </g>
+  <text x="95" y="575" class="mini">PRIMARY ACTION</text>
+  <g transform="translate(230 591)">
+    <path d="M0 41h305" stroke="#b7996f" stroke-width="1.5"/>
+    <path d="m0 41 8-8 8 8-8 8zm272 0 8-8 8 8-8 8z" fill="none" stroke="#bd6d53" stroke-width="1.6"/>
+    <path d="m32 41 5-5 5 5 5-5 5 5m188 0 5-5 5 5 5-5 5 5" fill="none" stroke="#a48a59" stroke-width="1.1"/>
+    <text x="88" y="31" class="name" font-size="25">Continue</text><use href="#chev" x="280" y="6" width="36" height="36" class="bone"/>
+  </g>
+  <text x="95" y="710" class="mini">CHOICES / FOOTER</text>
+  <g transform="translate(153 722)">
+    <use href="#step" width="65" height="65" class="ember"/><use href="#shield" x="15" y="15" width="36" height="36" class="bone"/>
+    <use href="#diamond" x="142" y="7" width="50" height="50" class="dim"/><use href="#bow" x="152" y="17" width="30" height="30" class="bone"/>
+    <use href="#diamond" x="270" y="7" width="50" height="50" class="dim"/><use href="#sun" x="280" y="17" width="30" height="30" class="bone"/>
+    <path d="M369 31h35" stroke="#a36f57"/><use href="#eye" x="423" y="9" width="44" height="44" class="bone"/><path d="M493 13v38" stroke="#9d8063"/><use href="#hub" x="519" y="10" width="42" height="42" class="bone"/>
+  </g>
+
+  <!-- right: small physical relics -->
+  <text x="842" y="187" class="name">B  /  Carved Relic</text>
+  <text x="844" y="213" class="caption">Wood appears only where a hand acts.</text>
+  <text x="845" y="266" class="mini">STATUS</text>
+  <g transform="translate(875 291)">
+    <path d="M49-15v15" stroke="#b7936a" stroke-width="2"/><path d="m49 0 49 49-49 49L0 49Z" fill="url(#oak)" stroke="#b19065" stroke-width="2"/>
+    <path d="m49 8 41 41-41 41L8 49Z" fill="url(#wood)" stroke="#76573d"/>
+    <use href="#person" x="27" y="27" width="44" height="44" class="bone"/>
+    <path d="m49-15 6 6-6 6-6-6z" fill="none" stroke="#ad624e"/>
+    <path d="M99 21h326l10 12-10 12H99" fill="#1d1b1b" stroke="#885b4a"/><path d="M103 25h196v16H103" fill="#813d38"/>
+    <path d="M99 49h326l10 12-10 12H99" fill="#1a1e20" stroke="#56748a"/><path d="M103 53h143v16H103" fill="#386d86"/>
+    <path d="M99 77h326l10 12-10 12H99" fill="#1d1b19" stroke="#9d774a"/><path d="M103 81h171v16H103" fill="#937447"/>
+    <path d="m111 33 6-6 6 6-6 6zm0 28 6-6 6 6-6 6zm0 28 6-6 6 6-6 6z" fill="none" stroke="#c09c72"/>
+    <text x="452" y="40" class="value">112</text><text x="462" y="68" class="value">64</text><text x="462" y="96" class="value">80</text>
+  </g>
+  <text x="845" y="451" class="mini">NAME</text>
+  <g transform="translate(885 466)">
+    <path d="M13 0h414l13 28-13 28H13L0 28Z" fill="url(#oak)" stroke="#ae805b" stroke-width="1.8"/><path d="M19 6h402l9 22-9 22H19L10 28Z" fill="url(#wood)" stroke="#684d39"/>
+    <path d="m34 28 6-6 6 6-6 6zm360 0 6-6 6 6-6 6z" fill="none" stroke="#bd6f54"/>
+    <path d="m58 28 5-5 5 5 5-5 5 5 5-5 5 5m263 0 5-5 5 5 5-5 5 5 5-5 5 5" fill="none" stroke="#9d8055" stroke-width="1.2"/>
+    <text x="164" y="39" class="name">Остап</text><text x="468" y="40" class="value">⚄</text>
+  </g>
+  <text x="845" y="575" class="mini">PRIMARY ACTION</text>
+  <g transform="translate(1020 590)">
+    <path d="M14 0h252l14 29-14 29H14L0 29Z" fill="url(#oak)" stroke="#d29b68" stroke-width="2"/>
+    <path d="M21 7h238l9 22-9 22H21l-9-22Z" fill="url(#wood)" stroke="#6e5039"/>
+    <path d="m32 29 7-7 7 7-7 7zm202 0 7-7 7 7-7 7z" fill="none" stroke="#b46b52"/>
+    <path d="m53 29 5-5 5 5 5-5 5 5m134 0 5-5 5 5 5-5 5 5" fill="none" stroke="#9d8055" stroke-width="1.2"/>
+    <use href="#chev" x="118" y="11" width="36" height="36" class="bone"/>
+  </g>
+  <text x="845" y="710" class="mini">CHOICES / FOOTER</text>
+  <g transform="translate(905 722)">
+    <path d="m36 0 36 36-36 36L0 36Z" fill="url(#oak)" stroke="#d0a071" stroke-width="2"/><use href="#shield" x="18" y="18" width="36" height="36" class="bone"/>
+    <path d="m166 8 28 28-28 28-28-28z" fill="#171a1a" stroke="#716452"/><use href="#bow" x="151" y="21" width="30" height="30" class="bone"/>
+    <path d="m296 8 28 28-28 28-28-28z" fill="#171a1a" stroke="#716452"/><use href="#sun" x="281" y="21" width="30" height="30" class="bone"/>
+    <use href="#eye" x="398" y="14" width="44" height="44" class="bone"/><path d="M467 16v38" stroke="#9d8063"/><use href="#hub" x="493" y="15" width="42" height="42" class="bone"/>
+  </g>
+  <text x="81" y="889" class="sub">Hutsul-inspired stepped diamonds and short embroidery stitches mark selection, connection, and touch points. No surrounding cards.</text>
+  <path d="M81 911h1438" stroke="#705941" stroke-width="1"/>
+</svg>
