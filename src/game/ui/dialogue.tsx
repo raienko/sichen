@@ -7,23 +7,19 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Circle, Ellipse, Line, Path, Rect } from "react-native-svg";
+import Svg, { Circle, Line, Path, Rect } from "react-native-svg";
+
+import { isPersonNpc } from "../render/art-kit";
+import NpcPortrait from "../render/npc-portrait";
 
 import { GButton, GIcon, Label } from "./kit";
 import { palette } from "./palette";
 
-const looks: Record<string, { coat: string; hair: string; trim: string }> = {
-  otaman: { coat: "#632a28", hair: "#29201c", trim: "#bf8861" },
-  olha: { coat: "#482f49", hair: "#261e23", trim: "#b98e64" },
-  sviatoslav: { coat: "#55595c", hair: "#292927", trim: "#a7a49a" },
-  karmaliuk: { coat: "#2c3d34", hair: "#1c1b1a", trim: "#a98562" },
-  merchant: { coat: "#675039", hair: "#3d2c21", trim: "#c79b61" },
-  healer: { coat: "#3b5146", hair: "#36302b", trim: "#b6aa82" },
-};
-
-/** A small, shared storybook portrait rather than a new 3D render per popup. */
-function SpeakerArt({ kind }: { kind?: string }) {
-  const look = looks[kind ?? ""];
+/**
+ * The painted stage behind a speaker: a person from the world stands on it
+ * as their own 3D figure (see NpcPortrait); a quest object gets an emblem.
+ */
+function SpeakerArt({ emblem }: { emblem: boolean }) {
   return (
     <Svg
       width="100%"
@@ -39,82 +35,7 @@ function SpeakerArt({ kind }: { kind?: string }) {
       />
       <Circle cx="153" cy="129" r="91" fill="#503425" opacity={0.27} />
       <Circle cx="153" cy="129" r="61" fill="#8f5536" opacity={0.12} />
-      {look ? (
-        <>
-          <Path
-            d="M27 305 Q38 217 100 205 L129 191 171 191 203 205 Q268 217 278 305Z"
-            fill={look.coat}
-            stroke="#8b6d50"
-            strokeWidth="2"
-          />
-          <Path
-            d="M100 206 149 246 203 205M149 246v56"
-            fill="none"
-            stroke={look.trim}
-            strokeWidth="4"
-          />
-          <Path
-            d="m132 251 17 14 17-14m-34 17 17 14 17-14"
-            fill="none"
-            stroke={look.trim}
-            strokeWidth="2"
-            opacity={0.75}
-          />
-          <Path d="M116 166v41q35 30 69 0v-41" fill="#af7d62" />
-          <Ellipse
-            cx="151"
-            cy="139"
-            rx="53"
-            ry="65"
-            fill="#c99a77"
-            stroke="#7d5947"
-            strokeWidth="2"
-          />
-          <Path
-            d="M99 127 Q99 72 148 70 Q203 68 204 127 L195 104 Q155 92 108 111Z"
-            fill={look.hair}
-          />
-          {kind === "olha" || kind === "healer" ? (
-            <Path
-              d="M103 104Q83 143 95 212l22-5-3-72M195 104q24 42 7 108l-21-6 7-74"
-              fill={look.hair}
-            />
-          ) : null}
-          {kind === "otaman" || kind === "karmaliuk" || kind === "merchant" ? (
-            <Path
-              d="M95 94Q150 60 206 94l8 23H87Z"
-              fill={look.hair}
-              stroke={look.trim}
-              strokeWidth="2"
-            />
-          ) : null}
-          <Path
-            d="M121 135q10-6 20 0m20 0q10-6 20 0"
-            fill="none"
-            stroke="#3c2b24"
-            strokeWidth="3"
-            strokeLinecap="round"
-          />
-          <Circle cx="132" cy="138" r="2.5" fill="#201a18" />
-          <Circle cx="170" cy="138" r="2.5" fill="#201a18" />
-          <Path
-            d="m151 140-5 18 8 3m-16 17q13 7 27-1"
-            fill="none"
-            stroke="#745041"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          {kind === "otaman" || kind === "karmaliuk" || kind === "merchant" ? (
-            <Path
-              d="M128 170q11-8 23 1 13-9 25-1-12 17-25 8-14 8-23-8Z"
-              fill={look.hair}
-            />
-          ) : null}
-          {kind === "olha" ? (
-            <Circle cx="193" cy="169" r="4" fill={look.trim} />
-          ) : null}
-        </>
-      ) : (
+      {emblem ? (
         <>
           <Path
             d="M147 65 205 120 178 218H118L91 120Z"
@@ -130,7 +51,7 @@ function SpeakerArt({ kind }: { kind?: string }) {
           />
           <Path d="M148 111v47m-19-24h38" stroke="#c19b6c" strokeWidth="2" />
         </>
-      )}
+      ) : null}
       <Rect x="0" y="281" width="300" height="19" fill="#171a18" />
       <Line
         x1="0"
@@ -187,7 +108,12 @@ export function DialogueFrame({
             portrait ? styles.stagePortrait : styles.stageLandscape,
           ]}
         >
-          <SpeakerArt kind={kind} />
+          <SpeakerArt emblem={!isPersonNpc(kind)} />
+          {isPersonNpc(kind) ? (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <NpcPortrait kind={kind!} />
+            </View>
+          ) : null}
           <View style={styles.stageShade} />
           <View style={styles.stageCaption}>
             <Label value={name} type="title2" color={palette.ivory} />
@@ -254,10 +180,17 @@ const styles = StyleSheet.create({
   },
   stageCaption: {
     position: "absolute",
-    bottom: 23,
-    start: 16,
-    end: 12,
+    bottom: 0,
+    start: 0,
+    end: 0,
     gap: 2,
+    paddingTop: 10,
+    paddingBottom: 14,
+    paddingStart: 16,
+    paddingEnd: 12,
+    backgroundColor: "rgba(8, 9, 8, 0.85)",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(141, 112, 77, 0.45)",
   },
   content: { flex: 1, backgroundColor: "#201c19" },
   topRule: { height: 3, backgroundColor: "#8d704d" },

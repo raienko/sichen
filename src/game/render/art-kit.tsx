@@ -1420,6 +1420,11 @@ const NPC_LOOKS: Record<
 
 const STANDING = () => 0;
 
+/** Whether a kind of NPC is a person drawn on the hero's body. */
+export function isPersonNpc(kind: string | undefined): boolean {
+  return !!kind && kind in NPC_LOOKS;
+}
+
 export function NpcFigure({ kind }: { kind: string }) {
   if (kind === "chest") {
     return (
