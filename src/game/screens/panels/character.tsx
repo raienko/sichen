@@ -23,7 +23,7 @@ import { ItemCard, ItemTile } from "../../ui/items";
 import { GIcon, Label, RoundButton, Row } from "../../ui/kit";
 import { palette, rarityColor } from "../../ui/palette";
 
-import { CharacterPanel } from "./misc";
+import { CharacterStats } from "./misc";
 import { RelicsTab } from "./relics";
 import { CornerAction, Workspace } from "./workspace";
 
@@ -134,7 +134,7 @@ export function CharacterScreen({
 }: {
   save: SaveData;
   onClose: () => void;
-  /** The full stat list on top; closing it goes back to the bag. */
+  /** Show stats in the same workspace body as the other tabs. */
   showStats?: boolean;
 }) {
   const { t } = useT();
@@ -185,13 +185,6 @@ export function CharacterScreen({
         <View style={styles.details}>
           <ScrollView contentContainerStyle={styles.detailsBody}>
             <ItemCard item={item} hero={hero} bare />
-            {selected?.from === "bag" && !meetsRequirement(hero, item) ? (
-              <Label
-                value={t("inv.cantWear")}
-                type="caption1"
-                color={palette.bad}
-              />
-            ) : null}
           </ScrollView>
         </View>
       ) : null}
@@ -359,24 +352,20 @@ export function CharacterScreen({
   );
 
   return (
-    <>
-      <Workspace
-        save={save}
-        tab={showStats ? "character" : "inventory"}
-        onClose={onClose}
-      >
+    <Workspace
+      save={save}
+      tab={showStats ? "character" : "inventory"}
+      onClose={onClose}
+    >
+      {showStats ? (
+        <CharacterStats save={save} />
+      ) : (
         <View style={wide ? styles.wide : styles.tall}>
           <View style={wide ? styles.half : styles.top}>{equipment}</View>
           <View style={wide ? styles.half : styles.flex}>{bag}</View>
         </View>
-      </Workspace>
-      {showStats ? (
-        <CharacterPanel
-          save={save}
-          onClose={() => actions.openPanel({ name: "inventory" })}
-        />
-      ) : null}
-    </>
+      )}
+    </Workspace>
   );
 }
 

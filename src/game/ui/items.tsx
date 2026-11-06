@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { getAffix, getBase, getSet, getUnique } from "../data";
 import { useT, type StringKey } from "../i18n";
 import { itemName, requirement } from "../sim/loot";
+import { heroStats } from "../sim/stats";
 import type { Hero, Item, StatKey, StatMods } from "../sim/types";
 
 import { GIcon, Label } from "./kit";
@@ -106,6 +107,7 @@ export function ItemCard({
   const lines = useModLines();
   const base = getBase(item.baseId);
   const req = requirement(item);
+  const stats = heroStats(hero);
   const color = rarityColor[item.rarity];
   const set = item.setId ? getSet(item.setId) : null;
   const worn = set
@@ -120,14 +122,18 @@ export function ItemCard({
     : set
       ? lines(set.pieces.find((p) => p.baseId === item.baseId)?.mods ?? {})
       : [];
-  const reqText = [
-    `Lv ${req.level}`,
-    req.str ? `${t("stat.str")} ${req.str}` : null,
-    req.dex ? `${t("stat.dex")} ${req.dex}` : null,
-    req.int ? `${t("stat.int")} ${req.int}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const requirements = [
+    { text: `Lv ${req.level}`, met: hero.level >= req.level },
+    ...(req.str
+      ? [{ text: `${t("stat.str")} ${req.str}`, met: stats.str >= req.str }]
+      : []),
+    ...(req.dex
+      ? [{ text: `${t("stat.dex")} ${req.dex}`, met: stats.dex >= req.dex }]
+      : []),
+    ...(req.int
+      ? [{ text: `${t("stat.int")} ${req.int}`, met: stats.int >= req.int }]
+      : []),
+  ];
   return (
     <View style={[styles.card, { borderColor: color }, bare && styles.bare]}>
       <Label value={tr(itemName(item))} type="headline" color={color} />
@@ -174,11 +180,21 @@ export function ItemCard({
           color={palette.ember}
         />
       ) : null}
-      <Label
-        value={`${t("inv.requires")}: ${reqText}`}
-        type="caption2"
-        color={palette.faint}
-      />
+      <View style={styles.requirements}>
+        <Label
+          value={`${t("inv.requires")}:`}
+          type="caption2"
+          color={palette.muted}
+        />
+        {requirements.map(({ text, met }, index) => (
+          <Label
+            key={text}
+            value={`${index ? "· " : ""}${text}`}
+            type="caption2"
+            color={met ? palette.muted : palette.bad}
+          />
+        ))}
+      </View>
     </View>
   );
 }
@@ -214,5 +230,6 @@ const styles = StyleSheet.create({
   },
   bare: { borderWidth: 0, backgroundColor: "transparent", padding: 0 },
   setBlock: { gap: 2, marginTop: 4 },
+  requirements: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
 });

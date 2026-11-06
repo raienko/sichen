@@ -166,7 +166,9 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   spear: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.12] },
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
-  bow: { arm: [-0.15, 0, -0.2], aim: [0, 1, 0] },
+  // The bow arm hangs out from the side. This is the bow as it is drawn,
+  // upright; at rest it is tilted low in the fist (see BOW_IDLE).
+  bow: { arm: [-0.1, 0, -0.4], aim: [0, 1, 0] },
   /** Empty hands: the arm hangs like the other one. */
   none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
@@ -319,8 +321,8 @@ const POSES = {
   bow: {
     weapon: [
       [0, 0],
-      [0.3, -1.3],
-      [0.75, -1.3],
+      [0.3, -1.35],
+      [0.75, -1.35],
       [1, 0],
     ],
     free: [
@@ -429,6 +431,40 @@ const POSES = {
   },
 } satisfies Record<string, Pose>;
 
+const X_AXIS = new THREE.Vector3(1, 0, 0);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+/**
+ * The bow at rest, as a turn of the hand's frame: low at the side in the
+ * hand held out from the hip, tilted about 50° from upright (upper limb
+ * forward and up, lower limb back past the leg), the belly out and the
+ * string on the inner side of the hand, clear of the hips and the arm.
+ * Built from the bow's world turn, moved into the resting arm's frame
+ * and taken back off the drawn grip.
+ */
+const BOW_IDLE = (() => {
+  const arm = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(...GRIPS.bow!.arm),
+  );
+  // Turned about its own limbs so the string faces the body, then tilted.
+  const world = new THREE.Quaternion()
+    .setFromAxisAngle(X_AXIS, 0.87)
+    .multiply(new THREE.Quaternion().setFromAxisAngle(Y_AXIS, -1.3));
+  const drawn = new THREE.Quaternion().setFromEuler(
+    new THREE.Euler(...GRIP_ROTATION.bow!),
+  );
+  return arm.invert().multiply(world).multiply(drawn.invert());
+})();
+const bowHeld = new THREE.Quaternion();
+const bowDrawn = new THREE.Quaternion();
+/** How upright the bow is through the shot (0 level, 1 upright). */
+const BOW_RAISE: Keys = [
+  [0, 0],
+  [0.25, 1],
+  [0.8, 1],
+  [1, 0],
+];
+
 function poseFor(move: HeroMove, weapon: string): Pose {
   switch (move) {
     case "strike":
@@ -449,10 +485,11 @@ function Weapon({ kind }: { kind: string }) {
     case "none":
       return null;
     case "bow":
-      // Belly forward and turned a little outwards so it reads from
-      // behind too; tips and string towards the body.
+      // Upright, belly forward; the string and tips turn a little outwards
+      // and the bow sits on the outside of the fist, clear of the arm and
+      // the body.
       return (
-        <group rotation={[0, -Math.PI / 2 - 0.6, 0]}>
+        <group position={[-0.04, 0, 0]} rotation={[0, -Math.PI / 2 + 0.3, 0]}>
           <Part
             geometry={G.torus}
             color={0x6b4423}
@@ -902,8 +939,16 @@ export function HeroFigure({
     if (freeAcross.current) freeAcross.current.rotation.z = at(pose?.across);
     if (upper.current)
       upper.current.rotation.set(at(pose?.lean), at(pose?.twist), 0);
-    if (held.current)
-      held.current.rotation.x = pose?.upright ? -at(pose.weapon) : 0;
+    if (held.current) {
+      const upright = pose?.upright ? -at(pose.weapon) : 0;
+      if (kind === "bow") {
+        // Level at rest; it turns upright as the arm comes up to shoot.
+        const raise = pose === POSES.bow ? sample(BOW_RAISE, c!.t) : 0;
+        bowDrawn.setFromAxisAngle(X_AXIS, upright);
+        bowHeld.slerpQuaternions(BOW_IDLE, bowDrawn, raise);
+        held.current.quaternion.copy(bowHeld);
+      } else held.current.rotation.x = upright;
+    }
     if (flask.current)
       flask.current.visible = !!pose?.flask && (c?.t ?? 1) < 0.85;
   });

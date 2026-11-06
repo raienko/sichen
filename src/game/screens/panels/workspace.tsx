@@ -8,7 +8,7 @@ import { getClass } from "../../data";
 import { useT } from "../../i18n";
 import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
-import { xpToNext } from "../../sim/hero";
+import { treePointsLeft, xpToNext } from "../../sim/hero";
 import { Bar, GIcon, Label, RoundButton, Row } from "../../ui/kit";
 import { LevelBadge } from "../../ui/level-badge";
 import { palette } from "../../ui/palette";
@@ -16,9 +16,8 @@ import { palette } from "../../ui/palette";
 /**
  * The hero's management workspace: character and bag, active skills and the
  * passive tree share one full-screen frame over the dimmed world. A short
- * header names the hero; symbols along the bottom switch between the
- * screens (the character sheet opens over the bag), with Back in the outer
- * corner.
+ * header names the hero on the inventory, character and skills tabs; symbols
+ * along the bottom switch screens, with Back in the outer corner.
  */
 
 export type WorkspaceTab = "inventory" | "character" | "skills" | "tree";
@@ -38,20 +37,20 @@ export function Workspace({
   save,
   tab,
   onClose,
-  right,
+  hideHeader,
   children,
 }: {
   save: SaveData;
   tab: WorkspaceTab;
   onClose: () => void;
-  /** Replaces the attributes at the header's right, e.g. tree points. */
-  right?: ReactNode;
+  hideHeader?: boolean;
   children: ReactNode;
 }) {
   const { t, tr } = useT();
   const insets = useSafeAreaInsets();
   const { hero } = save;
   const cls = getClass(hero.classId);
+  const treePoints = treePointsLeft(hero);
   return (
     <View
       style={[
@@ -64,58 +63,75 @@ export function Workspace({
         },
       ]}
     >
-      <Row gap={10} style={styles.header}>
-        <View>
-          <View style={styles.portrait}>
-            <View style={styles.portraitInner}>
-              <GIcon name={cls.icon} size={22} color={palette.ivory} />
+      {!hideHeader ? (
+        <Row gap={10} style={styles.header}>
+          <View>
+            <View style={styles.portrait}>
+              <View style={styles.portraitInner}>
+                <GIcon name={cls.icon} size={22} color={palette.ivory} />
+              </View>
             </View>
+            <LevelBadge level={hero.level} style={styles.portraitLevel} />
           </View>
-          <LevelBadge level={hero.level} style={styles.portraitLevel} />
-        </View>
-        <View style={styles.title}>
-          <Label
-            value={`${hero.name} · ${tr(cls.name)}`}
-            type="headline"
-            display
-            color={palette.ivory}
-            numberOfLines={1}
-          />
-          <Row gap={8}>
-            <Bar
-              value={hero.xp}
-              max={xpToNext(hero.level)}
-              color={palette.gold}
-              height={6}
-              style={styles.flex}
-            />
+          <View style={styles.title}>
             <Label
-              value={`${hero.xp}/${xpToNext(hero.level)}`}
-              type="caption2"
-              color={palette.muted}
+              value={`${hero.name} · ${tr(cls.name)}`}
+              type="headline"
+              display
+              color={palette.ivory}
+              numberOfLines={1}
             />
-          </Row>
-        </View>
-        {right}
-      </Row>
+            <Row gap={8}>
+              <Bar
+                value={hero.xp}
+                max={xpToNext(hero.level)}
+                color={palette.gold}
+                height={6}
+                style={styles.flex}
+              />
+              <Label
+                value={`${hero.xp}/${xpToNext(hero.level)}`}
+                type="caption2"
+                color={palette.muted}
+              />
+            </Row>
+          </View>
+        </Row>
+      ) : null}
       <View style={styles.body}>{children}</View>
       <Row gap={8} style={styles.nav}>
         {TABS.map((tb, i) => (
           <Row key={tb.id} gap={8}>
             {i > 0 ? <View style={styles.divider} /> : null}
-            <RoundButton
-              size={54}
-              accessibilityLabel={t(tb.key)}
-              selected={tab === tb.id}
-              onPress={() => actions.openPanel({ name: tb.id })}
-              style={styles.navButton}
-            >
-              <GIcon
-                name={tb.icon}
-                size={22}
-                color={tab === tb.id ? palette.amber : palette.ivory}
-              />
-            </RoundButton>
+            <View style={styles.navTab}>
+              <RoundButton
+                size={54}
+                accessibilityLabel={
+                  tb.id === "tree" && treePoints > 0
+                    ? `${t(tb.key)}, ${t("tree.points", { points: treePoints })}`
+                    : t(tb.key)
+                }
+                selected={tab === tb.id}
+                onPress={() => actions.openPanel({ name: tb.id })}
+                style={styles.navButton}
+              >
+                <GIcon
+                  name={tb.icon}
+                  size={22}
+                  color={tab === tb.id ? palette.amber : palette.ivory}
+                />
+              </RoundButton>
+              {tb.id === "tree" && treePoints > 0 ? (
+                <View style={styles.treeBadge} pointerEvents="none">
+                  <Label
+                    value={String(treePoints)}
+                    type="caption2"
+                    color={palette.night}
+                    numberOfLines={1}
+                  />
+                </View>
+              ) : null}
+            </View>
           </Row>
         ))}
         <View style={styles.flex} />
@@ -197,10 +213,24 @@ const styles = StyleSheet.create({
   title: { flex: 1, gap: 4, minWidth: 0 },
   body: { flex: 1 },
   nav: { alignItems: "center" },
+  navTab: { width: 54, height: 54 },
   navButton: {
     borderWidth: 0,
     backgroundColor: "transparent",
     boxShadow: "none",
+  },
+  treeBadge: {
+    position: "absolute",
+    top: -5,
+    right: -6,
+    minWidth: 21,
+    minHeight: 21,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: palette.amber,
+    alignItems: "center",
+    justifyContent: "center",
   },
   divider: { width: 1, height: 26, backgroundColor: palette.bronze },
   corner: { alignItems: "center", gap: 2, minWidth: 56 },

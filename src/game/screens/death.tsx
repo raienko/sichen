@@ -9,31 +9,33 @@ import { palette } from "../ui/palette";
 
 function CardFace({ card }: { card: DeathCard }) {
   const { t } = useT();
-  if (card.kind === "mercy") {
-    return (
-      <>
-        <GIcon name="dove" size={26} color={palette.good} />
-        <Label value={t("death.mercy")} type="footnote" color={palette.good} />
-      </>
-    );
-  }
+  const mercy = card.kind === "mercy";
+  const color = mercy ? palette.good : palette.bad;
+  const label = mercy
+    ? t("death.mercy")
+    : card.kind === "xp"
+      ? t("death.xp", { amount: `${card.percent}%` })
+      : t("death.gold", { amount: `${card.percent}%` });
   return (
-    <>
-      <GIcon
-        name={card.kind === "xp" ? "hourglass-half" : "coins"}
-        size={26}
-        color={palette.bad}
-      />
-      <Label
-        value={
-          card.kind === "xp"
-            ? t("death.xp", { amount: `${card.percent}%` })
-            : t("death.gold", { amount: `${card.percent}%` })
-        }
-        type="footnote"
-        color={palette.bad}
-      />
-    </>
+    <View style={styles.cardFace}>
+      <View style={styles.cardIcon}>
+        <GIcon
+          name={
+            mercy ? "dove" : card.kind === "xp" ? "hourglass-half" : "coins"
+          }
+          size={26}
+          color={color}
+        />
+      </View>
+      <View style={styles.cardText}>
+        <Label
+          value={label}
+          type="footnote"
+          color={color}
+          style={styles.cardLabel}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -67,20 +69,24 @@ export default function DeathScreen({
               {open ? (
                 <CardFace card={card} />
               ) : (
-                <GIcon name="skull" size={26} color={palette.line} />
+                <View style={styles.cardBack}>
+                  <GIcon name="skull" size={26} color={palette.line} />
+                </View>
               )}
             </Pressable>
           );
         })}
       </Row>
-      {picked !== null ? (
-        <GButton
-          label={t("death.rise")}
-          icon="church"
-          tone="primary"
-          onPress={actions.riseAgain}
-        />
-      ) : null}
+      <View style={styles.footerSlot}>
+        {picked !== null ? (
+          <GButton
+            label={t("death.rise")}
+            icon="church"
+            tone="primary"
+            onPress={actions.riseAgain}
+          />
+        ) : null}
+      </View>
       {picked === null ? <HintCard where="death" /> : null}
     </View>
   );
@@ -99,14 +105,17 @@ const styles = StyleSheet.create({
   card: {
     width: 86,
     height: 128,
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "center",
     borderRadius: 10,
     borderWidth: 2,
     borderColor: palette.line,
     backgroundColor: palette.panel,
   },
-  chosen: { borderColor: palette.gold, transform: [{ scale: 1.08 }] },
+  cardFace: { flex: 1, alignItems: "center", paddingTop: 19 },
+  cardIcon: { height: 32, alignItems: "center", justifyContent: "center" },
+  cardText: { width: "100%", marginTop: 10, paddingHorizontal: 2 },
+  cardLabel: { textAlign: "center", fontSize: 17, lineHeight: 21 },
+  cardBack: { flex: 1, alignItems: "center", justifyContent: "center" },
+  footerSlot: { height: 44, alignItems: "center", justifyContent: "center" },
+  chosen: { borderColor: palette.gold },
   other: { opacity: 0.5 },
 });

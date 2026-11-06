@@ -92,13 +92,6 @@ export function InventoryPanel({
       {item && selected ? (
         <>
           <ItemCard item={item} hero={hero} />
-          {!meetsRequirement(hero, item) && selected.from !== "equipped" ? (
-            <Label
-              value={t("inv.cantWear")}
-              type="caption1"
-              color={palette.bad}
-            />
-          ) : null}
           <Row gap={6} wrap>
             {selected.from === "inventory" ? (
               <GButton
@@ -178,6 +171,7 @@ export function InventoryPanel({
   return (
     <Sheet
       title={title ?? (mode === "stash" ? t("npc.stash") : t("menu.inventory"))}
+      hideTitle={mode === "inventory" && !title}
       icon={
         mode === "stash"
           ? "box-archive"

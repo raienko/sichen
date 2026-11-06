@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   ScrollView,
@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import Icon from "@/components/icon";
+import Modal, { type ModalHandle } from "@/components/modal";
 import Text from "@/components/text";
 import type { IconNameByType } from "@/components/icon";
 import type { TypographyToken } from "@/features/responsive";
@@ -190,6 +191,76 @@ export function GButton({
   );
 }
 
+/** A single-choice game field, with the same carved surface as GButton. */
+export function GSelect({
+  label,
+  value,
+  options,
+  onChange,
+  style,
+}: {
+  label: string;
+  value: string;
+  options: readonly { value: string; label: string }[];
+  onChange: (value: string) => void;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const modalId = useId();
+  const modal = useRef<ModalHandle>(null);
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value);
+  return (
+    <View style={[styles.select, style]}>
+      <Label value={label} type="caption1" color={palette.muted} />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityValue={{ text: selected?.label ?? "" }}
+        accessibilityState={{ expanded: open }}
+        onPress={() => {
+          setOpen(true);
+          modal.current?.show();
+        }}
+        style={({ pressed }) => [
+          styles.selectField,
+          open && styles.selectFieldOpen,
+          pressed && styles.selectFieldPressed,
+        ]}
+      >
+        <Label
+          value={selected?.label ?? ""}
+          type="callout"
+          color={palette.ivory}
+          style={styles.selectValue}
+          numberOfLines={1}
+        />
+        <GIcon name="chevron-down" size={13} color={palette.gold} />
+      </Pressable>
+      <Modal
+        ref={modal}
+        id={modalId}
+        type="bottomSheet"
+        style={styles.selectModal}
+        onClose={() => setOpen(false)}
+      >
+        <Label value={label} type="headline" color={palette.ivory} />
+        {options.map((option) => (
+          <GButton
+            key={option.value}
+            label={option.label}
+            icon={option.value === value ? "check" : undefined}
+            tone={option.value === value ? "primary" : "default"}
+            onPress={() => {
+              onChange(option.value);
+              modal.current?.hide();
+            }}
+          />
+        ))}
+      </Modal>
+    </View>
+  );
+}
+
 export function Bar({
   value,
   max,
@@ -230,17 +301,24 @@ export function Bar({
 export function Sheet({
   title,
   icon,
+  headerIcon,
+  hideTitle,
   onClose,
   children,
   wide,
+  fill,
   scroll = true,
   footer,
 }: {
   title: string;
   icon?: string;
+  headerIcon?: ReactNode;
+  hideTitle?: boolean;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  /** Occupy the available height so a footer can stay at the bottom. */
+  fill?: boolean;
   scroll?: boolean;
   /** Stays in view under the scrolling body, e.g. the selected item. */
   footer?: ReactNode;
@@ -252,15 +330,37 @@ export function Sheet({
         onPress={onClose}
         accessibilityLabel="Close"
       />
-      <View style={[styles.sheet, wide && styles.sheetWide]}>
-        <View style={styles.sheetHeader}>
-          {icon ? <GIcon name={icon} size={16} color={palette.gold} /> : null}
-          <Label
-            value={title}
-            type="headline"
-            color={palette.ivory}
-            style={styles.sheetTitle}
-          />
+      <View
+        style={[
+          styles.sheet,
+          wide && styles.sheetWide,
+          fill && styles.sheetFill,
+        ]}
+      >
+        <View
+          style={[styles.sheetHeader, hideTitle && styles.sheetHeaderCompact]}
+        >
+          {headerIcon || icon ? (
+            <View
+              accessible={hideTitle}
+              accessibilityLabel={hideTitle ? title : undefined}
+            >
+              {headerIcon ??
+                (icon ? (
+                  <GIcon name={icon} size={16} color={palette.gold} />
+                ) : null)}
+            </View>
+          ) : null}
+          {hideTitle ? (
+            <View style={styles.flex} />
+          ) : (
+            <Label
+              value={title}
+              type="headline"
+              color={palette.ivory}
+              style={styles.sheetTitle}
+            />
+          )}
           <GButton
             icon="xmark"
             onPress={onClose}
@@ -341,6 +441,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   compact: { minHeight: TOUCH, paddingHorizontal: 10, gap: 6 },
+  select: { gap: 7 },
+  selectField: {
+    minHeight: TOUCH,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: palette.line,
+    backgroundColor: "#2a221b",
+  },
+  selectFieldOpen: { borderColor: palette.bronze },
+  selectFieldPressed: { opacity: 0.75 },
+  selectValue: { flex: 1 },
+  selectModal: {
+    backgroundColor: "#171a1a",
+    borderTopWidth: 1,
+    borderColor: palette.bronze,
+  },
   bar: {
     backgroundColor: palette.night,
     borderRadius: 3,
@@ -369,6 +489,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   sheetWide: { maxWidth: 900, flex: 1 },
+  sheetFill: { flex: 1 },
   sheetFooter: {
     flexGrow: 0,
     maxHeight: "45%",
@@ -385,6 +506,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     backgroundColor: "transparent",
   },
+  sheetHeaderCompact: { paddingVertical: 7 },
   sheetTitle: { flex: 1, fontSize: 24, lineHeight: 29 },
   sheetBody: { padding: 18, gap: 14 },
   row: { flexDirection: "row", alignItems: "center" },

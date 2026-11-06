@@ -1,16 +1,29 @@
-import { StyleSheet, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 import { useLocale } from "@/features/localization";
 
-import { getClass, getEnemy, getQuest, getNpc, content } from "../../data";
+import { getEnemy, getQuest, getNpc, content } from "../../data";
 import { useT, type StringKey } from "../../i18n";
 import * as actions from "../../state/actions";
 import type { SaveData } from "../../state/save";
-import { xpToNext } from "../../sim/hero";
 import { questTarget } from "../../sim/quests";
 import { heroStats, setCounts } from "../../sim/stats";
 import { RARITIES, type StatKey } from "../../sim/types";
-import { Bar, Divider, GButton, GIcon, Label, Row, Sheet } from "../../ui/kit";
+import { Glyph } from "../../ui/glyphs";
+import {
+  GButton,
+  GIcon,
+  GSelect,
+  Label,
+  RoundButton,
+  Row,
+  Sheet,
+} from "../../ui/kit";
 import {
   canFullscreen,
   enterFullscreen,
@@ -54,31 +67,12 @@ const GROUPS: { title: StringKey; keys: StatKey[] }[] = [
   },
 ];
 
-export function CharacterPanel({
-  save,
-  onClose,
-}: {
-  save: SaveData;
-  onClose: () => void;
-}) {
+export function CharacterStats({ save }: { save: SaveData }) {
   const { t, tr } = useT();
   const stats = heroStats(save.hero);
-  const cls = getClass(save.hero.classId);
   const sets = [...setCounts(save.hero).entries()];
   return (
-    <Sheet title={save.hero.name} icon={cls.icon} onClose={onClose}>
-      <Label
-        value={`${tr(cls.name)} · ${t("title.level", { level: save.hero.level })}`}
-        type="subheadline"
-        color={palette.gold}
-      />
-      <Bar
-        value={save.hero.xp}
-        max={xpToNext(save.hero.level)}
-        color={palette.xp}
-        showText
-        height={14}
-      />
+    <ScrollView style={styles.flex} contentContainerStyle={styles.statsBody}>
       <View style={styles.columns}>
         {GROUPS.map((g) => (
           <View key={g.title} style={styles.column}>
@@ -112,7 +106,7 @@ export function CharacterPanel({
           />
         );
       })}
-    </Sheet>
+    </ScrollView>
   );
 }
 
@@ -129,7 +123,7 @@ export function QuestsPanel({
     st,
   }));
   return (
-    <Sheet title={t("menu.quests")} icon="scroll" onClose={onClose}>
+    <Sheet title={t("menu.quests")} icon="scroll" hideTitle onClose={onClose}>
       {entries.length === 0 ? (
         <Label value={t("quests.none")} type="footnote" color={palette.muted} />
       ) : null}
@@ -197,97 +191,121 @@ export function MenuPanel({
 }) {
   const { t } = useT();
   const { locale, setPreference } = useLocale();
+  const { width, height } = useWindowDimensions();
+  const shortLandscape = width > height && height < 500;
+  const destinations = [
+    ["inventory", "bag-shopping", "menu.inventory"],
+    ["skills", "book-open", "menu.skills"],
+    ["character", "user", "menu.character"],
+    ["tree", "sitemap", "menu.tree"],
+    ["quests", "scroll", "menu.quests"],
+  ] as const;
   return (
-    <Sheet title={t("menu.menu")} icon="bars" onClose={onClose}>
-      <Row gap={8} wrap>
-        {(
-          [
-            ["inventory", "bag-shopping", "menu.inventory"],
-            ["character", "user", "menu.character"],
-            ["skills", "book-open", "menu.skills"],
-            ["tree", "sitemap", "menu.tree"],
-            ["quests", "scroll", "menu.quests"],
-          ] as const
-        ).map(([name, icon, key]) => (
+    <Sheet
+      title={t("menu.menu")}
+      headerIcon={
+        <Glyph name="menu" size={20} color={palette.gold} weight={1.5} />
+      }
+      hideTitle
+      onClose={onClose}
+      fill
+      footer={
+        <Row style={styles.menuDestinations}>
+          {destinations.map(([name, icon, key]) => (
+            <RoundButton
+              key={name}
+              size={48}
+              accessibilityLabel={t(key)}
+              onPress={() => actions.openPanel({ name })}
+              style={styles.menuDestination}
+            >
+              <GIcon name={icon} size={20} color={palette.ivory} />
+            </RoundButton>
+          ))}
+        </Row>
+      }
+    >
+      <Row gap={8} style={styles.menuActions}>
+        {canFullscreen() ? (
           <GButton
-            key={name}
-            icon={icon}
-            label={t(key)}
+            icon="expand"
+            accessibilityLabel={t("menu.fullscreen")}
             compact
-            onPress={() => actions.openPanel({ name })}
+            style={styles.menuAction}
+            onPress={() =>
+              isFullscreen() ? exitFullscreen() : enterFullscreen()
+            }
           />
-        ))}
-      </Row>
-      <Divider />
-      <Label value={t("menu.language")} type="caption1" color={palette.muted} />
-      <Row gap={8}>
-        {(["uk", "en"] as const).map((code) => (
-          <GButton
-            key={code}
-            label={code === "uk" ? "Українська" : "English"}
-            tone={locale === code ? "primary" : "default"}
-            compact
-            onPress={() => setPreference(code)}
-          />
-        ))}
-      </Row>
-      <Label
-        value={t("menu.lootFilter")}
-        type="caption1"
-        color={palette.muted}
-      />
-      <Row gap={6} wrap>
-        {RARITIES.slice(0, 3).map((r) => (
-          <GButton
-            key={r}
-            label={t(`rarity.${r}`)}
-            compact
-            tone={save.settings.lootFilter === r ? "primary" : "default"}
-            onPress={() => actions.setLootFilter(r)}
-          />
-        ))}
-      </Row>
-      {canFullscreen() ? (
+        ) : null}
         <GButton
-          label={t("menu.fullscreen")}
-          icon="expand"
+          icon="comment"
+          accessibilityLabel={t("menu.tutorial")}
           compact
-          onPress={() =>
-            isFullscreen() ? exitFullscreen() : enterFullscreen()
-          }
+          tone={save.settings.tutorial ? "primary" : "default"}
+          style={styles.menuAction}
+          onPress={() => actions.setTutorial(!save.settings.tutorial)}
         />
-      ) : needsHomeScreen() ? (
+        <GButton
+          icon="floppy-disk"
+          accessibilityLabel={t("menu.save")}
+          compact
+          style={styles.menuAction}
+          onPress={() => {
+            actions.saveGame();
+            actions.toast("floppy-disk", "menu.saved", undefined, "good");
+          }}
+        />
+        <GButton
+          icon="right-from-bracket"
+          accessibilityLabel={t("menu.quit")}
+          tone="danger"
+          compact
+          style={styles.menuAction}
+          onPress={() => {
+            actions.saveGame();
+            actions.goToTitle();
+          }}
+        />
+      </Row>
+      {needsHomeScreen() ? (
         <Label
           value={t("menu.homeScreen")}
           type="caption1"
           color={palette.muted}
         />
       ) : null}
-      <GButton
-        label={t("menu.tutorial")}
-        icon="comment"
-        compact
-        tone={save.settings.tutorial ? "primary" : "default"}
-        onPress={() => actions.setTutorial(!save.settings.tutorial)}
-      />
-      <Divider />
-      <GButton
-        label={t("menu.save")}
-        icon="floppy-disk"
-        onPress={() => {
-          actions.saveGame();
-          actions.toast("floppy-disk", "menu.saved", undefined, "good");
-        }}
-      />
-      <GButton
-        label={t("menu.quit")}
-        icon="right-from-bracket"
-        tone="danger"
-        onPress={() => {
-          actions.saveGame();
-          actions.goToTitle();
-        }}
-      />
+      <View
+        style={[
+          styles.menuSelects,
+          shortLandscape && styles.menuSelectsLandscape,
+        ]}
+      >
+        <GSelect
+          label={t("menu.language")}
+          value={locale}
+          style={shortLandscape ? styles.menuSelectLandscape : undefined}
+          onChange={(value) => {
+            if (value === "uk" || value === "en") setPreference(value);
+          }}
+          options={[
+            { value: "uk", label: "Українська" },
+            { value: "en", label: "English" },
+          ]}
+        />
+        <GSelect
+          label={t("menu.lootFilter")}
+          value={save.settings.lootFilter}
+          style={shortLandscape ? styles.menuSelectLandscape : undefined}
+          onChange={(value) => {
+            const rarity = RARITIES.slice(0, 3).find((item) => item === value);
+            if (rarity) actions.setLootFilter(rarity);
+          }}
+          options={RARITIES.slice(0, 3).map((rarity) => ({
+            value: rarity,
+            label: t(`rarity.${rarity}`),
+          }))}
+        />
+      </View>
     </Sheet>
   );
 }
@@ -357,8 +375,9 @@ export function InspectPanel({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  columns: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
-  column: { flex: 1, minWidth: 150, gap: 3 },
+  statsBody: { padding: 18, paddingBottom: 36, gap: 20 },
+  columns: { flexDirection: "row", flexWrap: "wrap", gap: 24 },
+  column: { flexGrow: 1, flexBasis: 240, minWidth: 240, gap: 6 },
   statRow: { justifyContent: "space-between" },
   group: { gap: 6 },
   quest: {
@@ -372,4 +391,11 @@ const styles = StyleSheet.create({
   },
   questReady: { borderStartColor: palette.good },
   done: { opacity: 0.55, borderStartColor: palette.lineSoft },
+  menuActions: { justifyContent: "space-between" },
+  menuAction: { flex: 1, paddingHorizontal: 0 },
+  menuSelects: { gap: 14 },
+  menuSelectsLandscape: { flexDirection: "row" },
+  menuSelectLandscape: { flex: 1 },
+  menuDestinations: { justifyContent: "space-between" },
+  menuDestination: { borderWidth: 0, backgroundColor: "transparent" },
 });

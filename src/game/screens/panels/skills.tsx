@@ -152,30 +152,35 @@ export function SkillsPanel({
   );
   const focus = picked ? getSkill(picked) : null;
   return (
-    <Workspace save={save} tab="skills" onClose={onClose}>
+    <Workspace save={save} tab="skills" onClose={onClose} hideHeader>
       <View style={wide ? styles.wide : styles.page}>
         <View style={styles.library}>
-          {focus ? (
-            <Row gap={14} style={styles.focus}>
-              <View style={styles.bigIcon}>
-                <GIcon name={focus.icon} size={40} color={palette.ivory} />
-              </View>
-              <View style={styles.flex}>
-                <Label
-                  value={tr(focus.name)}
-                  type="title2"
-                  display
-                  color={palette.ivory}
-                />
-                <Costs skillId={focus.id} />
-                <Label
-                  value={summary(focus.id, hero.level)}
-                  type="footnote"
-                  color={palette.muted}
-                />
-              </View>
-            </Row>
-          ) : null}
+          <ScrollView
+            style={[styles.focusSlot, wide && styles.focusSlotWide]}
+            contentContainerStyle={styles.focusContent}
+          >
+            {focus ? (
+              <Row gap={14} style={styles.focus}>
+                <View style={styles.bigIcon}>
+                  <GIcon name={focus.icon} size={40} color={palette.ivory} />
+                </View>
+                <View style={styles.flex}>
+                  <Label
+                    value={tr(focus.name)}
+                    type="title2"
+                    display
+                    color={palette.ivory}
+                  />
+                  <Costs skillId={focus.id} />
+                  <Label
+                    value={summary(focus.id, hero.level)}
+                    type="footnote"
+                    color={palette.muted}
+                  />
+                </View>
+              </Row>
+            ) : null}
+          </ScrollView>
           <View style={styles.rule} />
           <ScrollView style={styles.flex} contentContainerStyle={styles.list}>
             {hero.learned.map((id) => {
@@ -241,9 +246,9 @@ export function SkillsPanel({
           <Row gap={8}>
             <Label
               value={t("skills.bar")}
-              type="title3"
+              type="caption1"
               display
-              color={palette.ivory}
+              color={palette.muted}
               style={styles.flex}
             />
             <GIcon name="hand-pointer" size={13} color={palette.muted} />
@@ -329,6 +334,9 @@ const styles = StyleSheet.create({
   loadoutSide: { width: 360, gap: 10, justifyContent: "flex-end" },
   rowIcon: { width: 50, height: 50, borderRadius: 25 },
   focus: { alignItems: "center" },
+  focusSlot: { height: 142, flexGrow: 0 },
+  focusSlotWide: { height: 114 },
+  focusContent: { minHeight: "100%", justifyContent: "center" },
   bigIcon: {
     width: 88,
     height: 88,
