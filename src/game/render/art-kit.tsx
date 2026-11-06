@@ -167,6 +167,8 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
   bow: { arm: [-0.15, 0, -0.2], aim: [0, 1, 0] },
+  /** Empty hands: the arm hangs like the other one. */
+  none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
 
 /** The weapon's rotation inside the (resting) arm, so it points at `aim`. */
@@ -444,6 +446,8 @@ function poseFor(move: HeroMove, weapon: string): Pose {
 /** A weapon drawn from its grip (the origin) along +y. */
 function Weapon({ kind }: { kind: string }) {
   switch (kind) {
+    case "none":
+      return null;
     case "bow":
       // Belly forward and turned a little outwards so it reads from
       // behind too; tips and string towards the body.
@@ -582,18 +586,24 @@ function Weapon({ kind }: { kind: string }) {
 }
 
 /** A loose-sleeved shirt arm from the shoulder down, with a stitched cuff. */
-function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
+function Arm({
+  skin,
+  sleeve,
+}: {
+  skin: THREE.ColorRepresentation;
+  sleeve: number;
+}) {
   return (
     <>
       <Part
         geometry={G.sphere}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.03, 0]}
         scale={[0.21, 0.2, 0.21]}
       />
       <Part
         geometry={G.box}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.17, 0]}
         scale={[0.16, 0.28, 0.17]}
       />
@@ -605,7 +615,7 @@ function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
       />
       <Part
         geometry={G.sphere}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.37, 0.01]}
         scale={[0.19, 0.24, 0.19]}
       />
@@ -626,8 +636,15 @@ function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
 }
 
 /** A boot from the hip down; under sharovary for him, a skirt for her. */
-function Leg({ woman, cloth }: { woman: boolean; cloth: number }) {
-  const boot = woman ? HERO.bootWoman : HERO.boot;
+function Leg({
+  woman,
+  cloth,
+  boot,
+}: {
+  woman: boolean;
+  cloth: number;
+  boot: number;
+}) {
   return (
     <>
       {woman ? null : (
@@ -667,6 +684,165 @@ function Leg({ woman, cloth }: { woman: boolean; cloth: number }) {
   );
 }
 
+/** Headwear over the shaved head or the hair. */
+function Hat({
+  kind,
+  color,
+  trim,
+  hair,
+  woman,
+}: {
+  kind: NonNullable<Outfit["hat"]>;
+  color: number;
+  trim: number;
+  hair: THREE.ColorRepresentation;
+  woman: boolean;
+}) {
+  switch (kind) {
+    case "kuchma":
+      // A tall fur hat with a cloth top falling to one side.
+      return (
+        <>
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.66, -0.01]}
+            scale={[0.38, 0.3, 0.38]}
+          />
+          <Part
+            geometry={G.sphere}
+            color={trim}
+            position={[0, 1.81, -0.01]}
+            scale={[0.3, 0.1, 0.3]}
+          />
+          <Part
+            geometry={G.box}
+            color={trim}
+            position={[0.17, 1.74, -0.06]}
+            rotation={[0, 0, -0.5]}
+            scale={[0.1, 0.18, 0.08]}
+          />
+        </>
+      );
+    case "brim":
+      // A wide-brimmed black brylka.
+      return (
+        <>
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.6, -0.01]}
+            scale={[0.62, 0.035, 0.62]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.68, -0.01]}
+            scale={[0.34, 0.16, 0.34]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={trim}
+            position={[0, 1.63, -0.01]}
+            scale={[0.35, 0.03, 0.35]}
+          />
+        </>
+      );
+    case "crown":
+      // A gold circlet with points over the hair, a braid down the back.
+      return (
+        <>
+          <Part
+            geometry={G.sphere}
+            color={hair}
+            position={[0, 1.58, -0.035]}
+            scale={[0.36, 0.2, 0.36]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.62, -0.01]}
+            scale={[0.37, 0.07, 0.37]}
+          />
+          {[0, 1, 2, 3, 4].map((k) => {
+            const a = ((k - 2) * Math.PI) / 5;
+            return (
+              <Part
+                key={k}
+                geometry={G.cone4}
+                color={color}
+                position={[Math.sin(a) * 0.17, 1.69, Math.cos(a) * 0.17]}
+                scale={[0.06, 0.1, 0.06]}
+              />
+            );
+          })}
+          <Part
+            geometry={G.sphere}
+            color={trim}
+            position={[0, 1.64, 0.185]}
+            scale={[0.05, 0.05, 0.03]}
+          />
+          {woman ? (
+            <Part
+              geometry={G.box}
+              color={hair}
+              position={[0, 1.2, -0.2]}
+              scale={[0.1, 0.6, 0.08]}
+            />
+          ) : null}
+        </>
+      );
+    case "scarf":
+      // A khustka over the hair, knotted at the nape.
+      return (
+        <>
+          <Part
+            geometry={G.sphere}
+            color={color}
+            position={[0, 1.53, -0.05]}
+            scale={[0.39, 0.34, 0.38]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={trim}
+            position={[0, 1.6, -0.04]}
+            scale={[0.395, 0.035, 0.385]}
+          />
+          <Part
+            geometry={G.box}
+            color={color}
+            position={[0, 1.34, -0.2]}
+            rotation={[0.3, 0, 0]}
+            scale={[0.12, 0.16, 0.04]}
+          />
+        </>
+      );
+  }
+}
+
+/**
+ * What a figure wears beyond the hero's defaults, so NPCs share the hero's
+ * body: colours, a coat, a hat, what is in hand.
+ */
+export type Outfit = {
+  /** Sharovary or skirt; the class's colour when not given. */
+  cloth?: number;
+  shirt?: number;
+  sash?: number;
+  boot?: number;
+  /** A zhupan over the shirt: knee-long for a kozak, a short keptar for a kozachka. */
+  coat?: number;
+  /** A sleeveless coat (a vest, a mail shirt) leaves the shirt sleeves. */
+  sleeveless?: boolean;
+  hat?: "kuchma" | "brim" | "crown" | "scarf";
+  hatColor?: number;
+  /** A second colour: the kuchma's cloth top, the scarf's pattern. */
+  hatTrim?: number;
+  earring?: boolean;
+  /** A round belly under the coat. */
+  stout?: boolean;
+};
+
 /**
  * The hero: a kozak in a white stitched shirt, wide sharovary in the class's
  * colour, a black belt with a red sash and dark boots, the oseledets lock on
@@ -679,14 +855,17 @@ export function HeroFigure({
   helmet,
   speed,
   action,
+  outfit = {},
 }: {
   look: Look;
   classId: string;
+  /** The weapon family in the right hand; "none" for empty hands. */
   weapon?: string;
   helmet?: boolean;
   speed: () => number;
   /** The battle move under way, if any; read every frame. */
   action?: () => HeroAction | null;
+  outfit?: Outfit;
 }) {
   const kind = weapon && GRIPS[weapon] ? weapon : "sabre";
   const grip = GRIPS[kind]!;
@@ -707,8 +886,15 @@ export function HeroFigure({
   const flask = useRef<THREE.Group>(null);
   const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
   const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
-  const cloth = CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
   const woman = look.body === "kozachka";
+  const cloth = outfit.cloth ?? CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
+  const shirt = outfit.shirt ?? HERO.shirt;
+  const sash = outfit.sash ?? HERO.sash;
+  const boot = outfit.boot ?? (woman ? HERO.bootWoman : HERO.boot);
+  const coat = outfit.coat;
+  const sleeve = coat !== undefined && !outfit.sleeveless ? coat : shirt;
+  // Over a coat the sash wraps a little wider.
+  const wrap = coat !== undefined ? 1.14 : 1;
   useFrame(() => {
     const c = current();
     const pose = c?.pose;
@@ -778,33 +964,33 @@ export function HeroFigure({
             {/* A wide kushak sash under the belt, its ends at the left hip */}
             <Part
               geometry={G.box}
-              color={HERO.sash}
+              color={sash}
               position={[0, 0.8, 0]}
-              scale={[0.48, 0.15, 0.33]}
+              scale={[0.48 * wrap, 0.15, 0.33 * wrap]}
             />
             <Part
               geometry={G.box}
               color={HERO.belt}
               position={[0, 0.79, 0]}
-              scale={[0.49, 0.05, 0.34]}
+              scale={[0.49 * wrap, 0.05, 0.34 * wrap]}
             />
             <Part
               geometry={G.box}
               color={HERO.buckle}
-              position={[0, 0.79, 0.172]}
+              position={[0, 0.79, 0.172 * wrap]}
               scale={[0.08, 0.07, 0.02]}
             />
             <Part
               geometry={G.box}
-              color={HERO.sash}
-              position={[0.16, 0.64, 0.155]}
+              color={sash}
+              position={[0.16, 0.64, 0.155 * wrap]}
               rotation={[0, 0, -0.12]}
               scale={[0.08, 0.26, 0.03]}
             />
             <Part
               geometry={G.box}
-              color={HERO.sash}
-              position={[0.215, 0.66, 0.135]}
+              color={sash}
+              position={[0.215, 0.66, 0.135 * wrap]}
               rotation={[0, 0.3, -0.25]}
               scale={[0.06, 0.22, 0.03]}
             />
@@ -812,13 +998,13 @@ export function HeroFigure({
             waist, the collar slit with its embroidery */}
             <Part
               geometry={G.sphere}
-              color={HERO.shirt}
+              color={shirt}
               position={[0, 0.92, 0]}
               scale={[0.5, 0.16, 0.34]}
             />
             <Part
               geometry={G.taper}
-              color={HERO.shirt}
+              color={shirt}
               position={[0, 1.07, 0]}
               scale={[0.64, 0.4, 0.37]}
             />
@@ -840,6 +1026,50 @@ export function HeroFigure({
               position={[0.055, 1.15, 0.161]}
               scale={[0.03, 0.16, 0.02]}
             />
+            {coat !== undefined ? (
+              <>
+                {/* The coat over the shirt, brass buttons down the front */}
+                <Part
+                  geometry={G.taper}
+                  color={coat}
+                  position={[0, 1.065, 0]}
+                  scale={[0.68, 0.42, 0.41]}
+                />
+                {woman ? null : (
+                  <Part
+                    geometry={G.skirt}
+                    color={coat}
+                    position={[0, 0.58, 0]}
+                    scale={[0.84, 0.48, 0.64]}
+                  />
+                )}
+                {[0.96, 1.06, 1.16].map((y) => (
+                  <Part
+                    key={y}
+                    geometry={G.box}
+                    color={HERO.brass}
+                    position={[0, y, 0.165 + (y - 0.96) * 0.06]}
+                    scale={[0.04, 0.04, 0.02]}
+                  />
+                ))}
+              </>
+            ) : null}
+            {outfit.stout ? (
+              <Part
+                geometry={G.sphere}
+                color={coat ?? shirt}
+                position={[0, 0.96, 0.08]}
+                scale={[0.46, 0.36, 0.38]}
+              />
+            ) : null}
+            {outfit.earring ? (
+              <Part
+                geometry={G.sphere}
+                color={HERO.brass}
+                position={[-0.18, 1.39, 0]}
+                scale={[0.04, 0.05, 0.04]}
+              />
+            ) : null}
             {/* Neck and head */}
             <Part
               geometry={G.cyl}
@@ -890,7 +1120,15 @@ export function HeroFigure({
               </group>
             ))}
             {/* Hair, or a hat */}
-            {helmet ? (
+            {outfit.hat ? (
+              <Hat
+                kind={outfit.hat}
+                color={outfit.hatColor ?? 0x2a2018}
+                trim={outfit.hatTrim ?? sash}
+                hair={hair}
+                woman={woman}
+              />
+            ) : helmet ? (
               <>
                 <Part
                   geometry={G.cyl}
@@ -1008,7 +1246,7 @@ export function HeroFigure({
             <group position={[0.32, 1.2, 0]} rotation={[0, 0, 0.12]}>
               <group ref={freeAcross}>
                 <group ref={freeArm}>
-                  <Arm skin={skin} />
+                  <Arm skin={skin} sleeve={sleeve} />
                   <group ref={flask} position={HAND} visible={false}>
                     <Part
                       geometry={G.sphere}
@@ -1028,7 +1266,7 @@ export function HeroFigure({
             </group>
             <group position={[-0.32, 1.2, 0]} rotation={grip.arm}>
               <group ref={weaponArm}>
-                <Arm skin={skin} />
+                <Arm skin={skin} sleeve={sleeve} />
                 <group ref={held} position={HAND}>
                   <group rotation={GRIP_ROTATION[kind]}>
                     <Weapon kind={kind} />
@@ -1040,10 +1278,10 @@ export function HeroFigure({
         </group>
       </group>
       <group ref={left} position={[-0.13, 0.66, 0]}>
-        <Leg woman={woman} cloth={cloth} />
+        <Leg woman={woman} cloth={cloth} boot={boot} />
       </group>
       <group ref={right} position={[0.13, 0.66, 0]}>
-        <Leg woman={woman} cloth={cloth} />
+        <Leg woman={woman} cloth={cloth} boot={boot} />
       </group>
     </group>
   );
@@ -1051,17 +1289,91 @@ export function HeroFigure({
 
 // ---------------------------------------------------------------- npcs
 
-const NPC_COLORS: Record<
+/**
+ * Kyiv's people, dressed on the hero's body so they stand beside the hero
+ * as the same kind of figure.
+ */
+const NPC_LOOKS: Record<
   string,
-  { coat: number; hat?: number; glow?: number }
+  { look: Look; weapon: string; outfit: Outfit }
 > = {
-  otaman: { coat: 0x7a1414, hat: 0x1a1410 },
-  olha: { coat: 0x5a1a4a, hat: 0xc9a24a, glow: 0xff6a00 },
-  sviatoslav: { coat: 0x6a6a72, hat: 0x8a8a92 },
-  karmaliuk: { coat: 0x1f2a1a, hat: 0x111111 },
-  merchant: { coat: 0x7a5a2a, hat: 0x3a2a1a },
-  healer: { coat: 0x3a5a3a },
+  // Ivan Sirko: a grey oseledets, a crimson zhupan and the otaman's bulava.
+  otaman: {
+    look: { body: "kozak", face: 0, hair: 0, hairColor: 3, mustache: true },
+    weapon: "bulava",
+    outfit: { cloth: 0x2c3f86, coat: 0x8c1d1d, sash: 0xb8892e },
+  },
+  // Olha: a purple gown, a gold circlet and a staff of fire.
+  olha: {
+    look: { body: "kozachka", face: 0, hair: 0, hairColor: 1, mustache: false },
+    weapon: "staff",
+    outfit: {
+      cloth: 0x4a1640,
+      coat: 0x6a1f5a,
+      sash: 0xc9a24a,
+      boot: 0x4a1640,
+      hat: "crown",
+      hatColor: 0xd8b04a,
+      hatTrim: 0xb3261e,
+    },
+  },
+  // Sviatoslav: shaved head and oseledets, a gold earring, mail over the
+  // shirt, a sabre.
+  sviatoslav: {
+    look: { body: "kozak", face: 1, hair: 0, hairColor: 2, mustache: true },
+    weapon: "sabre",
+    outfit: {
+      cloth: 0x7a1712,
+      coat: 0x7d8088,
+      sleeveless: true,
+      sash: 0x3a2a1a,
+      earring: true,
+    },
+  },
+  // Ustym Karmaliuk: a dark svyta, a black brimmed hat, a pistol.
+  karmaliuk: {
+    look: { body: "kozak", face: 1, hair: 1, hairColor: 0, mustache: true },
+    weapon: "pistol",
+    outfit: {
+      cloth: 0x2a2a2a,
+      coat: 0x2f3a24,
+      sash: 0x5a1410,
+      hat: "brim",
+      hatColor: 0x161210,
+      hatTrim: 0x5a1410,
+    },
+  },
+  // Hordii: a stout merchant in a brown kuntush and a fur kuchma.
+  merchant: {
+    look: { body: "kozak", face: 0, hair: 1, hairColor: 1, mustache: true },
+    weapon: "none",
+    outfit: {
+      cloth: 0x2c4a6a,
+      coat: 0x7a5a2a,
+      sash: 0x2c5a3a,
+      hat: "kuchma",
+      hatColor: 0x4a3020,
+      hatTrim: 0x2c5a3a,
+      stout: true,
+    },
+  },
+  // Motria: a grey-haired znakharka in a red khustka and a dark keptar.
+  healer: {
+    look: { body: "kozachka", face: 2, hair: 0, hairColor: 3, mustache: false },
+    weapon: "none",
+    outfit: {
+      cloth: 0x3a5a3a,
+      coat: 0x3a2a1a,
+      sleeveless: true,
+      sash: 0x8c1d1d,
+      hat: "scarf",
+      hatColor: 0x8c1d1d,
+      hatTrim: 0xe8d8b0,
+    },
+  },
 };
+
+const STANDING = () => 0;
 
 export function NpcFigure({ kind }: { kind: string }) {
   if (kind === "chest") {
@@ -1082,39 +1394,15 @@ export function NpcFigure({ kind }: { kind: string }) {
       </group>
     );
   }
-  const c = NPC_COLORS[kind] ?? { coat: 0x555555 };
+  const npc = NPC_LOOKS[kind] ?? NPC_LOOKS.merchant!;
   return (
-    <group>
-      <Part
-        geometry={G.cone}
-        color={c.coat}
-        position={[0, 0.6, 0]}
-        scale={[0.75, 1.2, 0.6]}
-      />
-      <Part
-        geometry={G.sphere}
-        color={0xd8ae88}
-        position={[0, 1.38, 0]}
-        scale={[0.36, 0.4, 0.36]}
-      />
-      {c.hat ? (
-        <Part
-          geometry={G.cyl}
-          color={c.hat}
-          position={[0, 1.6, 0]}
-          scale={[0.36, 0.2, 0.36]}
-        />
-      ) : null}
-      {c.glow ? (
-        <Part
-          geometry={G.octa}
-          color={0xffb04a}
-          emissive={c.glow}
-          position={[0.4, 1.1, 0.2]}
-          scale={[0.18, 0.18, 0.18]}
-        />
-      ) : null}
-    </group>
+    <HeroFigure
+      look={npc.look}
+      classId=""
+      weapon={npc.weapon}
+      speed={STANDING}
+      outfit={npc.outfit}
+    />
   );
 }
 
