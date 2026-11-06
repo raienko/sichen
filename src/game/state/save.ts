@@ -1,3 +1,5 @@
+import logger from "@/features/logger";
+
 import { getZone, RULES } from "../data";
 import type { Tactic } from "../sim/battle";
 import type { QuestLog } from "../sim/quests";
@@ -52,29 +54,33 @@ type Migration = (old: Record<string, unknown>) => Record<string, unknown>;
 const MIGRATIONS: Record<number, Migration> = {
   // 2: battle tactics, defence became on/off per delivery, and the
   // tutorial (off for heroes who already played).
-  1: (old) => ({
-    ...old,
-    settings: {
-      ...(old.settings as object),
-      tactic: 0,
-      tutorial: false,
-      hints: [],
-    },
-    tactics: Array.from({ length: RULES.tactics }, () => null),
-  }),
-  // 3: packs respawn on a timer, so cleared packs carry when they fell.
-  2: (old) => {
-    const world = old.world as { cleared?: string[] | ClearedPacks };
-    const now = Date.now();
+  //
+  // Older builds wrote every new hero as version 1 in the current shape,
+  // so each step keeps what a save already has: a mislabelled save comes
+  // through as it was, not reset.
+  1: (old) => {
+    const settings = (old.settings ?? {}) as Record<string, unknown>;
     return {
       ...old,
-      world: {
-        ...world,
-        cleared: Array.isArray(world.cleared)
-          ? Object.fromEntries(world.cleared.map((id) => [id, now]))
-          : (world.cleared ?? {}),
+      settings: {
+        ...settings,
+        tactic: settings.tactic ?? 0,
+        tutorial: settings.tutorial ?? false,
+        hints: settings.hints ?? [],
       },
+      tactics: Array.isArray(old.tactics)
+        ? old.tactics
+        : Array.from({ length: RULES.tactics }, () => null),
     };
+  },
+  // 3: packs respawn on a timer, so cleared packs carry when they fell.
+  2: (old) => {
+    const world = old.world as { cleared?: unknown };
+    const now = Date.now();
+    const cleared = Array.isArray(world.cleared)
+      ? Object.fromEntries(world.cleared.map((id) => [id, now]))
+      : (world.cleared ?? {});
+    return { ...old, world: { ...world, cleared } };
   },
 };
 
@@ -114,9 +120,19 @@ export type SlotStorage = {
   remove(slot: number): void;
 };
 
+/**
+ * Every slot, read for the title screen. A slot that fails to load reads as
+ * empty (and stays on disk until a new hero is made there): one bad save
+ * must not crash the title screen on every launch.
+ */
 export function loadSlots(storage: SlotStorage): (SaveData | null)[] {
   return Array.from({ length: RULES.saveSlots }, (_, slot) => {
-    const text = storage.read(slot);
-    return text ? deserialize(text) : null;
+    try {
+      const text = storage.read(slot);
+      return text ? deserialize(text) : null;
+    } catch (error) {
+      logger.error(`Save slot ${slot} couldn't be loaded.`, error);
+      return null;
+    }
   });
 }
