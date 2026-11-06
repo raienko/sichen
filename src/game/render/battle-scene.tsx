@@ -2,12 +2,18 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
-import { getEnemy } from "../data";
+import { getEnemy, getSkill } from "../data";
 import type { Combatant } from "../sim/battle";
 import type { Look, ZoneDef } from "../sim/types";
 
 import { Arena } from "./arena";
-import { HeroFigure, MonsterFigure } from "./art-kit";
+import {
+  HERO_MOVE_TIME,
+  HeroFigure,
+  MonsterFigure,
+  type HeroAction,
+  type HeroMove,
+} from "./art-kit";
 import { heroOnScreen } from "./nature";
 import { ANTIALIAS, GL_SCALE, GLFrame, paceFrames } from "./native-gl";
 
@@ -57,7 +63,23 @@ function heightOf(actor: Combatant): number {
   return actor.boss ? 3.5 : 2.1;
 }
 
-type Motion = { acting: boolean; hitAt?: number };
+/** A unit's action as it plays: who, with which skill, from when. */
+export type Acting = { actor: string; skill: string; at: number };
+
+type Motion = { acting: Acting | null; hitAt?: number };
+
+/** The hero's hands for a skill: by how its damage travels, or a potion. */
+function moveOf(skillId: string): HeroMove | null {
+  const skill = getSkill(skillId);
+  if (skill.potion) return "drink";
+  if (skill.flee) return null;
+  for (const e of skill.effects) {
+    if (e.type !== "damage") continue;
+    if (e.delivery === "melee") return "strike";
+    return e.delivery === "ranged" ? "shot" : "cast";
+  }
+  return "cast";
+}
 
 /** The boss figure is modelled huge for the world; it stands smaller here. */
 const BOSS_SCALE = 0.8;
@@ -76,7 +98,8 @@ function Fighter({
 }) {
   const ref = useRef<THREE.Group>(null);
   const home = useMemo(() => spotOf(actor), [actor]);
-  const lungeStart = useRef(0);
+  const lungeStart = useRef(-1e9);
+  const move = useRef<HeroMove | null>(null);
   const flash = useRef(0);
   const fall = useRef(actor.hp <= 0 ? 1 : 0);
   const speed = useRef(0);
@@ -84,8 +107,14 @@ function Fighter({
   const dir = actor.side === 0 ? -1 : 1;
 
   useEffect(() => {
-    if (motion.acting) lungeStart.current = performance.now();
-  }, [motion.acting]);
+    if (!motion.acting) return;
+    lungeStart.current = performance.now();
+    move.current = actor.enemyId ? null : moveOf(motion.acting.skill);
+  }, [motion.acting, actor.enemyId]);
+  const action = (): HeroAction | null => {
+    const t = (performance.now() - lungeStart.current) / 1000 / HERO_MOVE_TIME;
+    return move.current && t >= 0 && t < 1 ? { move: move.current, t } : null;
+  };
   useEffect(() => {
     if (motion.hitAt) flash.current = 1;
   }, [motion.hitAt]);
@@ -94,9 +123,15 @@ function Fighter({
     const g = ref.current;
     if (!g) return;
     const dt = Math.min(0.05, rawDt);
-    // Lunge: a step toward the other side and back, about a third of a second.
-    const t = (performance.now() - lungeStart.current) / 320;
-    const lunge = t >= 0 && t < 1 ? Math.sin(t * Math.PI) * 0.9 : 0;
+    // Lunge: a step toward the other side and back, about a third of a
+    // second. The hero steps in only to strike, timed to the blow; shots,
+    // spells and potions are done standing.
+    const hero = !actor.enemyId;
+    const step = hero ? (move.current === "strike" ? 0.9 : 0) : 0.9;
+    const t = hero
+      ? (performance.now() - lungeStart.current - 90) / 420
+      : (performance.now() - lungeStart.current) / 320;
+    const lunge = t >= 0 && t < 1 ? Math.sin(t * Math.PI) * step : 0;
     speed.current = lunge > 0.05 ? 1 : 0;
     // Hit: a shake and a white flash that fade out.
     flash.current = Math.max(0, flash.current - dt * 3.5);
@@ -140,7 +175,7 @@ function Fighter({
           speed={() => speed.current}
         />
       ) : (
-        <HeroFigure {...hero} speed={() => speed.current} />
+        <HeroFigure {...hero} speed={() => speed.current} action={action} />
       )}
       {/* A soft shadow so figures stand on the ground (above its facets); the selected
           one glows in its colour with a bright rim. */}
@@ -277,7 +312,7 @@ export default function BattleStage({
 }: {
   actors: Combatant[];
   hero: HeroLookProps;
-  motion: { acting: string | null; hitAt: Record<string, number> };
+  motion: { acting: Acting | null; hitAt: Record<string, number> };
   /** Unit id → the colour its shadow glows (selection). */
   highlights: Record<string, number>;
   /** Where on the canvas the fighters must stand clear of the HUD. */
@@ -324,7 +359,7 @@ export default function BattleStage({
             actor={a}
             hero={hero}
             motion={{
-              acting: motion.acting === a.id,
+              acting: motion.acting?.actor === a.id ? motion.acting : null,
               hitAt: motion.hitAt[a.id],
             }}
             highlight={highlights[a.id]}

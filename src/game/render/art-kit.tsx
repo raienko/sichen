@@ -61,6 +61,8 @@ const G = {
   torus: new THREE.TorusGeometry(0.4, 0.05, 5, 12, Math.PI),
   plane: new THREE.PlaneGeometry(1, 1),
   skirt: new THREE.CylinderGeometry(0.3, 0.5, 1, 8),
+  /** A square frustum, wider on top: a chest narrowing to the waist. */
+  taper: new THREE.CylinderGeometry(0.62, 0.5, 1, 4, 1).rotateY(Math.PI / 4),
   gable: gableGeometry(),
 };
 
@@ -91,24 +93,37 @@ export function gableGeometry(): THREE.BufferGeometry {
  * leg on their side: the free arm at +x fully, the weapon arm at -x only a
  * little.
  */
-function useWalk(speed: () => number) {
+function useWalk(
+  speed: () => number,
+  /** Arm angles that win over the walk (a battle move), when given. */
+  arms?: () => { weapon: number; free: number } | null,
+) {
   const body = useRef<THREE.Group>(null);
   const left = useRef<THREE.Group>(null);
   const right = useRef<THREE.Group>(null);
   const freeArm = useRef<THREE.Group>(null);
   const weaponArm = useRef<THREE.Group>(null);
   const phase = useRef(0);
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     const s = speed();
-    phase.current += dt * (s > 0.05 ? 10 : 0);
-    const swing = s > 0.05 ? Math.sin(phase.current) * 0.6 : 0;
+    const moving = s > 0.05;
+    phase.current += dt * (moving ? 10 : 0);
+    const swing = moving ? Math.sin(phase.current) * 0.6 : 0;
+    // Standing still, a slow breath: a rise of the body and a slight sway
+    // of the arms, so an idle figure never looks frozen.
+    const breath = moving ? 0 : Math.sin(clock.elapsedTime * 2.2);
     if (left.current) left.current.rotation.x = swing;
     if (right.current) right.current.rotation.x = -swing;
-    if (freeArm.current) freeArm.current.rotation.x = swing * 0.8;
-    if (weaponArm.current) weaponArm.current.rotation.x = -swing * 0.25;
+    const set = arms?.();
+    if (freeArm.current)
+      freeArm.current.rotation.x = set?.free ?? swing * 0.8 + breath * 0.04;
+    if (weaponArm.current)
+      weaponArm.current.rotation.x =
+        set?.weapon ?? -swing * 0.25 - breath * 0.02;
     if (body.current)
-      body.current.position.y =
-        s > 0.05 ? Math.abs(Math.sin(phase.current)) * 0.06 : 0;
+      body.current.position.y = moving
+        ? Math.abs(Math.sin(phase.current)) * 0.06
+        : (breath + 1) * 0.008;
   });
   return { body, left, right, freeArm, weaponArm };
 }
@@ -129,6 +144,7 @@ const HERO = {
   buckle: 0xc9a24a,
   sash: 0x7a1712,
   boot: 0x231a14,
+  sole: 0x120d0a,
   bootWoman: 0x8c1d1d,
   steel: 0xd8dbe0,
   wood: 0x5b3a1e,
@@ -151,6 +167,8 @@ const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
   bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
   pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
   bow: { arm: [-0.15, 0, -0.2], aim: [0, 1, 0] },
+  /** Empty hands: the arm hangs like the other one. */
+  none: { arm: [0, 0, -0.12], aim: [0, 1, 0] },
 };
 
 /** The weapon's rotation inside the (resting) arm, so it points at `aim`. */
@@ -168,9 +186,268 @@ const GRIP_ROTATION: Record<string, Vec3> = Object.fromEntries(
   Object.entries(GRIPS).map(([kind, grip]) => [kind, gripRotation(grip)]),
 );
 
+// ---------------------------------------------------------------- hero moves
+
+/** What the hero does with hands and weapon in a battle action. */
+export type HeroMove = "strike" | "shot" | "cast" | "drink";
+
+/** A move under way: which, and how far through it (0 to 1). */
+export type HeroAction = { move: HeroMove; t: number };
+
+/** How long a move takes, in seconds; the hit lands a little before half. */
+export const HERO_MOVE_TIME = 0.7;
+
+/** Keyframes of one channel: [time 0..1, value], eased between. */
+type Keys = readonly (readonly [number, number])[];
+
+function sample(keys: Keys, t: number): number {
+  let [t0, v0] = keys[0]!;
+  if (t <= t0) return v0;
+  for (const [t1, v1] of keys) {
+    if (t <= t1) {
+      const u = (t - t0) / (t1 - t0 || 1);
+      return v0 + (v1 - v0) * u * u * (3 - 2 * u);
+    }
+    [t0, v0] = [t1, v1];
+  }
+  return v0;
+}
+
+/**
+ * One move as offsets from the rest pose: the weapon arm's and the free
+ * arm's swing forward (negative raises the arm in front), the free arm's
+ * swing across the body, and the upper body's twist (positive brings the
+ * weapon shoulder forward) and lean (positive leans in).
+ */
+type Pose = {
+  weapon: Keys;
+  free: Keys;
+  across?: Keys;
+  twist: Keys;
+  lean: Keys;
+  /** Keeps the weapon upright while the arm rises (a drawn bow). */
+  upright?: boolean;
+  /** Shows the flask in the free hand. */
+  flask?: boolean;
+};
+
+const STILL: Keys = [[0, 0]];
+
+const POSES = {
+  // Overhead and down in a diagonal cut, stepping into it.
+  slash: {
+    weapon: [
+      [0, 0],
+      [0.35, -2.4],
+      [0.52, -0.5],
+      [1, 0],
+    ],
+    free: [
+      [0, 0],
+      [0.35, 0.35],
+      [0.52, -0.45],
+      [1, 0],
+    ],
+    twist: [
+      [0, 0],
+      [0.35, -0.35],
+      [0.52, 0.32],
+      [1, 0],
+    ],
+    lean: [
+      [0, 0],
+      [0.35, -0.06],
+      [0.52, 0.14],
+      [1, 0],
+    ],
+  },
+  // Drawn back, then driven forward.
+  thrust: {
+    weapon: [
+      [0, 0],
+      [0.32, 0.35],
+      [0.5, -1.25],
+      [1, 0],
+    ],
+    free: [
+      [0, 0],
+      [0.32, -0.3],
+      [0.5, 0.3],
+      [1, 0],
+    ],
+    twist: [
+      [0, 0],
+      [0.32, -0.4],
+      [0.5, 0.4],
+      [1, 0],
+    ],
+    lean: [
+      [0, 0],
+      [0.32, -0.05],
+      [0.5, 0.16],
+      [1, 0],
+    ],
+  },
+  // A stone, overhand with the free hand.
+  throw: {
+    weapon: [
+      [0, 0],
+      [0.35, 0.2],
+      [0.52, -0.2],
+      [1, 0],
+    ],
+    free: [
+      [0, 0],
+      [0.35, -2.7],
+      [0.52, -1.0],
+      [1, 0],
+    ],
+    twist: [
+      [0, 0],
+      [0.35, 0.35],
+      [0.52, -0.35],
+      [1, 0],
+    ],
+    lean: [
+      [0, 0],
+      [0.35, -0.08],
+      [0.52, 0.12],
+      [1, 0],
+    ],
+  },
+  // Bow up, string drawn to the chest, loosed.
+  bow: {
+    weapon: [
+      [0, 0],
+      [0.3, -1.3],
+      [0.75, -1.3],
+      [1, 0],
+    ],
+    free: [
+      [0, 0],
+      [0.3, -1.45],
+      [0.48, -1.3],
+      [0.53, -0.85],
+      [0.75, -0.95],
+      [1, 0],
+    ],
+    across: [
+      [0, 0],
+      [0.3, -0.85],
+      [0.75, -0.85],
+      [1, 0],
+    ],
+    twist: [
+      [0, 0],
+      [0.3, 0.25],
+      [0.75, 0.25],
+      [1, 0],
+    ],
+    lean: STILL,
+    upright: true,
+  },
+  // Aimed level, a kick of recoil.
+  pistol: {
+    weapon: [
+      [0, 0],
+      [0.3, -0.4],
+      [0.44, -0.4],
+      [0.5, -0.95],
+      [0.72, -0.45],
+      [1, 0],
+    ],
+    free: STILL,
+    twist: [
+      [0, 0],
+      [0.3, 0.3],
+      [0.72, 0.3],
+      [1, 0],
+    ],
+    lean: [
+      [0, 0],
+      [0.44, 0],
+      [0.5, -0.08],
+      [1, 0],
+    ],
+  },
+  // Both hands raised, then thrust at the foe.
+  cast: {
+    weapon: [
+      [0, 0],
+      [0.35, -1.0],
+      [0.52, -1.45],
+      [1, 0],
+    ],
+    free: [
+      [0, 0],
+      [0.35, -2.5],
+      [0.52, -1.5],
+      [1, 0],
+    ],
+    across: [
+      [0, 0],
+      [0.35, 0.35],
+      [0.52, -0.1],
+      [1, 0],
+    ],
+    twist: [
+      [0, 0],
+      [0.35, -0.12],
+      [0.52, 0.12],
+      [1, 0],
+    ],
+    lean: [
+      [0, 0],
+      [0.35, -0.1],
+      [0.52, 0.12],
+      [1, 0],
+    ],
+  },
+  // A flask to the lips, head back.
+  drink: {
+    weapon: STILL,
+    free: [
+      [0, 0],
+      [0.3, -2.1],
+      [0.75, -2.1],
+      [1, 0],
+    ],
+    across: [
+      [0, 0],
+      [0.3, -0.65],
+      [0.75, -0.65],
+      [1, 0],
+    ],
+    twist: STILL,
+    lean: [
+      [0, 0],
+      [0.3, -0.12],
+      [0.75, -0.12],
+      [1, 0],
+    ],
+    flask: true,
+  },
+} satisfies Record<string, Pose>;
+
+function poseFor(move: HeroMove, weapon: string): Pose {
+  switch (move) {
+    case "strike":
+      return weapon === "spear" ? POSES.thrust : POSES.slash;
+    case "shot":
+      if (weapon === "bow") return POSES.bow;
+      return weapon === "pistol" ? POSES.pistol : POSES.throw;
+    case "cast":
+      return POSES.cast;
+    case "drink":
+      return POSES.drink;
+  }
+}
+
 /** A weapon drawn from its grip (the origin) along +y. */
 function Weapon({ kind }: { kind: string }) {
   switch (kind) {
+    case "none":
+      return null;
     case "bow":
       // Belly forward and turned a little outwards so it reads from
       // behind too; tips and string towards the body.
@@ -309,24 +586,36 @@ function Weapon({ kind }: { kind: string }) {
 }
 
 /** A loose-sleeved shirt arm from the shoulder down, with a stitched cuff. */
-function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
+function Arm({
+  skin,
+  sleeve,
+}: {
+  skin: THREE.ColorRepresentation;
+  sleeve: number;
+}) {
   return (
     <>
       <Part
         geometry={G.sphere}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.03, 0]}
         scale={[0.21, 0.2, 0.21]}
       />
       <Part
         geometry={G.box}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.17, 0]}
         scale={[0.16, 0.28, 0.17]}
       />
       <Part
+        geometry={G.box}
+        color={HERO.stitch}
+        position={[0, -0.13, 0]}
+        scale={[0.168, 0.035, 0.178]}
+      />
+      <Part
         geometry={G.sphere}
-        color={HERO.shirt}
+        color={sleeve}
         position={[0, -0.37, 0.01]}
         scale={[0.19, 0.24, 0.19]}
       />
@@ -347,8 +636,15 @@ function Arm({ skin }: { skin: THREE.ColorRepresentation }) {
 }
 
 /** A boot from the hip down; under sharovary for him, a skirt for her. */
-function Leg({ woman, cloth }: { woman: boolean; cloth: number }) {
-  const boot = woman ? HERO.bootWoman : HERO.boot;
+function Leg({
+  woman,
+  cloth,
+  boot,
+}: {
+  woman: boolean;
+  cloth: number;
+  boot: number;
+}) {
   return (
     <>
       {woman ? null : (
@@ -369,12 +665,183 @@ function Leg({ woman, cloth }: { woman: boolean; cloth: number }) {
       <Part
         geometry={G.box}
         color={boot}
-        position={[0, -0.62, 0.05]}
+        position={[0, -0.6, 0.05]}
         scale={[0.15, 0.08, 0.27]}
+      />
+      <Part
+        geometry={G.box}
+        color={HERO.sole}
+        position={[0, -0.645, -0.05]}
+        scale={[0.13, 0.05, 0.08]}
+      />
+      <Part
+        geometry={G.box}
+        color={HERO.sole}
+        position={[0, -0.648, 0.1]}
+        scale={[0.14, 0.03, 0.16]}
       />
     </>
   );
 }
+
+/** Headwear over the shaved head or the hair. */
+function Hat({
+  kind,
+  color,
+  trim,
+  hair,
+  woman,
+}: {
+  kind: NonNullable<Outfit["hat"]>;
+  color: number;
+  trim: number;
+  hair: THREE.ColorRepresentation;
+  woman: boolean;
+}) {
+  switch (kind) {
+    case "kuchma":
+      // A tall fur hat with a cloth top falling to one side.
+      return (
+        <>
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.66, -0.01]}
+            scale={[0.38, 0.3, 0.38]}
+          />
+          <Part
+            geometry={G.sphere}
+            color={trim}
+            position={[0, 1.81, -0.01]}
+            scale={[0.3, 0.1, 0.3]}
+          />
+          <Part
+            geometry={G.box}
+            color={trim}
+            position={[0.17, 1.74, -0.06]}
+            rotation={[0, 0, -0.5]}
+            scale={[0.1, 0.18, 0.08]}
+          />
+        </>
+      );
+    case "brim":
+      // A wide-brimmed black brylka.
+      return (
+        <>
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.6, -0.01]}
+            scale={[0.62, 0.035, 0.62]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.68, -0.01]}
+            scale={[0.34, 0.16, 0.34]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={trim}
+            position={[0, 1.63, -0.01]}
+            scale={[0.35, 0.03, 0.35]}
+          />
+        </>
+      );
+    case "crown":
+      // A gold circlet with points over the hair, a braid down the back.
+      return (
+        <>
+          <Part
+            geometry={G.sphere}
+            color={hair}
+            position={[0, 1.58, -0.035]}
+            scale={[0.36, 0.2, 0.36]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={color}
+            position={[0, 1.62, -0.01]}
+            scale={[0.37, 0.07, 0.37]}
+          />
+          {[0, 1, 2, 3, 4].map((k) => {
+            const a = ((k - 2) * Math.PI) / 5;
+            return (
+              <Part
+                key={k}
+                geometry={G.cone4}
+                color={color}
+                position={[Math.sin(a) * 0.17, 1.69, Math.cos(a) * 0.17]}
+                scale={[0.06, 0.1, 0.06]}
+              />
+            );
+          })}
+          <Part
+            geometry={G.sphere}
+            color={trim}
+            position={[0, 1.64, 0.185]}
+            scale={[0.05, 0.05, 0.03]}
+          />
+          {woman ? (
+            <Part
+              geometry={G.box}
+              color={hair}
+              position={[0, 1.2, -0.2]}
+              scale={[0.1, 0.6, 0.08]}
+            />
+          ) : null}
+        </>
+      );
+    case "scarf":
+      // A khustka over the hair, knotted at the nape.
+      return (
+        <>
+          <Part
+            geometry={G.sphere}
+            color={color}
+            position={[0, 1.53, -0.05]}
+            scale={[0.39, 0.34, 0.38]}
+          />
+          <Part
+            geometry={G.cyl}
+            color={trim}
+            position={[0, 1.6, -0.04]}
+            scale={[0.395, 0.035, 0.385]}
+          />
+          <Part
+            geometry={G.box}
+            color={color}
+            position={[0, 1.34, -0.2]}
+            rotation={[0.3, 0, 0]}
+            scale={[0.12, 0.16, 0.04]}
+          />
+        </>
+      );
+  }
+}
+
+/**
+ * What a figure wears beyond the hero's defaults, so NPCs share the hero's
+ * body: colours, a coat, a hat, what is in hand.
+ */
+export type Outfit = {
+  /** Sharovary or skirt; the class's colour when not given. */
+  cloth?: number;
+  shirt?: number;
+  sash?: number;
+  boot?: number;
+  /** A zhupan over the shirt: knee-long for a kozak, a short keptar for a kozachka. */
+  coat?: number;
+  /** A sleeveless coat (a vest, a mail shirt) leaves the shirt sleeves. */
+  sleeveless?: boolean;
+  hat?: "kuchma" | "brim" | "crown" | "scarf";
+  hatColor?: number;
+  /** A second colour: the kuchma's cloth top, the scarf's pattern. */
+  hatTrim?: number;
+  earring?: boolean;
+  /** A round belly under the coat. */
+  stout?: boolean;
+};
 
 /**
  * The hero: a kozak in a white stitched shirt, wide sharovary in the class's
@@ -387,20 +854,59 @@ export function HeroFigure({
   weapon,
   helmet,
   speed,
+  action,
+  outfit = {},
 }: {
   look: Look;
   classId: string;
+  /** The weapon family in the right hand; "none" for empty hands. */
   weapon?: string;
   helmet?: boolean;
   speed: () => number;
+  /** The battle move under way, if any; read every frame. */
+  action?: () => HeroAction | null;
+  outfit?: Outfit;
 }) {
-  const { body, left, right, freeArm, weaponArm } = useWalk(speed);
-  const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
-  const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
-  const cloth = CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
-  const woman = look.body === "kozachka";
   const kind = weapon && GRIPS[weapon] ? weapon : "sabre";
   const grip = GRIPS[kind]!;
+  /** The move under way as a pose and how far through it. */
+  const current = () => {
+    const now = action?.();
+    return now ? { pose: poseFor(now.move, kind), t: now.t } : null;
+  };
+  const { body, left, right, freeArm, weaponArm } = useWalk(speed, () => {
+    const c = current();
+    return c
+      ? { weapon: sample(c.pose.weapon, c.t), free: sample(c.pose.free, c.t) }
+      : null;
+  });
+  const upper = useRef<THREE.Group>(null);
+  const freeAcross = useRef<THREE.Group>(null);
+  const held = useRef<THREE.Group>(null);
+  const flask = useRef<THREE.Group>(null);
+  const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
+  const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
+  const woman = look.body === "kozachka";
+  const cloth = outfit.cloth ?? CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
+  const shirt = outfit.shirt ?? HERO.shirt;
+  const sash = outfit.sash ?? HERO.sash;
+  const boot = outfit.boot ?? (woman ? HERO.bootWoman : HERO.boot);
+  const coat = outfit.coat;
+  const sleeve = coat !== undefined && !outfit.sleeveless ? coat : shirt;
+  // Over a coat the sash wraps a little wider.
+  const wrap = coat !== undefined ? 1.14 : 1;
+  useFrame(() => {
+    const c = current();
+    const pose = c?.pose;
+    const at = (keys: Keys | undefined) => (c && keys ? sample(keys, c.t) : 0);
+    if (freeAcross.current) freeAcross.current.rotation.z = at(pose?.across);
+    if (upper.current)
+      upper.current.rotation.set(at(pose?.lean), at(pose?.twist), 0);
+    if (held.current)
+      held.current.rotation.x = pose?.upright ? -at(pose.weapon) : 0;
+    if (flask.current)
+      flask.current.visible = !!pose?.flask && (c?.t ?? 1) < 0.85;
+  });
   return (
     <group>
       <group ref={body}>
@@ -428,241 +934,354 @@ export function HeroFigure({
             scale={[0.54, 0.3, 0.38]}
           />
         )}
-        {/* Belt, buckle and the sash's hanging end */}
-        <Part
-          geometry={G.box}
-          color={HERO.belt}
-          position={[0, 0.8, 0]}
-          scale={[0.47, 0.1, 0.32]}
-        />
-        <Part
-          geometry={G.box}
-          color={HERO.buckle}
-          position={[0, 0.8, 0.165]}
-          scale={[0.08, 0.07, 0.02]}
-        />
-        <Part
-          geometry={G.box}
-          color={HERO.sash}
-          position={[0.17, 0.67, 0.15]}
-          rotation={[0, 0, -0.12]}
-          scale={[0.07, 0.24, 0.03]}
-        />
-        {/* Shirt: waist and chest, the collar slit with its embroidery */}
-        <Part
-          geometry={G.box}
-          color={HERO.shirt}
-          position={[0, 0.93, 0]}
-          scale={[0.44, 0.18, 0.29]}
-        />
-        <Part
-          geometry={G.box}
-          color={HERO.shirt}
-          position={[0, 1.1, 0]}
-          scale={[0.54, 0.3, 0.32]}
-        />
-        <Part
-          geometry={G.box}
-          color={skin}
-          position={[0, 1.18, 0.157]}
-          scale={[0.07, 0.13, 0.02]}
-        />
-        <Part
-          geometry={G.box}
-          color={HERO.stitch}
-          position={[-0.055, 1.15, 0.161]}
-          scale={[0.03, 0.16, 0.02]}
-        />
-        <Part
-          geometry={G.box}
-          color={HERO.stitch}
-          position={[0.055, 1.15, 0.161]}
-          scale={[0.03, 0.16, 0.02]}
-        />
-        {/* Neck and head */}
-        <Part
-          geometry={G.cyl}
-          color={skin}
-          position={[0, 1.28, 0]}
-          scale={[0.14, 0.12, 0.14]}
-        />
-        <Part
-          geometry={G.sphere}
-          color={skin}
-          position={[0, 1.46, 0]}
-          scale={[0.34, 0.37, 0.33]}
-        />
-        <Part
-          geometry={G.box}
-          color={skin}
-          position={[-0.17, 1.45, -0.01]}
-          scale={[0.04, 0.08, 0.06]}
-        />
-        <Part
-          geometry={G.box}
-          color={skin}
-          position={[0.17, 1.45, -0.01]}
-          scale={[0.04, 0.08, 0.06]}
-        />
-        <Part
-          geometry={G.box}
-          color={skin}
-          position={[0, 1.45, 0.17]}
-          scale={[0.05, 0.08, 0.05]}
-        />
-        {/* Eyes and brows */}
-        {[-1, 1].map((side) => (
-          <group key={side} position={[side * 0.068, 0, 0]}>
+        {/* A scabbard at the left hip, the sabre out of it */}
+        {kind === "sabre" ? (
+          <group position={[0.27, 0.78, 0.06]} rotation={[0.93, 0, 0.12]}>
             <Part
               geometry={G.box}
-              color={0x1a1210}
-              position={[0, 1.49, 0.153]}
-              scale={[0.045, 0.03, 0.02]}
+              color={HERO.belt}
+              position={[0, -0.36, 0]}
+              rotation={[0.08, 0, 0]}
+              scale={[0.05, 0.72, 0.09]}
             />
             <Part
               geometry={G.box}
-              color={hair}
-              position={[0, 1.528, 0.15]}
-              rotation={[0, 0, side * -0.18]}
-              scale={[0.08, 0.026, 0.03]}
+              color={HERO.brass}
+              position={[0, -0.04, 0]}
+              scale={[0.06, 0.05, 0.1]}
+            />
+            <Part
+              geometry={G.box}
+              color={HERO.brass}
+              position={[0, -0.7, -0.03]}
+              scale={[0.06, 0.07, 0.1]}
             />
           </group>
-        ))}
-        {/* Hair, or a hat */}
-        {helmet ? (
-          <>
+        ) : null}
+        {/* The upper body twists and leans from the waist in a move */}
+        <group ref={upper} position={[0, 0.78, 0]}>
+          <group position={[0, -0.78, 0]}>
+            {/* A wide kushak sash under the belt, its ends at the left hip */}
             <Part
-              geometry={G.cyl}
-              color={0x2a2018}
-              position={[0, 1.61, 0]}
-              scale={[0.37, 0.2, 0.37]}
+              geometry={G.box}
+              color={sash}
+              position={[0, 0.8, 0]}
+              scale={[0.48 * wrap, 0.15, 0.33 * wrap]}
             />
             <Part
-              geometry={G.cyl}
-              color={HERO.sash}
-              position={[0, 1.715, 0]}
-              scale={[0.3, 0.04, 0.3]}
+              geometry={G.box}
+              color={HERO.belt}
+              position={[0, 0.79, 0]}
+              scale={[0.49 * wrap, 0.05, 0.34 * wrap]}
             />
-          </>
-        ) : woman ? (
-          <>
-            {/* Hair, a vinok of flowers and a braid down the back */}
+            <Part
+              geometry={G.box}
+              color={HERO.buckle}
+              position={[0, 0.79, 0.172 * wrap]}
+              scale={[0.08, 0.07, 0.02]}
+            />
+            <Part
+              geometry={G.box}
+              color={sash}
+              position={[0.16, 0.64, 0.155 * wrap]}
+              rotation={[0, 0, -0.12]}
+              scale={[0.08, 0.26, 0.03]}
+            />
+            <Part
+              geometry={G.box}
+              color={sash}
+              position={[0.215, 0.66, 0.135 * wrap]}
+              rotation={[0, 0.3, -0.25]}
+              scale={[0.06, 0.22, 0.03]}
+            />
+            {/* Shirt: bloused over the sash, a broad chest narrowing to the
+            waist, the collar slit with its embroidery */}
             <Part
               geometry={G.sphere}
-              color={hair}
-              position={[0, 1.58, -0.035]}
-              scale={[0.36, 0.2, 0.36]}
+              color={shirt}
+              position={[0, 0.92, 0]}
+              scale={[0.5, 0.16, 0.34]}
             />
             <Part
-              geometry={G.cyl}
-              color={0xd23a3a}
-              position={[0, 1.6, 0]}
-              scale={[0.38, 0.07, 0.38]}
+              geometry={G.taper}
+              color={shirt}
+              position={[0, 1.07, 0]}
+              scale={[0.64, 0.4, 0.37]}
             />
-            {[-0.12, 0, 0.12].map((x) => (
+            <Part
+              geometry={G.box}
+              color={skin}
+              position={[0, 1.18, 0.157]}
+              scale={[0.07, 0.13, 0.02]}
+            />
+            <Part
+              geometry={G.box}
+              color={HERO.stitch}
+              position={[-0.055, 1.15, 0.161]}
+              scale={[0.03, 0.16, 0.02]}
+            />
+            <Part
+              geometry={G.box}
+              color={HERO.stitch}
+              position={[0.055, 1.15, 0.161]}
+              scale={[0.03, 0.16, 0.02]}
+            />
+            {coat !== undefined ? (
+              <>
+                {/* The coat over the shirt, brass buttons down the front */}
+                <Part
+                  geometry={G.taper}
+                  color={coat}
+                  position={[0, 1.065, 0]}
+                  scale={[0.68, 0.42, 0.41]}
+                />
+                {woman ? null : (
+                  <Part
+                    geometry={G.skirt}
+                    color={coat}
+                    position={[0, 0.58, 0]}
+                    scale={[0.84, 0.48, 0.64]}
+                  />
+                )}
+                {[0.96, 1.06, 1.16].map((y) => (
+                  <Part
+                    key={y}
+                    geometry={G.box}
+                    color={HERO.brass}
+                    position={[0, y, 0.165 + (y - 0.96) * 0.06]}
+                    scale={[0.04, 0.04, 0.02]}
+                  />
+                ))}
+              </>
+            ) : null}
+            {outfit.stout ? (
               <Part
-                key={x}
                 geometry={G.sphere}
-                color={x === 0 ? 0xf2c94c : 0xe8e0d0}
-                position={[x, 1.64, 0.13]}
-                scale={[0.08, 0.08, 0.08]}
-              />
-            ))}
-            <Part
-              geometry={G.box}
-              color={hair}
-              position={[0, 1.2, -0.2]}
-              scale={[0.1, 0.5 + look.hair * 0.1, 0.08]}
-            />
-          </>
-        ) : look.hair === 0 ? (
-          <>
-            {/* Oseledets: a tuft on the crown of the shaved head and its
-                long lock falling over to one side */}
-            <Part
-              geometry={G.sphere}
-              color={hair}
-              position={[0, 1.645, -0.02]}
-              scale={[0.11, 0.09, 0.11]}
-            />
-            <Part
-              geometry={G.box}
-              color={hair}
-              position={[-0.07, 1.7, -0.03]}
-              rotation={[0, 0, 0.9]}
-              scale={[0.06, 0.16, 0.06]}
-            />
-            <Part
-              geometry={G.box}
-              color={hair}
-              position={[-0.17, 1.6, -0.05]}
-              rotation={[0.2, 0, -0.3]}
-              scale={[0.05, 0.2, 0.05]}
-            />
-          </>
-        ) : (
-          <>
-            <Part
-              geometry={G.sphere}
-              color={hair}
-              position={[0, 1.585, -0.035]}
-              scale={[0.37, 0.2, 0.37]}
-            />
-            {look.hair === 2 ? (
-              // A chupryna: the forelock swept over the brow.
-              <Part
-                geometry={G.box}
-                color={hair}
-                position={[0.05, 1.6, 0.13]}
-                rotation={[0.4, 0, -0.5]}
-                scale={[0.16, 0.06, 0.08]}
+                color={coat ?? shirt}
+                position={[0, 0.96, 0.08]}
+                scale={[0.46, 0.36, 0.38]}
               />
             ) : null}
-          </>
-        )}
-        {look.mustache && !woman ? (
-          <>
-            {/* A long moustache drooping past the chin */}
+            {outfit.earring ? (
+              <Part
+                geometry={G.sphere}
+                color={HERO.brass}
+                position={[-0.18, 1.39, 0]}
+                scale={[0.04, 0.05, 0.04]}
+              />
+            ) : null}
+            {/* Neck and head */}
+            <Part
+              geometry={G.cyl}
+              color={skin}
+              position={[0, 1.28, 0]}
+              scale={[0.14, 0.12, 0.14]}
+            />
+            <Part
+              geometry={G.sphere}
+              color={skin}
+              position={[0, 1.46, 0]}
+              scale={[0.34, 0.37, 0.33]}
+            />
+            <Part
+              geometry={G.box}
+              color={skin}
+              position={[-0.17, 1.45, -0.01]}
+              scale={[0.04, 0.08, 0.06]}
+            />
+            <Part
+              geometry={G.box}
+              color={skin}
+              position={[0.17, 1.45, -0.01]}
+              scale={[0.04, 0.08, 0.06]}
+            />
+            <Part
+              geometry={G.box}
+              color={skin}
+              position={[0, 1.45, 0.17]}
+              scale={[0.05, 0.08, 0.05]}
+            />
+            {/* Eyes and brows */}
             {[-1, 1].map((side) => (
-              <group key={side}>
+              <group key={side} position={[side * 0.068, 0, 0]}>
                 <Part
                   geometry={G.box}
-                  color={hair}
-                  position={[side * 0.065, 1.4, 0.168]}
-                  rotation={[0, 0, side * -0.4]}
-                  scale={[0.12, 0.04, 0.05]}
+                  color={0x1a1210}
+                  position={[0, 1.49, 0.153]}
+                  scale={[0.045, 0.03, 0.02]}
                 />
                 <Part
                   geometry={G.box}
                   color={hair}
-                  position={[side * 0.125, 1.33, 0.14]}
-                  rotation={[0.15, 0, side * 0.12]}
-                  scale={[0.035, 0.13, 0.035]}
+                  position={[0, 1.528, 0.15]}
+                  rotation={[0, 0, side * -0.18]}
+                  scale={[0.08, 0.026, 0.03]}
                 />
               </group>
             ))}
-          </>
-        ) : null}
-        {/* Arms: the left (+x) swings; the right (-x) holds the weapon */}
-        <group position={[0.32, 1.2, 0]} rotation={[0, 0, 0.12]}>
-          <group ref={freeArm}>
-            <Arm skin={skin} />
-          </group>
-        </group>
-        <group position={[-0.32, 1.2, 0]} rotation={grip.arm}>
-          <group ref={weaponArm}>
-            <Arm skin={skin} />
-            <group position={HAND} rotation={GRIP_ROTATION[kind]}>
-              <Weapon kind={kind} />
+            {/* Hair, or a hat */}
+            {outfit.hat ? (
+              <Hat
+                kind={outfit.hat}
+                color={outfit.hatColor ?? 0x2a2018}
+                trim={outfit.hatTrim ?? sash}
+                hair={hair}
+                woman={woman}
+              />
+            ) : helmet ? (
+              <>
+                <Part
+                  geometry={G.cyl}
+                  color={0x2a2018}
+                  position={[0, 1.61, 0]}
+                  scale={[0.37, 0.2, 0.37]}
+                />
+                <Part
+                  geometry={G.cyl}
+                  color={HERO.sash}
+                  position={[0, 1.715, 0]}
+                  scale={[0.3, 0.04, 0.3]}
+                />
+              </>
+            ) : woman ? (
+              <>
+                {/* Hair, a vinok of flowers and a braid down the back */}
+                <Part
+                  geometry={G.sphere}
+                  color={hair}
+                  position={[0, 1.58, -0.035]}
+                  scale={[0.36, 0.2, 0.36]}
+                />
+                <Part
+                  geometry={G.cyl}
+                  color={0xd23a3a}
+                  position={[0, 1.6, 0]}
+                  scale={[0.38, 0.07, 0.38]}
+                />
+                {[-0.12, 0, 0.12].map((x) => (
+                  <Part
+                    key={x}
+                    geometry={G.sphere}
+                    color={x === 0 ? 0xf2c94c : 0xe8e0d0}
+                    position={[x, 1.64, 0.13]}
+                    scale={[0.08, 0.08, 0.08]}
+                  />
+                ))}
+                <Part
+                  geometry={G.box}
+                  color={hair}
+                  position={[0, 1.2, -0.2]}
+                  scale={[0.1, 0.5 + look.hair * 0.1, 0.08]}
+                />
+              </>
+            ) : look.hair === 0 ? (
+              <>
+                {/* Oseledets: a tuft on the crown of the shaved head and its
+                long lock falling over to one side */}
+                <Part
+                  geometry={G.sphere}
+                  color={hair}
+                  position={[0, 1.645, -0.02]}
+                  scale={[0.11, 0.09, 0.11]}
+                />
+                <Part
+                  geometry={G.box}
+                  color={hair}
+                  position={[-0.07, 1.7, -0.03]}
+                  rotation={[0, 0, 0.9]}
+                  scale={[0.06, 0.16, 0.06]}
+                />
+                <Part
+                  geometry={G.box}
+                  color={hair}
+                  position={[-0.17, 1.6, -0.05]}
+                  rotation={[0.2, 0, -0.3]}
+                  scale={[0.05, 0.2, 0.05]}
+                />
+              </>
+            ) : (
+              <>
+                <Part
+                  geometry={G.sphere}
+                  color={hair}
+                  position={[0, 1.585, -0.035]}
+                  scale={[0.37, 0.2, 0.37]}
+                />
+                {look.hair === 2 ? (
+                  // A chupryna: the forelock swept over the brow.
+                  <Part
+                    geometry={G.box}
+                    color={hair}
+                    position={[0.05, 1.6, 0.13]}
+                    rotation={[0.4, 0, -0.5]}
+                    scale={[0.16, 0.06, 0.08]}
+                  />
+                ) : null}
+              </>
+            )}
+            {look.mustache && !woman ? (
+              <>
+                {/* A long moustache drooping past the chin */}
+                {[-1, 1].map((side) => (
+                  <group key={side}>
+                    <Part
+                      geometry={G.box}
+                      color={hair}
+                      position={[side * 0.065, 1.4, 0.168]}
+                      rotation={[0, 0, side * -0.4]}
+                      scale={[0.12, 0.04, 0.05]}
+                    />
+                    <Part
+                      geometry={G.box}
+                      color={hair}
+                      position={[side * 0.125, 1.33, 0.14]}
+                      rotation={[0.15, 0, side * 0.12]}
+                      scale={[0.035, 0.13, 0.035]}
+                    />
+                  </group>
+                ))}
+              </>
+            ) : null}
+            {/* Arms: the left (+x) swings; the right (-x) holds the weapon */}
+            <group position={[0.32, 1.2, 0]} rotation={[0, 0, 0.12]}>
+              <group ref={freeAcross}>
+                <group ref={freeArm}>
+                  <Arm skin={skin} sleeve={sleeve} />
+                  <group ref={flask} position={HAND} visible={false}>
+                    <Part
+                      geometry={G.sphere}
+                      color={0xb3261e}
+                      position={[0, 0, 0.09]}
+                      scale={[0.11, 0.12, 0.11]}
+                    />
+                    <Part
+                      geometry={G.cyl}
+                      color={0x5b3a1e}
+                      position={[0, 0.09, 0.09]}
+                      scale={[0.04, 0.07, 0.04]}
+                    />
+                  </group>
+                </group>
+              </group>
+            </group>
+            <group position={[-0.32, 1.2, 0]} rotation={grip.arm}>
+              <group ref={weaponArm}>
+                <Arm skin={skin} sleeve={sleeve} />
+                <group ref={held} position={HAND}>
+                  <group rotation={GRIP_ROTATION[kind]}>
+                    <Weapon kind={kind} />
+                  </group>
+                </group>
+              </group>
             </group>
           </group>
         </group>
       </group>
       <group ref={left} position={[-0.13, 0.66, 0]}>
-        <Leg woman={woman} cloth={cloth} />
+        <Leg woman={woman} cloth={cloth} boot={boot} />
       </group>
       <group ref={right} position={[0.13, 0.66, 0]}>
-        <Leg woman={woman} cloth={cloth} />
+        <Leg woman={woman} cloth={cloth} boot={boot} />
       </group>
     </group>
   );
@@ -670,17 +1289,91 @@ export function HeroFigure({
 
 // ---------------------------------------------------------------- npcs
 
-const NPC_COLORS: Record<
+/**
+ * Kyiv's people, dressed on the hero's body so they stand beside the hero
+ * as the same kind of figure.
+ */
+const NPC_LOOKS: Record<
   string,
-  { coat: number; hat?: number; glow?: number }
+  { look: Look; weapon: string; outfit: Outfit }
 > = {
-  otaman: { coat: 0x7a1414, hat: 0x1a1410 },
-  olha: { coat: 0x5a1a4a, hat: 0xc9a24a, glow: 0xff6a00 },
-  sviatoslav: { coat: 0x6a6a72, hat: 0x8a8a92 },
-  karmaliuk: { coat: 0x1f2a1a, hat: 0x111111 },
-  merchant: { coat: 0x7a5a2a, hat: 0x3a2a1a },
-  healer: { coat: 0x3a5a3a },
+  // Ivan Sirko: a grey oseledets, a crimson zhupan and the otaman's bulava.
+  otaman: {
+    look: { body: "kozak", face: 0, hair: 0, hairColor: 3, mustache: true },
+    weapon: "bulava",
+    outfit: { cloth: 0x2c3f86, coat: 0x8c1d1d, sash: 0xb8892e },
+  },
+  // Olha: a purple gown, a gold circlet and a staff of fire.
+  olha: {
+    look: { body: "kozachka", face: 0, hair: 0, hairColor: 1, mustache: false },
+    weapon: "staff",
+    outfit: {
+      cloth: 0x4a1640,
+      coat: 0x6a1f5a,
+      sash: 0xc9a24a,
+      boot: 0x4a1640,
+      hat: "crown",
+      hatColor: 0xd8b04a,
+      hatTrim: 0xb3261e,
+    },
+  },
+  // Sviatoslav: shaved head and oseledets, a gold earring, mail over the
+  // shirt, a sabre.
+  sviatoslav: {
+    look: { body: "kozak", face: 1, hair: 0, hairColor: 2, mustache: true },
+    weapon: "sabre",
+    outfit: {
+      cloth: 0x7a1712,
+      coat: 0x7d8088,
+      sleeveless: true,
+      sash: 0x3a2a1a,
+      earring: true,
+    },
+  },
+  // Ustym Karmaliuk: a dark svyta, a black brimmed hat, a pistol.
+  karmaliuk: {
+    look: { body: "kozak", face: 1, hair: 1, hairColor: 0, mustache: true },
+    weapon: "pistol",
+    outfit: {
+      cloth: 0x2a2a2a,
+      coat: 0x2f3a24,
+      sash: 0x5a1410,
+      hat: "brim",
+      hatColor: 0x161210,
+      hatTrim: 0x5a1410,
+    },
+  },
+  // Hordii: a stout merchant in a brown kuntush and a fur kuchma.
+  merchant: {
+    look: { body: "kozak", face: 0, hair: 1, hairColor: 1, mustache: true },
+    weapon: "none",
+    outfit: {
+      cloth: 0x2c4a6a,
+      coat: 0x7a5a2a,
+      sash: 0x2c5a3a,
+      hat: "kuchma",
+      hatColor: 0x4a3020,
+      hatTrim: 0x2c5a3a,
+      stout: true,
+    },
+  },
+  // Motria: a grey-haired znakharka in a red khustka and a dark keptar.
+  healer: {
+    look: { body: "kozachka", face: 2, hair: 0, hairColor: 3, mustache: false },
+    weapon: "none",
+    outfit: {
+      cloth: 0x3a5a3a,
+      coat: 0x3a2a1a,
+      sleeveless: true,
+      sash: 0x8c1d1d,
+      hat: "scarf",
+      hatColor: 0x8c1d1d,
+      hatTrim: 0xe8d8b0,
+    },
+  },
 };
+
+const STANDING = () => 0;
 
 export function NpcFigure({ kind }: { kind: string }) {
   if (kind === "chest") {
@@ -701,39 +1394,15 @@ export function NpcFigure({ kind }: { kind: string }) {
       </group>
     );
   }
-  const c = NPC_COLORS[kind] ?? { coat: 0x555555 };
+  const npc = NPC_LOOKS[kind] ?? NPC_LOOKS.merchant!;
   return (
-    <group>
-      <Part
-        geometry={G.cone}
-        color={c.coat}
-        position={[0, 0.6, 0]}
-        scale={[0.75, 1.2, 0.6]}
-      />
-      <Part
-        geometry={G.sphere}
-        color={0xd8ae88}
-        position={[0, 1.38, 0]}
-        scale={[0.36, 0.4, 0.36]}
-      />
-      {c.hat ? (
-        <Part
-          geometry={G.cyl}
-          color={c.hat}
-          position={[0, 1.6, 0]}
-          scale={[0.36, 0.2, 0.36]}
-        />
-      ) : null}
-      {c.glow ? (
-        <Part
-          geometry={G.octa}
-          color={0xffb04a}
-          emissive={c.glow}
-          position={[0.4, 1.1, 0.2]}
-          scale={[0.18, 0.18, 0.18]}
-        />
-      ) : null}
-    </group>
+    <HeroFigure
+      look={npc.look}
+      classId=""
+      weapon={npc.weapon}
+      speed={STANDING}
+      outfit={npc.outfit}
+    />
   );
 }
 

@@ -5,8 +5,11 @@ import type * as THREE from "three";
 import { getBase, getClass } from "../data";
 import type { Look } from "../sim/types";
 
-import { HeroFigure } from "./art-kit";
+import { HERO_MOVE_TIME, HeroFigure, type HeroMove } from "./art-kit";
 import { ANTIALIAS, GLFrame, paceFrames } from "./native-gl";
+
+/** Seconds between the preview's demo moves. */
+const DEMO_EVERY = 4;
 
 function Turntable({
   look,
@@ -23,14 +26,29 @@ function Turntable({
   useFrame((_, dt) => {
     if (ref.current) ref.current.rotation.y += dt * 0.6;
   });
+  const kind = weapon ?? getBase(getClass(classId).startWeapon).kind;
+  // Every few seconds the hero shows off the weapon's move.
+  const move: HeroMove =
+    kind === "bow" || kind === "pistol"
+      ? "shot"
+      : kind === "staff"
+        ? "cast"
+        : "strike";
+  const action = () => {
+    const t = ((performance.now() / 1000) % DEMO_EVERY) - DEMO_EVERY + 1;
+    return t >= 0 && t < HERO_MOVE_TIME
+      ? { move, t: t / HERO_MOVE_TIME }
+      : null;
+  };
   return (
     <group ref={ref}>
       <HeroFigure
         look={look}
         classId={classId}
-        weapon={weapon ?? getBase(getClass(classId).startWeapon).kind}
+        weapon={kind}
         helmet={helmet}
         speed={() => 0}
+        action={action}
       />
     </group>
   );
