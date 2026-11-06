@@ -12,11 +12,11 @@ export default function NpcPortrait({ kind }: { kind: string }) {
   return (
     <GLFrame>
       <Canvas
-        camera={{ fov: 30, position: [-0.3, 1.5, 2.45] }}
+        camera={{ fov: 30, position: [-0.3, 1.72, 2.55] }}
         onCreated={(state) => {
           paceFrames(state);
           state.gl.setClearColor(0x000000, 0);
-          state.camera.lookAt(0, 1.25, 0);
+          state.camera.lookAt(0, 1.4, 0);
         }}
         dpr={[1, 1.75]}
         gl={{ antialias: ANTIALIAS, alpha: true }}

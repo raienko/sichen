@@ -73,10 +73,10 @@ export default function HeroPreview({
   return (
     <GLFrame>
       <Canvas
-        camera={{ fov: 30, position: [0, 1.3, 4.3] }}
+        camera={{ fov: 30, position: [0, 1.35, 4.5] }}
         onCreated={(state) => {
           paceFrames(state);
-          state.camera.lookAt(0, 0.85, 0);
+          state.camera.lookAt(0, 0.92, 0);
         }}
         dpr={[1, 1.75]}
         gl={{ antialias: ANTIALIAS }}
