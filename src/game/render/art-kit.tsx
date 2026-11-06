@@ -86,15 +86,17 @@ export function gableGeometry(): THREE.BufferGeometry {
 
 /**
  * Bobs and swings a figure while it moves; reads the speed it is given.
- * `left`/`right` are the legs; arms, when a figure has them, swing against
- * the leg on their side (the weapon arm only a little).
+ * `left`/`right` are the legs at -x/+x (figures face +z, so `left` is the
+ * figure's own right leg). Arms, when a figure has them, swing against the
+ * leg on their side: the free arm at +x fully, the weapon arm at -x only a
+ * little.
  */
 function useWalk(speed: () => number) {
   const body = useRef<THREE.Group>(null);
   const left = useRef<THREE.Group>(null);
   const right = useRef<THREE.Group>(null);
-  const leftArm = useRef<THREE.Group>(null);
-  const rightArm = useRef<THREE.Group>(null);
+  const freeArm = useRef<THREE.Group>(null);
+  const weaponArm = useRef<THREE.Group>(null);
   const phase = useRef(0);
   useFrame((_, dt) => {
     const s = speed();
@@ -102,13 +104,13 @@ function useWalk(speed: () => number) {
     const swing = s > 0.05 ? Math.sin(phase.current) * 0.6 : 0;
     if (left.current) left.current.rotation.x = swing;
     if (right.current) right.current.rotation.x = -swing;
-    if (leftArm.current) leftArm.current.rotation.x = -swing * 0.8;
-    if (rightArm.current) rightArm.current.rotation.x = swing * 0.25;
+    if (freeArm.current) freeArm.current.rotation.x = swing * 0.8;
+    if (weaponArm.current) weaponArm.current.rotation.x = -swing * 0.25;
     if (body.current)
       body.current.position.y =
         s > 0.05 ? Math.abs(Math.sin(phase.current)) * 0.06 : 0;
   });
-  return { body, left, right, leftArm, rightArm };
+  return { body, left, right, freeArm, weaponArm };
 }
 
 // ---------------------------------------------------------------- heroes
@@ -137,17 +139,18 @@ const HERO = {
 const HAND: Vec3 = [0, -0.54, 0.02];
 
 /**
- * How each weapon is held: the weapon arm's rest pose, and the direction
- * (in the figure's frame) the weapon's own +y points. Weapons are drawn
- * from the grip outwards along +y.
+ * How each weapon is held in the right hand: the weapon arm's rest pose,
+ * and the direction (in the figure's frame) the weapon's own +y points.
+ * Figures face +z, so their right side is -x. Weapons are drawn from the
+ * grip outwards along +y.
  */
 const GRIPS: Record<string, { arm: Vec3; aim: Vec3 }> = {
-  sabre: { arm: [-0.3, 0, 0.16], aim: [0.35, -0.35, 0.87] },
-  staff: { arm: [-0.45, 0, 0.12], aim: [0, 1, 0.06] },
-  spear: { arm: [-0.45, 0, 0.12], aim: [0, 1, 0.12] },
-  bulava: { arm: [-0.55, 0, 0.16], aim: [0.15, 0.55, 0.8] },
-  pistol: { arm: [-1.1, 0, 0.08], aim: [0.05, 0.05, 1] },
-  bow: { arm: [-0.15, 0, 0.2], aim: [0, 1, 0] },
+  sabre: { arm: [-0.3, 0, -0.16], aim: [-0.35, -0.35, 0.87] },
+  staff: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.06] },
+  spear: { arm: [-0.45, 0, -0.12], aim: [0, 1, 0.12] },
+  bulava: { arm: [-0.55, 0, -0.16], aim: [-0.15, 0.55, 0.8] },
+  pistol: { arm: [-1.1, 0, -0.08], aim: [-0.05, 0.05, 1] },
+  bow: { arm: [-0.15, 0, -0.2], aim: [0, 1, 0] },
 };
 
 /** The weapon's rotation inside the (resting) arm, so it points at `aim`. */
@@ -172,7 +175,7 @@ function Weapon({ kind }: { kind: string }) {
       // Belly forward and turned a little outwards so it reads from
       // behind too; tips and string towards the body.
       return (
-        <group rotation={[0, -Math.PI / 2 + 0.6, 0]}>
+        <group rotation={[0, -Math.PI / 2 - 0.6, 0]}>
           <Part
             geometry={G.torus}
             color={0x6b4423}
@@ -391,7 +394,7 @@ export function HeroFigure({
   helmet?: boolean;
   speed: () => number;
 }) {
-  const { body, left, right, leftArm, rightArm } = useWalk(speed);
+  const { body, left, right, freeArm, weaponArm } = useWalk(speed);
   const skin = SKIN_TONES[look.face % SKIN_TONES.length]!;
   const hair = HAIR_COLORS[look.hairColor % HAIR_COLORS.length]!;
   const cloth = CLASS_CLOTH[classId] ?? CLASS_CLOTH.lytsar!;
@@ -441,8 +444,8 @@ export function HeroFigure({
         <Part
           geometry={G.box}
           color={HERO.sash}
-          position={[-0.17, 0.67, 0.15]}
-          rotation={[0, 0, 0.12]}
+          position={[0.17, 0.67, 0.15]}
+          rotation={[0, 0, -0.12]}
           scale={[0.07, 0.24, 0.03]}
         />
         {/* Shirt: waist and chest, the collar slit with its embroidery */}
@@ -640,14 +643,14 @@ export function HeroFigure({
             ))}
           </>
         ) : null}
-        {/* Arms: the left swings; the right holds the weapon */}
-        <group position={[-0.32, 1.2, 0]} rotation={[0, 0, -0.12]}>
-          <group ref={leftArm}>
+        {/* Arms: the left (+x) swings; the right (-x) holds the weapon */}
+        <group position={[0.32, 1.2, 0]} rotation={[0, 0, 0.12]}>
+          <group ref={freeArm}>
             <Arm skin={skin} />
           </group>
         </group>
-        <group position={[0.32, 1.2, 0]} rotation={grip.arm}>
-          <group ref={rightArm}>
+        <group position={[-0.32, 1.2, 0]} rotation={grip.arm}>
+          <group ref={weaponArm}>
             <Arm skin={skin} />
             <group position={HAND} rotation={GRIP_ROTATION[kind]}>
               <Weapon kind={kind} />
