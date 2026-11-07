@@ -7,6 +7,7 @@ import { HAIR_COLORS, SKIN_TONES } from "../ui/palette";
 
 import { baked, useMarkMoving } from "./bake";
 import { CY, FACE, HEADS } from "./head-mesh";
+import { GoldenGate, SophiaBellTower, SophiaCathedral } from "./landmarks";
 
 /**
  * The slice's art kit: low-poly figures and props built from primitives in
@@ -3382,6 +3383,27 @@ const TILE_ART: Record<string, InstanceSpec[]> = {
       scale: [0.95, 0.6, 0.95],
     },
   ],
+  // A monastery's whitewashed stone wall under a green tiled coping.
+  w: [
+    {
+      geometry: G.box,
+      color: 0xf0ebdc,
+      offset: [0, 1.4, 0],
+      scale: [2.02, 2.8, 2.02],
+    },
+    {
+      geometry: G.box,
+      color: 0x4f8a72,
+      offset: [0, 2.95, 0],
+      scale: [2.1, 0.3, 2.1],
+    },
+    {
+      geometry: G.box,
+      color: 0xd9d3c2,
+      offset: [0, 0.3, 0],
+      scale: [2.06, 0.6, 2.06],
+    },
+  ],
   t: [
     {
       geometry: G.cone,
@@ -3456,11 +3478,29 @@ function TileInstances({
 
 /** Building tiles drawn as one building per connected block. */
 const BUILDINGS = new Set(["h", "c"]);
-/** Landmark tiles drawn one per tile (bell tower, stalls). */
+/** Small props drawn one per tile (market stalls). */
 const SINGLES: Record<string, ComponentType> = {
-  b: BellTower,
   m: Stall,
 };
+
+/** The bounding box, in tiles, of every tile of one kind; null if none. */
+function boundsOf(map: readonly string[], ch: string) {
+  let box: { x0: number; z0: number; x1: number; z1: number } | null = null;
+  map.forEach((row, z) => {
+    for (let x = 0; x < row.length; x++) {
+      if (row[x] !== ch) continue;
+      box = box
+        ? {
+            x0: Math.min(box.x0, x),
+            z0: Math.min(box.z0, z),
+            x1: Math.max(box.x1, x),
+            z1: Math.max(box.z1, z),
+          }
+        : { x0: x, z0: z, x1: x, z1: z };
+    }
+  });
+  return box as { x0: number; z0: number; x1: number; z1: number } | null;
+}
 
 /** Connected blocks of one building tile, as tile bounding boxes. */
 function buildingBlocks(map: readonly string[]) {
@@ -3514,385 +3554,64 @@ function Mat({ color, emissive }: { color: number; emissive?: number }) {
   );
 }
 
+/**
+ * A khata's measures, in world units: the figures stand at ACTOR_SCALE (1.35
+ * units to the metre), so the walls are about 2.3 m and the door 2 m by
+ * 1 m, tall and wide enough for the hero, hat and all, to walk through.
+ */
+const KHATA = {
+  wall: 3.1,
+  roof: 2.6,
+  doorW: 1.3,
+  doorH: 2.7,
+  windowW: 0.95,
+  windowH: 1.05,
+  sill: 1.35,
+};
+
 /** A whitewashed khata with a thatched gable roof and a door. */
 function House({ w, d }: { w: number; d: number }) {
   const alongX = w >= d;
+  const { wall, roof, doorW, doorH, windowW, windowH, sill } = KHATA;
   return (
     <group>
       <mesh
         geometry={G.box}
-        position={[0, 0.8, 0]}
-        scale={[w - 0.3, 1.6, d - 0.3]}
+        position={[0, wall / 2, 0]}
+        scale={[w - 0.3, wall, d - 0.3]}
       >
         <Mat color={0xd8d0bc} />
       </mesh>
       <mesh
         geometry={G.gable}
-        position={[0, 1.6, 0]}
+        position={[0, wall, 0]}
         rotation={[0, alongX ? 0 : Math.PI / 2, 0]}
-        scale={alongX ? [w + 0.2, 1.3, d + 0.4] : [d + 0.2, 1.3, w + 0.4]}
+        scale={alongX ? [w + 0.2, roof, d + 0.6] : [d + 0.2, roof, w + 0.6]}
       >
         <Mat color={0x8a7440} />
       </mesh>
+      {/* The door, a step off centre, under a timber lintel. */}
       <mesh
         geometry={G.box}
-        position={[0, 0.5, d / 2 - 0.12]}
-        scale={[0.6, 1, 0.08]}
+        position={[-w / 8, doorH / 2, d / 2 - 0.12]}
+        scale={[doorW, doorH, 0.08]}
       >
         <Mat color={0x4a3220} />
       </mesh>
       <mesh
         geometry={G.box}
-        position={[w / 4, 1, d / 2 - 0.12]}
-        scale={[0.45, 0.4, 0.08]}
+        position={[-w / 8, doorH + 0.08, d / 2 - 0.11]}
+        scale={[doorW + 0.3, 0.16, 0.1]}
+      >
+        <Mat color={0x6a4a2c} />
+      </mesh>
+      <mesh
+        geometry={G.box}
+        position={[w / 4, sill + windowH / 2, d / 2 - 0.12]}
+        scale={[windowW, windowH, 0.08]}
       >
         <Mat color={0x2a3a4a} emissive={0x1a1200} />
       </mesh>
-    </group>
-  );
-}
-
-const GOLD = 0xd9b04a;
-const GOLD_GLOW = 0x3a2600;
-const SOPHIA_WHITE = 0xf2eee2;
-const SOPHIA_GREEN = 0x4f8a72;
-
-/** An onion dome on a drum, with a cross: gold or the cathedral's green. */
-function Dome({ at, size, gold }: { at: Vec3; size: number; gold: boolean }) {
-  const color = gold ? GOLD : SOPHIA_GREEN;
-  return (
-    <group position={at} scale={size}>
-      <mesh geometry={G.cyl} position={[0, 0.5, 0]} scale={[0.9, 1, 0.9]}>
-        <Mat color={SOPHIA_WHITE} />
-      </mesh>
-      <mesh
-        geometry={G.sphere}
-        position={[0, 1.25, 0]}
-        scale={[1.05, 1.1, 1.05]}
-      >
-        <Mat color={color} emissive={gold ? GOLD_GLOW : undefined} />
-      </mesh>
-      <mesh geometry={G.cone} position={[0, 1.95, 0]} scale={[0.35, 0.5, 0.35]}>
-        <Mat color={color} emissive={gold ? GOLD_GLOW : undefined} />
-      </mesh>
-      <mesh geometry={G.box} position={[0, 2.45, 0]} scale={[0.06, 0.55, 0.06]}>
-        <Mat color={GOLD} emissive={GOLD_GLOW} />
-      </mesh>
-      <mesh geometry={G.box} position={[0, 2.5, 0]} scale={[0.3, 0.06, 0.06]}>
-        <Mat color={GOLD} emissive={GOLD_GLOW} />
-      </mesh>
-    </group>
-  );
-}
-
-/**
- * St. Sophia's Cathedral: a white stepped body under green roofs, a tall
- * golden central dome, four golden domes round it and eight green cupolas
- * on the outer corners and sides (thirteen in all, as in Kyiv).
- */
-function Church({ w, d }: { w: number; d: number }) {
-  const outer: Vec3[] = [];
-  for (const sx of [-1, 1])
-    for (const sz of [-1, 1]) {
-      outer.push([sx * (w / 2 - 0.9), 2.6, sz * (d / 2 - 0.9)]);
-      outer.push([sx * (w / 2 - 0.9), 2.6, 0]);
-    }
-  // Two of the eight sit front and back on the middle line.
-  outer.splice(1, 1, [0, 2.6, -(d / 2 - 0.9)]);
-  outer.splice(3, 1, [0, 2.6, d / 2 - 0.9]);
-  return (
-    <group>
-      {/* Lower galleries, then the raised core. */}
-      <mesh
-        geometry={G.box}
-        position={[0, 1.3, 0]}
-        scale={[w - 0.3, 2.6, d - 0.3]}
-      >
-        <Mat color={SOPHIA_WHITE} />
-      </mesh>
-      <mesh
-        geometry={G.box}
-        position={[0, 2.68, 0]}
-        scale={[w - 0.1, 0.16, d - 0.1]}
-      >
-        <Mat color={SOPHIA_GREEN} />
-      </mesh>
-      <mesh
-        geometry={G.box}
-        position={[0, 3.6, 0]}
-        scale={[w * 0.55, 1.9, d * 0.55]}
-      >
-        <Mat color={SOPHIA_WHITE} />
-      </mesh>
-      <mesh
-        geometry={G.box}
-        position={[0, 4.6, 0]}
-        scale={[w * 0.6, 0.16, d * 0.6]}
-      >
-        <Mat color={SOPHIA_GREEN} />
-      </mesh>
-      {/* Pilasters and windows on the front. */}
-      {[-0.36, -0.12, 0.12, 0.36].map((k) => (
-        <mesh
-          key={k}
-          geometry={G.box}
-          position={[k * w, 1.4, d / 2 - 0.12]}
-          scale={[0.5, 1.1, 0.06]}
-        >
-          <Mat color={0x2e3a44} emissive={0x0a0806} />
-        </mesh>
-      ))}
-      <mesh
-        geometry={G.box}
-        position={[0, 0.95, d / 2 - 0.1]}
-        scale={[1.1, 1.9, 0.1]}
-      >
-        <Mat color={0x4a3220} />
-      </mesh>
-      <Dome at={[0, 4.6, 0]} size={1.6} gold />
-      {[
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
-        [1, 1],
-      ].map(([sx, sz]) => (
-        <Dome
-          key={`${sx}${sz}`}
-          at={[sx! * w * 0.2, 4.6, sz! * d * 0.2]}
-          size={0.85}
-          gold
-        />
-      ))}
-      {outer.map((p, i) => (
-        <Dome key={i} at={p} size={0.6} gold={false} />
-      ))}
-    </group>
-  );
-}
-
-/** St. Sophia's bell tower: white and green tiers under a golden dome. */
-function BellTower() {
-  const tiers: [number, number, number][] = [
-    // width, height, colour
-    [1.9, 3, SOPHIA_WHITE],
-    [1.6, 2.4, SOPHIA_GREEN],
-    [1.35, 2, SOPHIA_WHITE],
-    [1.1, 1.6, SOPHIA_GREEN],
-  ];
-  let y = 0;
-  return (
-    <group>
-      {tiers.map(([wd, h, c], i) => {
-        const at = y + h / 2;
-        y += h;
-        return (
-          <group key={i}>
-            <mesh geometry={G.box} position={[0, at, 0]} scale={[wd, h, wd]}>
-              <Mat color={c} />
-            </mesh>
-            {/* An arched opening on each face of the upper tiers. */}
-            {i > 0 ? (
-              <mesh
-                geometry={G.box}
-                position={[0, at, wd / 2 + 0.01]}
-                scale={[wd * 0.4, h * 0.55, 0.04]}
-              >
-                <Mat color={0x2a2620} />
-              </mesh>
-            ) : null}
-          </group>
-        );
-      })}
-      <Dome at={[0, y, 0]} size={0.9} gold />
-    </group>
-  );
-}
-
-/**
- * The Golden Gates, after the reconstructed gate in Kyiv: a brick tower
- * with the road through its arch, crenellated steps up to the gate church
- * (three arched gables and a golden dome), and earth ramparts running off
- * both sides, grassed on the slope, faced with stepped log walls and topped
- * by timber blockhouses. `w` runs along the road, `d` across it.
- */
-function GoldenGate({ w, d }: { w: number; d: number }) {
-  const BRICK = 0xc66a48;
-  const BRICK_DARK = 0xa8553a;
-  const WOOD = 0x8a5a32;
-  const WOOD_DARK = 0x6b4430;
-  const GRASS = 0x5a7a2e;
-  /** The tower's size: along the road, across it, and to its parapet. */
-  // The tower stands well proud of the ramparts on both faces, as in Kyiv.
-  const tx = w + 2.4;
-  const tz = 4.4;
-  const th = 6;
-  const passage = 2.2;
-  /** The rampart runs from the tower's side to the end of the block. */
-  const inner = tz / 2;
-  const outer = d / 2;
-  const run = outer - inner;
-  const rise = 4.7;
-  const slope = Math.atan2(rise, run);
-  /** The ramparts' thickness along the road: the town wall's. */
-  const ramp = w * 0.6;
-  const merlons = (len: number, n: number) =>
-    Array.from({ length: n }, (_, i) => -len / 2 + (len * (i + 0.5)) / n);
-  return (
-    <group>
-      {/* The tower, its parapet steps and merlons. */}
-      {/* Two piers either side of the passage, the vault over it. */}
-      {[-1, 1].map((s) => (
-        <mesh
-          key={s}
-          geometry={G.box}
-          position={[0, th / 2, (s * (tz / 2 + passage / 2)) / 2]}
-          scale={[tx, th, tz / 2 - passage / 2]}
-        >
-          <Mat color={BRICK} />
-        </mesh>
-      ))}
-      <mesh
-        geometry={G.box}
-        position={[0, (th + 3.2) / 2, 0]}
-        scale={[tx, th - 3.2, passage]}
-      >
-        <Mat color={BRICK} />
-      </mesh>
-      <mesh
-        geometry={G.box}
-        position={[0, th + 0.7, 0]}
-        scale={[tx * 0.8, 1.4, tz * 0.78]}
-      >
-        <Mat color={BRICK} />
-      </mesh>
-      {merlons(tz, 5).map((z) =>
-        [-1, 1].map((s) => (
-          <mesh
-            key={`x${z}${s}`}
-            geometry={G.box}
-            position={[(s * tx) / 2 - s * 0.2, th + 0.25, z]}
-            scale={[0.4, 0.5, 0.45]}
-          >
-            <Mat color={BRICK} />
-          </mesh>
-        )),
-      )}
-      {/* The arch through the tower, on both faces along the road. */}
-      {[-1, 1].map((s) => (
-        <group
-          key={s}
-          position={[s * (tx / 2 + 0.02), 0, 0]}
-          rotation={[0, (s * Math.PI) / 2, 0]}
-        >
-          <mesh position={[0, 3.2, 0]} scale={[1.3, 1.3, 1]}>
-            <circleGeometry args={[passage / 2 + 0.25, 18, 0, Math.PI]} />
-            <meshBasicMaterial color={BRICK_DARK} side={THREE.DoubleSide} />
-          </mesh>
-          <mesh position={[0, 3.2, 0.01]}>
-            <circleGeometry args={[passage / 2, 16, 0, Math.PI]} />
-            <meshBasicMaterial color={0x2a2420} side={THREE.DoubleSide} />
-          </mesh>
-        </group>
-      ))}
-      {/* The gate church: a brick block, three arched gables a side. */}
-      <group position={[0, th + 1.4, 0]}>
-        <mesh geometry={G.box} position={[0, 0.9, 0]} scale={[2.6, 1.8, 2.6]}>
-          <Mat color={BRICK} />
-        </mesh>
-        {[-1, 1].flatMap((s) =>
-          [-0.85, 0, 0.85].map((k) => (
-            <group key={`${s}${k}`}>
-              <mesh
-                geometry={G.cyl}
-                position={[s * 1.05, 1.8, k]}
-                rotation={[0, 0, Math.PI / 2]}
-                scale={[0.86, 0.55, 0.86]}
-              >
-                <Mat color={BRICK} />
-              </mesh>
-              <mesh
-                geometry={G.cyl}
-                position={[k, 1.8, s * 1.05]}
-                rotation={[Math.PI / 2, 0, 0]}
-                scale={[0.86, 0.55, 0.86]}
-              >
-                <Mat color={BRICK} />
-              </mesh>
-            </group>
-          )),
-        )}
-        <Dome at={[0, 2.1, 0]} size={0.85} gold />
-      </group>
-      {/* The ramparts, one each side of the tower. */}
-      {[-1, 1].map((s) => (
-        <group key={s}>
-          {/* The grassed slope. */}
-          <mesh
-            geometry={G.box}
-            position={[0, rise / 2 + 0.2, s * (inner + run / 2)]}
-            rotation={[s * slope, 0, 0]}
-            scale={[ramp, 0.3, Math.hypot(run, rise)]}
-          >
-            <Mat color={GRASS} />
-          </mesh>
-          {/* Stepped log walls on both ends, closing the earth. */}
-          {[-1, 1].map((e) =>
-            [0, 1, 2, 3].map((k) => {
-              const step = run / 4;
-              const h = rise + 0.4 - k * (rise / 4);
-              return (
-                <mesh
-                  key={`${e}${k}`}
-                  geometry={G.box}
-                  position={[
-                    e * (ramp / 2 - 0.25),
-                    h / 2,
-                    s * (inner + step * (k + 0.5)),
-                  ]}
-                  scale={[0.5, h, step + 0.02]}
-                >
-                  <Mat color={k % 2 ? WOOD : WOOD_DARK} />
-                </mesh>
-              );
-            }),
-          )}
-          {/* A timber blockhouse on top, its upper storey overhanging. */}
-          <group position={[0, rise, s * (inner + 1)]}>
-            <mesh
-              geometry={G.box}
-              position={[0, 0.8, 0]}
-              scale={[ramp - 0.2, 1.6, 1.8]}
-            >
-              <Mat color={WOOD} />
-            </mesh>
-            <mesh
-              geometry={G.box}
-              position={[0, 2.1, s * 0.15]}
-              scale={[ramp + 0.2, 1, 2.2]}
-            >
-              <Mat color={WOOD_DARK} />
-            </mesh>
-            {/* Loopholes. */}
-            {[-ramp / 4, 0, ramp / 4].map((x) => (
-              <mesh
-                key={x}
-                geometry={G.box}
-                position={[x, 2.1, s * 1.27]}
-                scale={[0.45, 0.14, 0.04]}
-              >
-                <Mat color={0x1a120c} />
-              </mesh>
-            ))}
-            <mesh
-              geometry={G.gable}
-              position={[0, 2.6, s * 0.15]}
-              scale={[ramp + 0.5, 0.8, 2.6]}
-            >
-              <Mat color={0x4a3424} />
-            </mesh>
-          </group>
-        </group>
-      ))}
     </group>
   );
 }
@@ -3953,47 +3672,45 @@ function Stall() {
   );
 }
 
-function BuildingsModel({ map }: { map: readonly string[] }) {
+function BuildingsModel({
+  map,
+  ground,
+}: {
+  map: readonly string[];
+  ground?: number;
+}) {
   const blocks = useMemo(() => buildingBlocks(map), [map]);
-  const { singles, gate } = useMemo(() => {
+  const { singles, gate, tower } = useMemo(() => {
     const singles: { ch: string; x: number; z: number }[] = [];
-    // The gate's two halves, either side of the road, are one landmark.
-    const gateTiles: [number, number][] = [];
     map.forEach((row, z) => {
       for (let x = 0; x < row.length; x++) {
         const ch = row[x]!;
         if (SINGLES[ch]) singles.push({ ch, x, z });
-        if (ch === "g") gateTiles.push([x, z]);
       }
     });
-    const xs = gateTiles.map(([x]) => x);
-    const zs = gateTiles.map(([, z]) => z);
-    const gate =
-      gateTiles.length > 0
-        ? {
-            x0: Math.min(...xs),
-            x1: Math.max(...xs),
-            z0: Math.min(...zs),
-            z1: Math.max(...zs),
-          }
-        : null;
-    return { singles, gate };
+    // The gate's tiles, either side of the road and its ramparts, and the
+    // bell tower's either side of its passage, are one landmark each.
+    return { singles, gate: boundsOf(map, "g"), tower: boundsOf(map, "b") };
   }, [map]);
+  const centre = (b: { x0: number; z0: number; x1: number; z1: number }) =>
+    [((b.x0 + b.x1) / 2) * TILE, 0, ((b.z0 + b.z1) / 2) * TILE] as const;
+  // The road through a gate runs across its long side.
+  const gateAlongZ = gate ? gate.x1 - gate.x0 >= gate.z1 - gate.z0 : false;
+  const towerAlongX = tower
+    ? map[Math.round((tower.z0 + tower.z1) / 2)]?.[tower.x0] !== "b"
+    : false;
   return (
     <>
       {blocks.map((b) => {
         const w = (b.x1 - b.x0 + 1) * TILE;
         const d = (b.z1 - b.z0 + 1) * TILE;
         return (
-          <group
-            key={`${b.ch}${b.x0},${b.z0}`}
-            position={[
-              ((b.x0 + b.x1) / 2) * TILE,
-              0,
-              ((b.z0 + b.z1) / 2) * TILE,
-            ]}
-          >
-            {b.ch === "c" ? <Church w={w} d={d} /> : <House w={w} d={d} />}
+          <group key={`${b.ch}${b.x0},${b.z0}`} position={centre(b)}>
+            {b.ch === "c" ? (
+              <SophiaCathedral w={w} d={d} />
+            ) : (
+              <House w={w} d={d} />
+            )}
           </group>
         );
       })}
@@ -4006,17 +3723,26 @@ function BuildingsModel({ map }: { map: readonly string[] }) {
         );
       })}
       {gate ? (
+        // Built with the road along z and the outside at +z; turned a
+        // quarter so the outside faces +x where the road runs along x.
         <group
-          position={[
-            ((gate.x0 + gate.x1) / 2) * TILE,
-            0,
-            ((gate.z0 + gate.z1) / 2) * TILE,
-          ]}
+          position={centre(gate)}
+          rotation={[0, gateAlongZ ? 0 : Math.PI / 2, 0]}
         >
           <GoldenGate
-            w={(gate.x1 - gate.x0 + 1) * TILE}
-            d={(gate.z1 - gate.z0 + 1) * TILE}
+            w={
+              ((gateAlongZ ? gate.x1 - gate.x0 : gate.z1 - gate.z0) + 1) * TILE
+            }
+            d={
+              ((gateAlongZ ? gate.z1 - gate.z0 : gate.x1 - gate.x0) + 1) * TILE
+            }
+            ground={ground}
           />
+        </group>
+      ) : null}
+      {tower ? (
+        <group position={centre(tower)}>
+          <SophiaBellTower alongX={towerAlongX} />
         </group>
       ) : null}
     </>
@@ -4026,10 +3752,13 @@ function BuildingsModel({ map }: { map: readonly string[] }) {
 export function Tiles({
   map,
   town,
+  ground,
 }: {
   map: readonly string[];
   /** Towns draw their wall tiles as timber fortress walls instead. */
   town?: boolean;
+  /** The zone's ground colour, for earthworks that rise from it. */
+  ground?: number;
 }) {
   const byKind = useMemo(() => {
     const out = new Map<string, [number, number][]>();
@@ -4049,7 +3778,7 @@ export function Tiles({
           <TileInstances key={`${ch}${i}`} spec={spec} cells={cells} />
         )),
       )}
-      <Buildings map={map} />
+      <Buildings map={map} ground={ground} />
     </>
   );
 }

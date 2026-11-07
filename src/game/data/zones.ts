@@ -8,11 +8,16 @@ import type { ZoneDef } from "../sim/types";
  *   .  ground          =  road (walkable)        ,  tall grass (walkable)
  *   #  tree            r  rock                   ~  water
  *   h  house           W  palisade wall          c  church
+ *   T  wall tower (a town wall tile crowned by a tower)
  *   t  tent            f  campfire (walkable glow)
  *   g  Golden Gates    b  bell tower             m  market stall
+ *   w  monastery wall (whitewashed stone)
+ *
+ * North is row 0, up the screen: towns follow the real map's layout.
  */
 export const BLOCKING = new Set([
   "#",
+  "T",
   "r",
   "~",
   "h",
@@ -22,6 +27,7 @@ export const BLOCKING = new Set([
   "g",
   "b",
   "m",
+  "w",
 ]);
 
 /** A small drawing kit so the maps stay readable as code. */
@@ -91,51 +97,226 @@ class MapBuilder {
     return this;
   }
 
+  get(x: number, z: number): string | undefined {
+    return this.rows[z]?.[x];
+  }
+
+  /**
+   * A line of tiles between two points, straight or at exactly 45°: a
+   * diagonal run steps corner to corner, which the town walls draw as one
+   * slanting wall.
+   */
+  line(x0: number, z0: number, x1: number, z1: number, ch: string): this {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(z1 - z0));
+    for (let i = 0; i <= n; i++)
+      this.set(x0 + Math.sign(x1 - x0) * i, z0 + Math.sign(z1 - z0) * i, ch);
+    return this;
+  }
+
+  /** A closed outline through the points, each leg straight or at 45°. */
+  outline(points: readonly (readonly [number, number])[], ch: string): this {
+    points.forEach(([x, z], i) => {
+      const [nx, nz] = points[(i + 1) % points.length]!;
+      this.line(x, z, nx, nz, ch);
+    });
+    return this;
+  }
+
+  /**
+   * The tiles reachable from (x, z) without crossing `walls`, as "x,z"
+   * keys: the outside of a closed outline, from a corner.
+   */
+  reach(x: number, z: number, walls: ReadonlySet<string>): Set<string> {
+    const seen = new Set<string>();
+    const stack: [number, number][] = [[x, z]];
+    while (stack.length > 0) {
+      const [cx, cz] = stack.pop()!;
+      const key = `${cx},${cz}`;
+      const ch = this.get(cx, cz);
+      if (ch === undefined || seen.has(key) || walls.has(ch)) continue;
+      seen.add(key);
+      stack.push([cx + 1, cz], [cx - 1, cz], [cx, cz + 1], [cx, cz - 1]);
+    }
+    return seen;
+  }
+
   build(): string[] {
     return this.rows.map((row) => row.join(""));
   }
 }
 
+/**
+ * Kyiv's Upper Town, laid out north to south as on the real map: the road
+ * from St. Andrew's hill (north) runs down Volodymyrska past Sophia Square
+ * and the St. Sophia monastery, through a quarter of houses and gardens,
+ * to the Golden Gates in the south rampart. The town wall is a star fort:
+ * straight curtains between pointed bastions, a tower on every point.
+ * Outside the gates a moat and a few huts, as in the old engravings; the
+ * road out to the wilds leaves from there.
+ */
+export const KYIV = {
+  width: 39,
+  height: 60,
+  /** The south rampart's row, and the road's column through the gates. */
+  wallZ: 49,
+  gateX: 14,
+} as const;
+
+/** The star fort's outline, clockwise from the north-west bastion. */
+const KYIV_WALL: readonly (readonly [number, number])[] = [
+  [5, 2],
+  [8, 5],
+  [16, 5],
+  [19, 2],
+  [22, 5],
+  [30, 5],
+  [33, 2],
+  [36, 5],
+  [33, 8],
+  [33, 16],
+  [36, 19],
+  [33, 22],
+  [33, 30],
+  [36, 33],
+  [33, 36],
+  [33, 46],
+  [36, 49],
+  [33, 52],
+  [30, 49],
+  [8, 49],
+  [5, 52],
+  [2, 49],
+  [5, 46],
+  [5, 36],
+  [2, 33],
+  [5, 30],
+  [5, 22],
+  [2, 19],
+  [5, 16],
+  [5, 8],
+  [2, 5],
+];
+
+/** The bastions' points, each crowned by a tower. */
+const KYIV_TOWERS: readonly (readonly [number, number])[] = [
+  [5, 2],
+  [2, 5],
+  [19, 2],
+  [33, 2],
+  [36, 5],
+  [36, 19],
+  [36, 33],
+  [36, 49],
+  [33, 52],
+  [5, 52],
+  [2, 49],
+  [2, 33],
+  [2, 19],
+];
+
 function kyivMap(): string[] {
-  const m = new MapBuilder(30, 22).border("W");
-  // Main roads: a square in the middle and the road to the east gate.
-  m.rect(4, 11, 25, 11, "=").rect(14, 4, 14, 18, "=").rect(25, 11, 29, 11, "=");
-  m.rect(11, 8, 17, 14, "=");
-  // St. Sophia's, north of the square.
-  m.rect(12, 2, 16, 5, "c");
-  // Houses.
+  const { width, height, wallZ, gateX } = KYIV;
+  const m = new MapBuilder(width, height);
+  m.outline(KYIV_WALL, "W");
+  for (const [x, z] of KYIV_TOWERS) m.set(x, z, "T");
+  // Outside the walls: a cleared strip under them, then woods.
+  const outside = m.reach(0, 0, new Set(["W", "T"]));
+  const rng = new Rng(43);
+  for (const key of outside) {
+    const [x, z] = key.split(",").map(Number) as [number, number];
+    let nearWall = false;
+    for (let dz = -1; dz <= 1; dz++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const ch = m.get(x + dx, z + dz);
+        if (ch === "W" || ch === "T") nearWall = true;
+      }
+    m.set(x, z, nearWall || rng.next() < 0.25 ? "." : "#");
+  }
+
+  // Outside the gates: a moat between the southern bastions, huts, and
+  // the road out through the woods.
+  for (let x = 1; x < width - 1; x++)
+    for (let z = wallZ + 2; z <= wallZ + 3; z++)
+      if (outside.has(`${x},${z}`) && x > 5 && x < 33) m.set(x, z, "~");
+  m.rect(gateX - 2, wallZ + 4, gateX + 2, height - 4, ".");
+  m.rect(8, wallZ + 5, 10, wallZ + 6, "h").rect(
+    19,
+    wallZ + 5,
+    21,
+    wallZ + 6,
+    "h",
+  );
+  m.rect(0, height - 3, width - 1, height - 1, "#");
+  m.rect(gateX, wallZ - 1, gateX, height - 1, "=");
+
+  // Streets. Volodymyrska climbs north from the gates, turns east below
+  // the monastery and runs north past Sophia Square to the wall under St.
+  // Andrew's hill; Velyka Zhytomyrska crosses the north quarter, and a
+  // lane crosses the south one.
+  m.rect(gateX, 33, gateX, wallZ - 1, "=")
+    .rect(gateX, 33, 24, 33, "=")
+    .rect(24, 6, 24, 33, "=")
+    .rect(6, 10, 32, 10, "=")
+    .rect(6, 40, 32, 40, "=");
+  // Sophia Square, cobbled, east of the bell tower.
+  m.rect(24, 16, 32, 29, "=");
+
+  // Houses: the north quarter, round the square, and the south quarter
+  // between the monastery and the gates.
   for (const [x, z] of [
-    [3, 3],
-    [7, 3],
-    [20, 3],
-    [24, 3],
-    [3, 15],
-    [7, 16],
-    [20, 15],
-    [24, 16],
-    [3, 8],
-    [24, 7],
+    [9, 7],
+    [13, 6],
+    [17, 7],
+    [27, 7],
+    [26, 11],
+    [29, 13],
+    [7, 34],
+    [11, 36],
+    [17, 35],
+    [21, 36],
+    [26, 31],
+    [29, 34],
+    [26, 37],
+    [7, 38],
+    [17, 38],
+    [8, 42],
+    [20, 42],
+    [24, 41],
+    [28, 42],
+    [24, 45],
+    [28, 46],
   ] as const)
     m.rect(x, z, x + 2, z + 1, "h");
-  m.scatter("#", 18, 11, { x0: 1, z0: 1, x1: 28, z1: 20 });
-  m.clear(14, 11, 2, "=");
-  for (const [x, z] of [
-    [10, 9],
-    [18, 9],
-    [10, 13],
-    [18, 13],
-    [21, 11],
-    [8, 11],
-  ] as const)
-    m.clear(x, z, 1);
-  m.rect(26, 10, 29, 12, "=").set(29, 10, "W").set(29, 12, "W");
-  // The Golden Gates stand in the east wall; the road runs out through
-  // their arch, and their ramparts carry the wall on either side.
-  m.rect(28, 8, 29, 10, "g").rect(28, 12, 29, 14, "g");
-  // St. Sophia's bell tower, at the road's end before the cathedral.
-  m.set(14, 6, "b");
-  // Market stalls by the merchant and on the south road.
-  m.set(19, 14, "m").set(20, 14, "m").set(11, 16, "m").set(12, 16, "m");
+  m.scatter("#", 12, 12, { x0: 6, z0: 6, x1: 32, z1: 12 });
+  m.scatter("#", 34, 13, { x0: 6, z0: 32, x1: 32, z1: wallZ - 2 });
+
+  // The St. Sophia monastery: a whitewashed wall round the cathedral
+  // (west) and the bell tower over its east gate, onto the square.
+  m.rect(7, 13, 22, 13, "w")
+    .rect(7, 31, 22, 31, "w")
+    .rect(7, 13, 7, 31, "w")
+    .rect(22, 13, 22, 31, "w");
+  m.rect(8, 14, 21, 30, ".");
+  m.rect(9, 15, 19, 23, "c");
+  m.rect(21, 21, 23, 23, "b").rect(20, 22, 24, 22, "=");
+  // The south gate in the wall, and paths across the yard.
+  m.rect(gateX, 25, gateX, 32, "=").rect(10, 25, 20, 25, "=");
+  m.rect(20, 22, 20, 25, "=");
+  m.scatter("#", 16, 14, { x0: 8, z0: 26, x1: 21, z1: 30 });
+  m.scatter("#", 6, 15, { x0: 8, z0: 14, x1: 21, z1: 14 });
+  m.rect(gateX - 1, 27, gateX + 1, 29, ".").rect(gateX, 25, gateX, 32, "=");
+
+  // Market stalls by the merchant on the square.
+  m.set(30, 27, "m").set(31, 27, "m");
+  // Zolotovoritskyi garden: trees inside the gates, the road kept clear.
+  m.scatter("#", 14, 16, { x0: 9, z0: 43, x1: 19, z1: wallZ - 2 });
+  m.rect(gateX - 1, 43, gateX + 1, wallZ - 1, ".");
+  m.rect(gateX, 33, gateX, wallZ - 1, "=").rect(6, 40, 32, 40, "=");
+
+  // The Golden Gates stand in the south rampart, the road through their
+  // arch; the earth banks either side are part of the landmark.
+  m.rect(gateX - 5, wallZ - 1, gateX + 5, wallZ + 1, "g");
+  m.rect(gateX, wallZ - 1, gateX, wallZ + 3, "=");
   return m.build();
 }
 
@@ -238,19 +419,61 @@ export const ZONES: readonly ZoneDef[] = [
     town: true,
     danger: "green",
     map: kyivMap(),
-    spawn: { x: 14, z: 12 },
+    spawn: { x: 27, z: 24 },
+    // Sophia Square, in front of the bell tower.
     npcs: [
-      { npcId: "sirko", x: 14, z: 10 },
-      { npcId: "olha", x: 10, z: 9 },
-      { npcId: "sviatoslav", x: 18, z: 9 },
-      { npcId: "karmaliuk", x: 10, z: 13 },
-      { npcId: "merchant", x: 18, z: 13 },
-      { npcId: "stash", x: 21, z: 11 },
-      { npcId: "healer", x: 8, z: 11 },
+      { npcId: "sirko", x: 27, z: 21 },
+      { npcId: "olha", x: 25, z: 18 },
+      { npcId: "sviatoslav", x: 29, z: 18 },
+      { npcId: "karmaliuk", x: 25, z: 27 },
+      { npcId: "merchant", x: 30, z: 26 },
+      { npcId: "stash", x: 31, z: 23 },
+      { npcId: "healer", x: 28, z: 28 },
     ],
     packs: [],
     interactables: [],
-    exits: [{ x: 29, z: 11, to: "vyshhorod", spawn: { x: 3, z: 17 } }],
+    exits: [
+      {
+        x: KYIV.gateX,
+        z: KYIV.height - 3,
+        to: "vyshhorod",
+        spawn: { x: 3, z: 17 },
+      },
+    ],
+    landmarks: [
+      {
+        id: "golden_gate",
+        name: { en: "The Golden Gates", uk: "Золоті ворота" },
+        x: KYIV.gateX,
+        z: KYIV.wallZ,
+        radius: 13,
+        zoom: 2.9,
+        top: 23,
+        // St. Sophia's domes and bell tower over the gate, up the street.
+        vistas: [
+          { x: 13.4, z: 19, top: 22.5 },
+          { x: 22, z: 22, top: 32 },
+        ],
+      },
+      {
+        id: "sophia",
+        name: { en: "St. Sophia's Cathedral", uk: "Софійський собор" },
+        x: 14,
+        z: 19,
+        radius: 13,
+        zoom: 2.6,
+        top: 22.5,
+      },
+      {
+        id: "sophia_bell_tower",
+        name: { en: "St. Sophia's bell tower", uk: "Дзвіниця Софії" },
+        x: 22,
+        z: 22,
+        radius: 8,
+        zoom: 2.3,
+        top: 32,
+      },
+    ],
     palette: { ground: 0x6a6840, fog: 0x2a2418, sky: 0x2a2218 },
   },
   {
@@ -395,7 +618,7 @@ export const ZONES: readonly ZoneDef[] = [
       },
     ],
     exits: [
-      { x: 0, z: 17, to: "kyiv", spawn: { x: 26, z: 11 } },
+      { x: 0, z: 17, to: "kyiv", spawn: { x: KYIV.gateX, z: KYIV.height - 5 } },
       { x: 17, z: 0, to: "salt_road", spawn: { x: 21, z: 26 } },
     ],
     palette: { ground: 0x6c7a3c, fog: 0x24301e, sky: 0x1f2a1a },

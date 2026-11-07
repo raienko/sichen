@@ -55,6 +55,7 @@ const en = {
   "menu.tutorial": "Tutorial hints",
   "menu.fullscreen": "Fullscreen",
   "menu.fps": "FPS meter",
+  "menu.unstuck": "Unstuck",
   "menu.homeScreen":
     "For fullscreen on iPhone: Share → Add to Home Screen, then play from the icon.",
   "hint.gotIt": "Got it",
@@ -180,6 +181,7 @@ const en = {
   "toast.learned": "Learned {{name}}",
   "toast.loot": "{{name}}",
   "toast.zone": "{{name}}",
+  "toast.unstuck": "Back on open ground",
   "rarity.normal": "Normal",
   "rarity.magic": "Magic",
   "rarity.rare": "Rare",
@@ -301,6 +303,7 @@ const uk: Record<StringKey, string> = {
   "menu.tutorial": "Підказки",
   "menu.fullscreen": "На весь екран",
   "menu.fps": "Лічильник FPS",
+  "menu.unstuck": "Вибратися",
   "menu.homeScreen":
     "Щоб грати на весь екран на iPhone: Поділитися → На початковий екран, і запускай з іконки.",
   "hint.gotIt": "Зрозумів",
@@ -426,6 +429,7 @@ const uk: Record<StringKey, string> = {
   "toast.learned": "Вивчено: {{name}}",
   "toast.loot": "{{name}}",
   "toast.zone": "{{name}}",
+  "toast.unstuck": "Знову на відкритому місці",
   "rarity.normal": "Звичайний",
   "rarity.magic": "Магічний",
   "rarity.rare": "Рідкісний",

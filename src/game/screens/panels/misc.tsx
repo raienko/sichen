@@ -256,6 +256,13 @@ export function MenuPanel({
           onPress={() => fpsMeterSetting.setValue(!fpsMeter)}
         />
         <GButton
+          icon="life-ring"
+          accessibilityLabel={t("menu.unstuck")}
+          compact
+          style={styles.menuAction}
+          onPress={() => actions.unstuck()}
+        />
+        <GButton
           icon="floppy-disk"
           accessibilityLabel={t("menu.save")}
           compact

@@ -316,6 +316,32 @@ export type ZoneDef = {
     spawn: { x: number; z: number };
   }[];
   palette: { ground: number; fog: number; sky: number };
+  /**
+   * Sights that pull the camera out as the hero comes near, so their scale
+   * reads: `zoom` multiplies the camera's distance at the centre, easing
+   * back to 1 at `radius` tiles. Named in a toast on the way in.
+   */
+  landmarks?: readonly LandmarkDef[];
+};
+
+export type LandmarkDef = {
+  id: string;
+  name: Localized;
+  x: number;
+  z: number;
+  radius: number;
+  zoom: number;
+  /**
+   * Its height, world units: in front of it the camera stands back and
+   * tips up as far as it takes to keep the top in view, hero and all.
+   */
+  top?: number;
+  /**
+   * Far sights seen over this one from in front of it, kept in view the
+   * same way with the fog pushed back past them: (x, z) in tiles, `top`
+   * the height in world units.
+   */
+  vistas?: readonly { x: number; z: number; top: number }[];
 };
 
 // ---------------------------------------------------------------- quests

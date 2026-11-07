@@ -5,11 +5,18 @@ import {
   type RootState,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { Fragment, useEffect, useRef } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+} from "react";
 import { StyleSheet, View } from "react-native";
 import * as THREE from "three";
 
 import { getBase, getEnemy, getNpc, getZone } from "../data";
+import type { LandmarkDef, ZoneDef } from "../sim/types";
 import * as actions from "../state/actions";
 import { runtime } from "../state/runtime";
 import type { SaveData } from "../state/save";
@@ -27,7 +34,7 @@ import {
   TILE,
 } from "./art-kit";
 import { distance, step, walkable } from "./movement";
-import { heroOnScreen, Nature } from "./nature";
+import { fadeAroundHero, heroOnScreen, Nature } from "./nature";
 import { TownEdge, Walls } from "./walls";
 import {
   AdaptiveDpr,
@@ -46,6 +53,15 @@ const CONTACT = 0.95;
 /** Raised behind the hero, about 48° down: more from behind than above. */
 const CAMERA = new THREE.Vector3(0, 10, 9).normalize();
 /**
+ * Near a landmark the camera drops to about 30° and looks up a little, so
+ * a tall front reads as tall, as in the old engravings.
+ */
+const CAMERA_LOW = new THREE.Vector3(0, 6, 10).normalize();
+const LOOK_UP = 5.5;
+/** Looking almost straight down, for the hero just behind a landmark. */
+const CAMERA_TOP = new THREE.Vector3(0, 10, 3).normalize();
+const CAMERA_DIR = new THREE.Vector3();
+/**
  * The camera aims this far ahead of the hero (up the screen), so the hero
  * stands in the lower middle with the way ahead in view.
  */
@@ -59,6 +75,97 @@ const FOV = 42;
  * distances are unchanged.
  */
 const ACTOR_SCALE = 1.35;
+/** How fast the camera eases out near a landmark and back in, per second. */
+const LANDMARK_EASE = 1.4;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const smooth = (v: number) => {
+  const t = clamp01(v);
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * How the zone's landmarks move the camera, for the hero at (x, z).
+ *
+ * In front of one (south of it: the camera looks north) the camera pulls
+ * out by up to the landmark's `zoom` and drops lower, so the whole front
+ * fits: `pull` 0-1, full inside 45% of its radius, none past it. Just
+ * behind one (north of it), while the camera, `behind` tiles south of the
+ * hero, would sit inside the building, it rises to look almost straight
+ * down instead: `over` 0-1. Further north the hero stays in the usual
+ * view, and the building dissolves round him where it hides him.
+ */
+function landmarkPull(zone: ZoneDef, x: number, z: number, behind = 4) {
+  let best: {
+    zoom: number;
+    pull: number;
+    over: number;
+    mark: LandmarkDef | null;
+  } = { zoom: 1, pull: 0, over: 0, mark: null };
+  let over = 0;
+  for (const mark of zone.landmarks ?? []) {
+    const d = distance(x, z, mark.x, mark.z);
+    const near = smooth((mark.radius - d) / (mark.radius * 0.55));
+    const north = mark.z - z;
+    const pull = near * smooth((1 - north) / 2);
+    const beside = clamp01(1 - (Math.abs(x - mark.x) - mark.radius * 0.45) / 2);
+    over = Math.max(
+      over,
+      smooth(north / 1.5) * (1 - smooth((north - behind - 2.5) / 1.5)) * beside,
+    );
+    const zoom = 1 + (mark.zoom - 1) * pull;
+    if (zoom > best.zoom) best = { zoom, pull, over: 0, mark };
+  }
+  return { ...best, over };
+}
+
+const HALF_FOV = ((FOV / 2) * Math.PI) / 180;
+/** Keep a landmark's top this far (radians) under the screen's top edge. */
+const TOP_MARGIN = 0.04;
+/** And the hero's feet this far over the bottom edge. */
+const FEET_MARGIN = 0.12;
+
+/** A point's angle above the camera's line of sight, in radians. */
+function angleUp(camera: THREE.Camera, x: number, y: number, z: number) {
+  const v = SCRATCH.set(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+  return Math.atan2(v.y, -v.z);
+}
+
+/**
+ * How much further back than `base` the camera must stand (`back`, a
+ * multiplier), and how far it must then tip up (`pitch`, radians), to
+ * show a landmark's top and its vistas' above the hero's feet. `place`
+ * puts the camera at a distance; it is left wherever the last try put it.
+ */
+function frameTops(
+  camera: THREE.Camera,
+  mark: LandmarkDef,
+  place: (far: number) => void,
+  base: number,
+): { back: number; pitch: number } | null {
+  const tops: [number, number, number][] = (mark.vistas ?? []).map((v) => [
+    v.x,
+    v.top,
+    v.z,
+  ]);
+  if (mark.top !== undefined) tops.push([mark.x, mark.top, mark.z]);
+  if (!tops.length) return null;
+  let back = 1;
+  let pitch = 0;
+  for (let k = 0; k < 10; k++) {
+    place(base * back);
+    let up = -Infinity;
+    for (const [x, y, z] of tops)
+      up = Math.max(up, angleUp(camera, x * TILE, y, z * TILE));
+    const feet = angleUp(camera, runtime.x * TILE, 0, runtime.z * TILE);
+    const need = up - (HALF_FOV - TOP_MARGIN);
+    const room = feet + (HALF_FOV - FEET_MARGIN);
+    pitch = Math.max(0, Math.min(need, room));
+    if (need <= room) break;
+    back *= 1.12;
+  }
+  return { back, pitch };
+}
 
 /**
  * How far the camera stands from the hero: far enough to show at least 9
@@ -98,8 +205,22 @@ function Hero({ save }: { save: SaveData }) {
   const size = useThree((s) => s.size);
   const regen = useRef(0);
   const weapon = save.hero.equipment.weapon;
+  /** The landmark camera: its zoom, its aim's pull, the last one named. */
+  const sight = useRef({
+    zoom: landmarkPull(zone, runtime.x, runtime.z).zoom,
+    tilt: landmarkPull(zone, runtime.x, runtime.z).pull,
+    over: landmarkPull(zone, runtime.x, runtime.z).over,
+    aimX: 0,
+    aimZ: 0,
+    named: landmarkPull(zone, runtime.x, runtime.z).mark?.id ?? "",
+    /** How much further back, and how far up (radians), to fit its top. */
+    back: 1,
+    pitch: 0,
+    /** The landmark the camera last framed, to ease away from. */
+    mark: null as LandmarkDef | null,
+  });
 
-  useFrame((_, rawDt) => {
+  useFrame((state, rawDt) => {
     const dt = Math.min(0.05, rawDt);
     const gamepad = readGamepad();
     let { x: ix, z: iz } = gamepad ?? runtime.input;
@@ -133,17 +254,81 @@ function Hero({ save }: { save: SaveData }) {
       ref.current.position.set(runtime.x * TILE, 0, runtime.z * TILE);
       ref.current.rotation.y = runtime.heading;
     }
-    const far =
-      cameraDistance(size.width / Math.max(1, size.height)) *
-      runtime.cameraZoom;
-    const aimZ = runtime.z * TILE - LOOK_AHEAD;
-    camera.position.set(
-      runtime.x * TILE + CAMERA.x * far,
-      0.8 + CAMERA.y * far,
-      aimZ + CAMERA.z * far,
-    );
-    camera.lookAt(runtime.x * TILE, 0.8, aimZ);
-    camera.updateMatrixWorld();
+    // Near a landmark the camera eases out, and its aim leans towards the
+    // landmark, so the whole of it fits the screen.
+    const reach = cameraDistance(size.width / Math.max(1, size.height));
+    // How far south of the hero the usual camera stands, in tiles.
+    const behind = (CAMERA.z * reach - LOOK_AHEAD) / TILE;
+    const near = landmarkPull(zone, runtime.x, runtime.z, behind);
+    const view = sight.current;
+    const ease = Math.min(1, dt * LANDMARK_EASE);
+    view.zoom += (near.zoom - view.zoom) * ease;
+    view.tilt += (near.pull - view.tilt) * ease;
+    view.over += (near.over - view.over) * Math.min(1, dt * 3);
+    const lean = near.mark ? near.pull * 0.45 : 0;
+    const toX = near.mark ? (near.mark.x - runtime.x) * TILE * lean : 0;
+    const toZ = near.mark ? (near.mark.z - runtime.z) * TILE * lean : 0;
+    view.aimX += (toX - view.aimX) * ease;
+    view.aimZ += (toZ - view.aimZ) * ease;
+    if (near.mark && near.pull > 0.5 && view.named !== near.mark.id) {
+      view.named = near.mark.id;
+      actions.toast("landmark", "toast.zone", { name: near.mark.name });
+    }
+    if (near.mark) view.mark = near.mark;
+    const mark = view.mark;
+    const dir = CAMERA_DIR.lerpVectors(CAMERA, CAMERA_LOW, view.tilt)
+      .lerp(CAMERA_TOP, view.over)
+      .normalize();
+    const aimX = runtime.x * TILE + view.aimX;
+    const aimZ = runtime.z * TILE - LOOK_AHEAD + view.aimZ;
+    const aimY = 0.8 + LOOK_UP * view.tilt;
+    const place = (far: number) => {
+      camera.position.set(
+        aimX + dir.x * far,
+        aimY + dir.y * far,
+        aimZ + dir.z * far,
+      );
+      camera.lookAt(aimX, aimY, aimZ);
+      camera.updateMatrixWorld();
+    };
+    const base = reach * runtime.cameraZoom * view.zoom;
+    // In front of a tall landmark, stand back and tip up until its top
+    // (and any far sight over it) fits above the hero's feet.
+    const fit = near.mark ? frameTops(camera, near.mark, place, base) : null;
+    const fitEase = Math.min(1, dt * 2);
+    const backTo = fit ? 1 + (fit.back - 1) * near.pull : 1;
+    const pitchTo = fit ? fit.pitch * near.pull : 0;
+    view.back += (backTo - view.back) * fitEase;
+    view.pitch += (pitchTo - view.pitch) * fitEase;
+    const far = base * view.back;
+    place(far);
+    if (view.pitch > 0.001) {
+      camera.rotateX(view.pitch);
+      camera.updateMatrixWorld();
+    }
+    // The fog keeps its distance from the hero as the camera pulls out,
+    // and stands back past a far sight while it's framed.
+    const fog = state.scene.fog;
+    if (fog instanceof THREE.Fog) {
+      const extra = far - reach;
+      let fogNear = reach + 6 + extra;
+      let fogFar = reach + 38 + extra * 1.3;
+      if (mark?.vistas?.length && view.tilt > 0.01) {
+        let depth = 0;
+        for (const v of mark.vistas)
+          depth = Math.max(
+            depth,
+            -SCRATCH.set(v.x * TILE, v.top / 2, v.z * TILE).applyMatrix4(
+              camera.matrixWorldInverse,
+            ).z,
+          );
+        const w = smooth(view.tilt);
+        fogNear += (Math.max(fogNear, depth - 25) - fogNear) * w;
+        fogFar += (Math.max(fogFar, depth + 30) - fogFar) * w;
+      }
+      fog.near = fogNear;
+      fog.far = fogFar;
+    }
     // Tell the trees where the hero's chest is on screen, to fade for him.
     const chest = SCRATCH.set(runtime.x * TILE, 1.3, runtime.z * TILE);
     chest.project(camera);
@@ -331,6 +516,30 @@ function Ground({
   );
 }
 
+/**
+ * Buildings dissolve around the hero where they stand in front of him, as
+ * trees do: the landmarks are tall enough to hide him for many steps.
+ * Patches the materials once the buildings are built and batched.
+ */
+function SeeThrough({
+  map,
+  children,
+}: {
+  map: readonly string[];
+  children: ReactNode;
+}) {
+  const ref = useRef<THREE.Group>(null);
+  useLayoutEffect(() => {
+    ref.current?.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+      mesh.material.onBeforeCompile = fadeAroundHero;
+      mesh.material.needsUpdate = true;
+    });
+  }, [map]);
+  return <group ref={ref}>{children}</group>;
+}
+
 /** Marks a group that takes taps itself (NPCs, foes, quest objects). */
 const INTERACTIVE = { interactive: true };
 
@@ -413,8 +622,10 @@ function Scene({ save, version }: { save: SaveData; version: number }) {
       />
       <Ground width={width} height={height} color={zone.palette.ground} />
       <Nature map={zone.map} grass={zone.palette.ground} town={!!zone.town} />
-      <Tiles map={zone.map} town={!!zone.town} />
-      {zone.town ? <Walls map={zone.map} /> : null}
+      <SeeThrough map={zone.map}>
+        <Tiles map={zone.map} town={!!zone.town} ground={zone.palette.ground} />
+      </SeeThrough>
+      {zone.town ? <Walls map={zone.map} ground={zone.palette.ground} /> : null}
       {/* Where the road leaves for a town, that town's wall and gate. */}
       {zone.exits.map((exit) =>
         getZone(exit.to).town ? (
@@ -423,6 +634,7 @@ function Scene({ save, version }: { save: SaveData; version: number }) {
             exit={exit}
             width={width}
             height={height}
+            ground={zone.palette.ground}
           />
         ) : null,
       )}
@@ -525,7 +737,7 @@ export default function WorldScene({ save, version, paused }: Props) {
               camera={{
                 fov: FOV,
                 near: 0.5,
-                far: 120,
+                far: 180,
                 position: [runtime.x * TILE, 15.5, runtime.z * TILE + 8.5],
               }}
               dpr={sceneDpr()}

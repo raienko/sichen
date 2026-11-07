@@ -196,7 +196,9 @@ export const heroOnScreen = {
  * him, dissolve in a dither, so he never vanishes behind the forest from
  * the high camera. Done per pixel in the shader, so batching still works.
  */
-function fadeAroundHero(shader: THREE.WebGLProgramParametersWithUniforms) {
+export function fadeAroundHero(
+  shader: THREE.WebGLProgramParametersWithUniforms,
+) {
   Object.assign(shader.uniforms, heroOnScreen);
   shader.fragmentShader =
     "uniform vec3 uHero;\nuniform float uFadeRadius;\n" +
@@ -234,6 +236,7 @@ export function Instances({
   color = 0xffffff,
   shadow,
   fade,
+  vertexColors,
 }: {
   geometry: THREE.BufferGeometry;
   items: Item[];
@@ -242,6 +245,8 @@ export function Instances({
   shadow?: boolean;
   /** Dissolves in front of the hero (see fadeAroundHero). */
   fade?: boolean;
+  /** Takes its colours from the geometry (an earth bank's facets). */
+  vertexColors?: boolean;
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
@@ -279,6 +284,7 @@ export function Instances({
         <meshLambertMaterial
           color={color}
           flatShading
+          vertexColors={vertexColors}
           onBeforeCompile={fade ? fadeAroundHero : undefined}
         />
       )}
@@ -381,7 +387,7 @@ function natureItems(map: Map, town: boolean) {
           z: p.z + SHADOW.z * k,
           scale: [1.3 * k, 1.3 * k, 1],
         });
-      } else if (ch === "=" && near(map, x, z, "~")) {
+      } else if (ch === "=" && !town && near(map, x, z, "~")) {
         // A ford: flat stones to step on.
         for (let s = 0; s < 2; s++) {
           const p = at(30 + s, 0.6);

@@ -14,12 +14,14 @@ const COLORS: Record<string, string> = {
   "~": "#1e3a52",
   h: "#8a7a5a",
   W: "#5a4028",
+  T: "#5a4028",
   c: "#c9b880",
   t: "#6a4a2a",
   "=": "#5a4a34",
   g: "#c9a24a",
   b: "#e8e2d4",
   m: "#a3181f",
+  w: "#e8e2d4",
 };
 
 /** Run-length rows, so a 48×36 map is a few hundred rects, not 1700. */

@@ -1,5 +1,6 @@
 import { RULES, getEnemy, getQuest, getSkill, getZone } from "../data";
 import { translate, type StringKey, type Vars } from "../i18n";
+import { freeSpot } from "../render/movement";
 import { planFor } from "../sim/ai";
 import {
   apFor,
@@ -168,8 +169,18 @@ export function continueGame(slot: number) {
   enterLoaded(data);
 }
 
-function enterLoaded(data: SaveData) {
-  resetRuntime(data.world.x, data.world.z);
+/** Where the hero can stand in the current zone, nearest to (x, z). */
+function standing(zoneId: string, x: number, z: number) {
+  const zone = getZone(zoneId);
+  return freeSpot(zone.map, zone.spawn, x, z, zone.exits);
+}
+
+function enterLoaded(loaded: SaveData) {
+  // The map may have changed since the save: step out of anything that
+  // now stands where the hero was.
+  const spot = standing(loaded.world.zoneId, loaded.world.x, loaded.world.z);
+  const data = { ...loaded, world: { ...loaded.world, ...spot } };
+  resetRuntime(spot.x, spot.z);
   runtime.safeUntil = Date.now() + 2000;
   set((s) => ({
     save: data,
@@ -199,6 +210,23 @@ export function saveGame() {
 }
 
 // ---------------------------------------------------------------- world
+
+/**
+ * Frees a hero caught in a wall or a building: to the nearest open spot
+ * they can walk on from, or back to the zone's spawn if nothing is wrong
+ * where they stand.
+ */
+export function unstuck() {
+  const zoneId = save().world.zoneId;
+  const zone = getZone(zoneId);
+  let spot = standing(zoneId, runtime.x, runtime.z);
+  if (spot.x === runtime.x && spot.z === runtime.z) spot = zone.spawn;
+  commit((s) => ({ ...s, world: { ...s.world, ...spot } }));
+  resetRuntime(spot.x, spot.z);
+  runtime.safeUntil = Date.now() + 2000;
+  set((s) => ({ panel: null, worldVersion: s.worldVersion + 1 }));
+  toast("life-ring", "toast.unstuck");
+}
 
 export function openPanel(panel: Panel | null) {
   set({ panel });
